@@ -1,0 +1,177 @@
+{
+	"name"			: "mBot",
+	"port"			: 0,										// 変更禁止
+	"boardType"		: "atmega328",
+
+	"sort"			: 50,										// メニュー上の表示順序
+	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
+	"javascriptURL"	: "robot.js",
+	"normalFW"		: "robot_normal/mbot_reset",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// PCモード/書き込みモード ヘッダ (C言語)
+	"header":"
+#include <Arduino.h>
+#include <Servo.h>
+#include <Wire.h>
+#include <EEPROM.h>
+#include <remoconRoboLib.h>
+
+#define mVersion \"mBot1.0\"
+
+uint8_t initMP3 = 0;        // for playMP3
+Servo srvClass[3];          // for setServo
+const uint8_t srvPin[3] = {3,9,10};
+",
+	// PCモード/書き込みモード setup処理 (C言語)
+	"setup":"
+remoconRobo_init();
+digitalWrite(13, HIGH);
+Serial.begin(115200);
+delay(500);
+digitalWrite(13, LOW);
+remoconRobo_tone(500, 50);
+",
+	// PCモード/書き込みモード loop処理 (C言語)
+	"loop":"",
+
+	// PCモード/書き込みモード スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum| 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+------------------+----------------------------------
+		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],	"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
+
+		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
+
+		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"], "func":"remoconRobo_setRobot({0},{1});"}],
+		["w", "stop",									"stopRobot",					{"remote":[],		"func":"remoconRobo_setRobot(0,0);"}],
+		["w", "set motor%d.motorPort speed %d.motorvalue","setMotor",		1,0,		{"remote":["B","S"], "func":"remoconRobo_setMotor({0}-1,{1});"}],
+
+		["w", "calibration right %n",					"incCalibRight",	1,			{"remote":["S"],	"func":"remoconRobo_incCalib({0});"}],
+		["w", "calibration left %n",					"incCalibLeft", 	1,			{"remote":["S"],	"func":"remoconRobo_incCalib(-{0});"}],
+		["R", "read calibration",						"getCalib",						{"remote":["S"],	"func":"remoconRobo_getCalib()"}],
+		["w", "set calibration %n",						"setCalib",			0,			{"remote":["S"],	"func":"remoconRobo_setCalib({0});"}],
+
+		["-"],	// ブロック区切り
+
+		// robot.js呼び出し
+		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 		"func":"remoconRobo_checkRemoteKey()"}],
+		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
+		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
+		["R", "get remote X",							"getRemoteX",					{"custom":"",		"func":"remoconRobo_getRemoteX()"}],
+		["R", "get remote Y",							"getRemoteY",					{"custom":"",		"func":"remoconRobo_getRemoteY()"}],
+
+		["-"],
+
+		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"], "func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B","B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B","B"], "func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
+		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},1)"}],
+		["R", "read analog pin A%n average %n times",	"getAnalogAve",		0,10,		{"remote":["B","S","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},{1})"}],
+
+		["-"],
+
+		["w", "set servo %d.servoSlot angle %d.servovalue","setServo",		"servo3",90,{"remote":["B","B"], "func":"if(!srvClass[{0}].attached()) srvClass[{0}].attach(srvPin[{0}]); srvClass[{0}].write({1});"}],
+
+		["w", "Play MP3 track %n with loop %d.onoff",	"playMP3",			1,"Off",	{"remote":["B","B"], "func":"if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3({0},{1});"}],
+		["w", "Stop MP3",								"stopMP3",						{"remote":[],		"func":"remoconRobo_stopMP3();"}],
+
+		// enum
+		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",			"func":"{0}"}],
+		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
+		["r", "%d.direction .",							"enumDirection", "run forward",	{"enum":"",			"func":"{0}"}],
+	],
+	"menus": {
+		"servoSlot":["servo3","servo9","servo10"],
+		"servovalue":[0,45,90,135,180],
+		"motorPort":[1,2,3,4],
+		"motorvalue":[255,100,50,0,-50,-100,-255],
+		"speedvalue":[255,100,50,0],
+
+		"direction":["run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"note":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",
+				"C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",
+				"C6","D6","E6","F6","G6","A6","B6","C7","D7","E7","F7","G7","A7","B7","C8","D8"],
+		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
+		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
+		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
+		"beats":["Half","Quarter","Eighth","Whole","Double"],
+		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
+		"ircode":["POWER","MENU","TEST","RETURN","R0","C","↑","↓","←","→","CENTER","R1","R2","R3","R4","R5","R6","R7","R8","R9","B",],
+		"ircodeA":["A CENTER","A↑","A→","A←","A↓",],
+	},
+	"values":{
+		"servo3":0,"servo9":1,"servo10":2,
+		"run forward":0,"turn left":1,"turn right":2,"run backward":3,"rotate left":4,"rotate right":5,
+
+		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
+		"C3":131,"D3":147,"E3":165,"F3":175,"G3":196,"A3":220,"B3":247,
+		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
+		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
+		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
+		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
+		"C8":4186,"D8":4699,
+		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
+		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
+		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
+		"ド5":523,"レ5":587,"ミ5":659,"ファ5":698,"ソ5":784,"ラ5":880,"シ5":988,
+		"ド6":1047,"レ6":1175,"ミ6":1319,"ファ6":1397,"ソ6":1568,"ラ6":1760,"シ6":1976,
+		"ド7":2093,"レ7":2349,"ミ7":2637,"ファ7":2794,"ソ7":3136,"ラ7":3520,"シ7":3951,
+		"ド8":4186,"レ8":4699,
+
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
+		"POWER":0x45,"B":0x46,"MENU":0x47,"TEST":0x44,"RETURN":0x43,"R0":0x16,"C":0x0D,"↑":0x40,"↓":0x19,"←":0x07,"→":0x09,"CENTER":0x15,
+		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
+		"A CENTER":0x61,"A↑":0x62,"A→":0x63,"A←":0x64,"A↓":0x65,
+	},
+	"translators":{
+		"ja":{
+			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
+			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
+
+			"set LED %d.onoff"								:"LEDを %d.onoff",
+			"play tone on note %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
+			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
+			"play tone on note %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
+			"play tone on note %d.note beat %d.beats"		:"%d.note を %d.beats 鳴らす",
+			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
+			"set motor%d.motorPort speed %d.motorvalue"		:"モーター %d.motorPort の速さを %d.motorvalue にする",
+			"calibration right %n"							:"右に%n 補正",
+			"calibration left %n"							:"左に%n 補正",
+			"read calibration"								:"補正データ",
+			"set calibration %n"							:"補正データを%n に設定",
+			"remote pressed"								:"リモコンボタンが押された",
+			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
+			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
+			"get remote X"									:"アナログXの値",
+			"get remote Y"									:"アナログYの値",
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
+			"read digital pin %n"							:"デジタルピン %n",
+			"read digital pin A%n"							:"デジタルピン A%n",
+			"read analog pin A%n"							:"アナログピン A%n",
+			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
+			"set servo %d.servoSlot angle %d.servovalue"	:"サーボ %d.servoSlot の角度を %d.servovalue にする",
+			"Play MP3 track %n with loop %d.onoff"			:"MP3の%n 曲目をループ%d.onoff で再生",
+			"Stop MP3"										:"MP3を止める",
+		}
+	}
+}
