@@ -61,9 +61,6 @@ static void parseData()
         case 22: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
         case 23: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),1))); break;
         case 24: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),getShort(1)))); break;
-        case 26: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
-        case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
-        case 28: remoconRobo_stopMP3();; callOK(); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
