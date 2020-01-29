@@ -105,7 +105,7 @@ quadCrawler_servoLoop();
 		"ircodeA":["A CENTER","A U","A R","A L","A D","A↑→","A↑","A←↑","A→","A←","A↓→","A↓","A←↓"],
 
 		"speed":["sslow","slow","typical","fast", "high"],
-		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_dn","h_up","t_up","r_up","l_up","all_h_up","l_r_up","all_up_dn"],
+		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_down","t_down","h_down","l_down","r_down","t_up_down","l_r_up","all_up_down"],
 		"color":["off","red","green","blue","yellow","purple","lightblue"],
 		"knee":["Neutral","up","down","max"],
 		"crotch":["Neutral","rear","front"],
@@ -118,7 +118,7 @@ quadCrawler_servoLoop();
 		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
 		"A CENTER":0x61,"A U":0x62,"A R":0x63,"A L":0x64,"A D":0x65,"A↑→":0x70,"A↑":0x71,"A←↑":0x72,"A→":0x73,"A←":0x74,"A↓→":0x75,"A↓":0x76,"A←↓":0x77,
 		"sslow":2000,"slow":1000,"typical":500,"fast":200,"high":100,
-		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_dn":8,"h_up":9,"t_up":10,"r_up":11,"l_up":12,"all_h_up":13,"l_r_up":14,"all_up_dn":15,
+		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_down":8,"t_down":9,"h_down":10,"l_down":11,"r_down":12,"t_up_down":13,"l_r_up":14,"all_up_down":15,
 		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
 		"keep":0,"Neutral":1,"up":2,"down":3,"max":4, "rear":2,"front":3,
 	},
@@ -148,7 +148,7 @@ quadCrawler_servoLoop();
 			"walk %d.walkcmd %d.speed":"動く %d.walkcmd %d.speed",
 			"sslow":"超低速","slow":"低速","typical":"普通","fast":"高速","high":"超高速",
 			"stop":"停止","fw":"前進","cw":"右旋回","ccw":"左旋回","rw":"後進","right":"右移動","left":"左移動",
-			"all_up":"しゃがむ","all_dn":"伸び","h_up":"後傾斜","t_up":"前傾斜","r_up":"右傾斜","l_up":"左傾斜","all_h_up":"背伸び","l_r_up":"左右傾斜","all_up_dn":"スクワット",
+			"all_up":"しゃがむ","all_down":"伸び","t_down":"後傾斜","h_down":"前傾斜","l_down":"左傾斜","r_down":"右傾斜","t_up_down":"背伸び","l_r_up":"左右傾斜","all_up_down":"スクワット",
 
 			"off":"消す","red":"赤色","green":"緑色","blue":"青色","yellow":"黄色","purple":"紫色","lightblue":"水色",
 			"keep":"保持","Neutral":"中立","up":"上","down":"下","max":"下最大",

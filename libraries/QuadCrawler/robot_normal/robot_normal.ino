@@ -26,6 +26,7 @@ void setup() {
 
 static uint8_t lastkey = 0;
 static uint8_t originAdj = 0;
+static uint8_t lastSw4 = 1;
 
 void loop() {
   #define A_DOWN_OFFSET  0x10
@@ -104,28 +105,28 @@ void loop() {
       case XY_DOWN + A_DOWN_OFFSET:
       case BUTTON_3:
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-        quadCrawler_Walk(quadCrawler_fast, h_up);
+        quadCrawler_Walk(quadCrawler_fast, t_dn);
         break;
       case XY_UP + A_DOWN_OFFSET:
       case BUTTON_4:
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-        quadCrawler_Walk(quadCrawler_fast, t_up);
+        quadCrawler_Walk(quadCrawler_fast, h_dn);
         break;
       case XY_LEFT + A_DOWN_OFFSET:
       case BUTTON_5:
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-        quadCrawler_Walk(quadCrawler_fast, r_up);
+        quadCrawler_Walk(quadCrawler_fast, l_dn);
         break;
       case XY_RIGHT + A_DOWN_OFFSET:
       case BUTTON_6:
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-        quadCrawler_Walk(quadCrawler_fast, l_up);
+        quadCrawler_Walk(quadCrawler_fast, r_dn);
         break;
 
       case BUTTON_A_UP:
       case BUTTON_7:
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-        quadCrawler_Walk(quadCrawler_fast, all_h_up);
+        quadCrawler_Walk(quadCrawler_fast, t_up_dn);
         break;
       case BUTTON_A_LEFT:
       case BUTTON_8:
@@ -144,7 +145,8 @@ void loop() {
     }
   }
 
-  if(digitalRead(Sw4)==0) {
+  uint8_t sw4 = digitalRead(Sw4);
+  if(lastSw4!=sw4 && sw4==0) {
     if(!originAdj) {
       quadCrawler_colorWipe(COLOR_RED);
       quadCrawler_setPose4(POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL);
@@ -157,6 +159,7 @@ void loop() {
     quadCrawler_colorWipe(COLOR_PURPLE);
     originAdj = 0;
   }
+  lastSw4 = sw4;
 
   quadCrawler_servoLoop();
   if(rData.xyLevel >= 10) {

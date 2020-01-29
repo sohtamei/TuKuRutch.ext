@@ -22,54 +22,54 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 //Right Front Knee SV1-1
 #define RFK  1
 #define RFK_N 70
-#define RFK_D 80
 #define RFK_U 58
+#define RFK_D 80
 #define RFK_UD 130
 
 //Right Front Crach SV1-3
 #define RFC  0
 #define RFC_N 85
-#define RFC_F 90
 #define RFC_R 60
+#define RFC_F 90
 
 //Right Rear Knee SV3-1
 #define RRK  5
 #define RRK_N 68
-#define RRK_D 75
 #define RRK_U 55
+#define RRK_D 75
 #define RRK_UD 130
 
 //Right Rear Crach SV3-4
 #define RRC  4
 #define RRC_N 90
-#define RRC_F 110
 #define RRC_R 80
+#define RRC_F 110
 
 //Left Front Knee SV2-1
 #define LFK  3
 #define LFK_N 90
-#define LFK_D 80
 #define LFK_U 105
+#define LFK_D 80
 #define LFK_UD 20
 
 //Left Front Crach SV2-4
 #define LFC  2
 #define LFC_N 90
-#define LFC_F 80
 #define LFC_R 110
+#define LFC_F 80
 
 //Left Rear Knee SV4-1
 #define LRK  7
 #define LRK_N 90
-#define LRK_D 80
 #define LRK_U 103
+#define LRK_D 80
 #define LRK_UD 20
 
 //Left Rear Crach SV4-4
 #define LRC  6
 #define LRC_N 90
-#define LRC_F 60
 #define LRC_R 90
+#define LRC_F 60
 
 enum {
   ServoOff = 0,
@@ -97,22 +97,11 @@ static void set_servo_deg(uint8_t id, unsigned int deg) {
   uint8_t channel = channel_table[id];
   unsigned int setdata;
   setdata = (unsigned int)((deg - deg_min) *  (servo_max - servo_min) / (deg_max - deg_min)) + servo_min;
-  //  Serial.print ("setdata:");
-  //  Serial.println (setdata);
   if (setdata <= servo_max) {
     if (setdata >= servo_min) {
       pwm.setPWM(channel, 0, setdata);
       delay(20);
-      //      //Serial.print(setdata);
     }
-    else {
-      //      //Serial.print (setdata);
-      //Serial.println ("add or deg value error < min");
-    }
-  }
-  else {
-    //    //Serial.print (setdata);
-    //Serial.println ("deg value error > max");
   }
 }
 
@@ -150,7 +139,7 @@ static const uint8_t angle_table[5][8] = {
 	{RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N},		// neutral
 	{RFK_U, RFC_R, RRK_U, RRC_R, LFK_U, LFC_R, LRK_U, LRC_R},		// up/rear
 	{RFK_D, RFC_F, RRK_D, RRC_F, LFK_D, LFC_F, LRK_D, LRC_F},		// down/forward
-	{RFK_UD, RFC_N, RRK_UD, RRC_N, LFK_UD, LFC_N, LRK_UD, LRC_N},	// downMax
+	{RFK_UD,RFC_N, RRK_UD,RRC_N, LFK_UD,LFC_N, LRK_UD,LRC_N},		// downMax
 };
 
 void quadCrawler_setPose4(uint8_t rfk, uint8_t rfc, uint8_t rrk, uint8_t rrc, uint8_t lfk, uint8_t lfc, uint8_t lrk, uint8_t lrc)
@@ -320,27 +309,27 @@ void quadCrawler_Walk(uint16_t speed, uint8_t com) {
     const uint8_t motion[] = {RFK_UD,-1,    RRK_UD,-1,    LFK_UD,-1,    LRK_UD,-1   };
     set_servo_motion(&motion, ServoNormal);
   }
-  else if (com == h_up) {
+  else if (com == t_dn) {
     //Serial.println ("-Hip up");
     const uint8_t motion[] = {RFK_U, -1,    RRK_UD,-1,    LFK_U, -1,    LRK_UD,-1   };
     set_servo_motion(&motion, ServoNormal);
   }
-  else if (com == t_up) {
+  else if (com == h_dn) {
     //Serial.println ("-Top up");
     const uint8_t motion[] = {RFK_UD,-1,    RRK_U, -1,    LFK_UD,-1,    LRK_U, -1   };
     set_servo_motion(&motion, ServoNormal);
   }
-  else if (com == r_up) {
+  else if (com == l_dn) {
     //Serial.println ("-Right up");
     const uint8_t motion[] = {RFK_U, -1,    RRK_U, -1,    LFK_UD,-1,    LRK_UD,-1   };
     set_servo_motion(&motion, ServoNormal);
   }
-  else if (com == l_up) {
+  else if (com == r_dn) {
     //Serial.println ("Left up");
     const uint8_t motion[] = {RFK_UD,-1,    RRK_UD,-1,    LFK_U, -1,    LRK_U, -1   };
     set_servo_motion(&motion, ServoNormal);
   }
-  else if (com == all_h_up) {
+  else if (com == t_up_dn) {
     static const uint8_t motion[4][8] = {
                            {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   },
                            {RFK_U, -1,    RRK_UD,-1,    LFK_U, -1,    LRK_UD,-1   },

@@ -35,13 +35,13 @@ enum {
   // normal
   all_up,
   all_dn,
-  h_up,
-  t_up,
-  r_up,
-  l_up,
+  t_dn,
+  h_dn,
+  l_dn,
+  r_dn,
 
   // repeat
-  all_h_up,
+  t_up_dn,
   l_r_up,
   all_up_dn,
 
@@ -63,6 +63,13 @@ enum {
 };
 
 void quadCrawler_setPose4(uint8_t rfk, uint8_t rfc, uint8_t rrk, uint8_t rrc, uint8_t lfk, uint8_t lfc, uint8_t lrk, uint8_t lrc);
+
+enum {
+  FRONT_R   = 0,
+  REAR_R    = 1,
+  FRONT_L   = 2,
+  REAR_L    = 3,
+};
 void quadCrawler_setPose1(uint8_t index, uint8_t knee, uint8_t crach);
 
 void quadCrawler_servoLoop(void);

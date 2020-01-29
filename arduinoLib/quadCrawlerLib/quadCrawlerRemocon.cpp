@@ -252,7 +252,7 @@ int remoconRobo_checkRemoteUpdated(int mergeKeys)
 					case XY_DOWN:	lev = -remoconData1.y; break;
 					default:		lev = lev/2; break;
 					}
-					if(lev > 256) lev = 255;
+					if(lev >= 256) lev = 255;
 					remoconData1.xyLevel = lev;
 				} else {
 					remoconData1.xyKeys = 0;
