@@ -163,7 +163,7 @@ void loop() {
 
   quadCrawler_servoLoop();
   if(rData.xyLevel >= 10) {
-    quadCrawler_setSpeed(10000 / rData.xyLevel);
+    quadCrawler_setSpeed(25000 / rData.xyLevel);
   }
 
   double sonner_val;
