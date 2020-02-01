@@ -6,6 +6,8 @@
 	"sort"			: 10,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_app.html",
+	"sampleDir"		: "",										// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
