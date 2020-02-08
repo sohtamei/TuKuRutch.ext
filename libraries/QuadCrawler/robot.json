@@ -141,15 +141,17 @@ quadCrawler_servoLoop();
 			"read analog pin A%n"							:"アナログピン A%n",
 			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
 
+			"walk %d.walkcmd %d.speed":"動く %d.walkcmd %d.speed",
 			"FrontR %d.knee %d.crotch"	: "右前足 %d.knee %d.crotch",
 			"RearR  %d.knee %d.crotch"	: "右後足 %d.knee %d.crotch",
 			"FrontL %d.knee %d.crotch"	: "左前足 %d.knee %d.crotch",
 			"RearL  %d.knee %d.crotch"	: "左後足 %d.knee %d.crotch",
 
+			"LED rainbow %d sec"		: "LEDレインボー %d 秒",
+			"beep %d"					: "ビープ %d",
 			"read Sonner"				: "距離取得",
 			"SW %d.sw is pressed"		: "スイッチ %d.sw が押された",
 
-			"walk %d.walkcmd %d.speed":"動く %d.walkcmd %d.speed",
 			"sslow":"超低速","slow":"低速","typical":"普通","fast":"高速","high":"超高速",
 			"stop":"停止","fw":"前進","cw":"右旋回","ccw":"左旋回","rw":"後進","right":"右移動","left":"左移動",
 			"all_up":"しゃがむ","all_down":"伸び","t_down":"後傾斜","h_down":"前傾斜","l_down":"左傾斜","r_down":"右傾斜","t_up_down":"背伸び","l_r_up":"左右傾斜","all_up_down":"スクワット",
