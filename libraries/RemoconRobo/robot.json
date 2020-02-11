@@ -6,7 +6,7 @@
 	"sort"			: 1,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_app.html",
+	"productInfoURL": "https://bit-trade-one.co.jp/adkrbt/",
 	"sampleDir"		: "sample/RemoconRobo",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex

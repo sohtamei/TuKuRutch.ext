@@ -5,8 +5,8 @@
 
 	"sort"			: 10,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_app.html",
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_orgel.html",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_orgel.html",
 	"sampleDir"		: "sample/Buzzer",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
