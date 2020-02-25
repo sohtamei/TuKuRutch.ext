@@ -1,17 +1,41 @@
 // copyright to SohtaMei 2019.
 
 
-#include <Arduino.h>
-#include <Servo.h>
-#include <Wire.h>
-#include <EEPROM.h>
-#include <remoconRoboLib.h>
+#define M5STACK_MPU6886 
+// #define M5STACK_MPU9250 
+// #define M5STACK_MPU6050
+// #define M5STACK_200Q
+#include <M5Stack.h>
 
-#define mVersion "RemoconRobo1.0"
+#define mVersion "M5STACK 1.0"
 
-uint8_t initMP3 = 0;        // for playMP3
-Servo srvClass[3];          // for setServo
-const uint8_t srvPin[3] = {3,9,10};
+uint8_t checkButton(uint8_t button)
+{
+      switch(button) {
+          case 0: return M5.BtnA.isPressed();
+          case 1: return M5.BtnB.isPressed();
+          case 2: return M5.BtnC.isPressed();
+      }
+      return 0;
+}
+
+float getIMU(uint8_t index)
+{
+      float data[3];
+      if(index < 3) {
+            M5.IMU.getGyroData(data+0,data+1,data+2);
+            return data[index-0];
+      } else if(index < 6) {
+            M5.IMU.getAccelData(data+0,data+1,data+2);
+            return data[index-3];
+      } else if(index < 9) {
+            M5.IMU.getAhrsData(data+0,data+1,data+2);
+            return data[index-6];
+      } else {
+            M5.IMU.getTempData(data+0);
+            return data[0];
+      }
+}
 
 
 enum {
@@ -26,12 +50,17 @@ enum {
 void setup()
 {
     
-    remoconRobo_init();
-    digitalWrite(13, HIGH);
+    M5.begin(true, true, true); // init lcd, sd card, serial
+    M5.Power.begin();    // use battery
+    M5.IMU.Init();
+    
+    M5.Lcd.clear(BLACK);
+    M5.Lcd.setTextColor(YELLOW);
+    M5.Lcd.setTextSize(2);
+    M5.Lcd.setCursor(0, 0);
+    M5.Lcd.println(mVersion);
+    
     Serial.begin(115200);
-    delay(500);
-    digitalWrite(13, LOW);
-    remoconRobo_tone(500, 50);
     
     Serial.println("PC mode: " mVersion);
 }
@@ -44,26 +73,29 @@ static uint8_t buffer[52];
 static void parseData()
 {
     switch(buffer[3]){
-        case 1: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
-        case 2: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 3: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 4: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 5: remoconRobo_setRobot(getByte(0),getByte(1));; callOK(); break;
-        case 6: remoconRobo_setRobot(0,0);; callOK(); break;
-        case 7: remoconRobo_setMotor(getByte(0)-1,getShort(1));; callOK(); break;
-        case 8: remoconRobo_incCalib(getShort(0));; callOK(); break;
-        case 9: remoconRobo_incCalib(-getShort(0));; callOK(); break;
-        case 10: sendShort((remoconRobo_getCalib())); break;
-        case 11: remoconRobo_setCalib(getShort(0));; callOK(); break;
-        case 19: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 20: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
-        case 21: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 22: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 23: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),1))); break;
-        case 24: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),getShort(1)))); break;
-        case 26: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
-        case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
-        case 28: remoconRobo_stopMP3();; callOK(); break;
+        case 2: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(2));; callOK(); break;
+        case 3: M5.Lcd.setCursor(getShort(0),getShort(2));; callOK(); break;
+        case 4: M5.Lcd.print(getString(0));; callOK(); break;
+        case 5: M5.Lcd.println(getString(0));; callOK(); break;
+        case 6: M5.Lcd.drawString(getString(5),getShort(0),getShort(2),getByte(4));; callOK(); break;
+        case 7: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
+        case 8: M5.Lcd.drawCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
+        case 9: M5.Lcd.fillCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
+        case 10: M5.Lcd.drawRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
+        case 11: M5.Lcd.fillRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
+        case 12: M5.Lcd.drawTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
+        case 13: M5.Lcd.fillTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
+        case 14: M5.Lcd.qrcode(getString(0));; callOK(); break;
+        case 15: M5.Lcd.drawJpgFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
+        case 16: M5.Lcd.drawBmpFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
+        case 18: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 19: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 20: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 21: M5.Speaker.beep();; callOK(); break;
+        case 22: sendByte((checkButton(getByte(0)))); break;
+        case 23: sendFloat((getIMU(getByte(0)))); break;
+        case 24: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 25: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
@@ -106,6 +138,8 @@ void loop()
             _index = 0;
         }
     }
+    
+    M5.update();  // update button and speaker
     
 }
 

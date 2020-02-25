@@ -1,0 +1,249 @@
+{
+	"name"			: "m5stack",
+	"port"			: 0,										// 変更禁止
+	"boardType"		: "esp32",
+
+	"sort"			: 50,										// メニュー上の表示順序
+	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
+	"sampleDir"		: "",										// サンプルディレクトリ
+	"javascriptURL"	: "robot.js",
+	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// PCモード/書き込みモード ヘッダ (C言語)
+	"header":"
+#define M5STACK_MPU6886 
+// #define M5STACK_MPU9250 
+// #define M5STACK_MPU6050
+// #define M5STACK_200Q
+#include <M5Stack.h>
+
+#define mVersion \"M5STACK 1.0\"
+
+uint8_t checkButton(uint8_t button)
+{
+  switch(button) {
+  case 0: return M5.BtnA.isPressed();
+  case 1: return M5.BtnB.isPressed();
+  case 2: return M5.BtnC.isPressed();
+  }
+  return 0;
+}
+
+float getIMU(uint8_t index)
+{
+  float data[3];
+  if(index < 3) {
+    M5.IMU.getGyroData(data+0,data+1,data+2);
+    return data[index-0];
+  } else if(index < 6) {
+    M5.IMU.getAccelData(data+0,data+1,data+2);
+    return data[index-3];
+  } else if(index < 9) {
+    M5.IMU.getAhrsData(data+0,data+1,data+2);
+    return data[index-6];
+  } else {
+    M5.IMU.getTempData(data+0);
+    return data[0];
+  }
+}
+",
+	// PCモード/書き込みモード setup処理 (C言語)
+	"setup":"
+M5.begin(true, true, true); // init lcd, sd card, serial
+M5.Power.begin();    // use battery
+M5.IMU.Init();
+
+M5.Lcd.clear(BLACK);
+M5.Lcd.setTextColor(YELLOW);
+M5.Lcd.setTextSize(2);
+M5.Lcd.setCursor(0, 0);
+M5.Lcd.println(mVersion);
+
+Serial.begin(115200);
+",
+	// PCモード/書き込みモード loop処理 (C言語)
+	"loop":"
+M5.update();  // update button and speaker
+",
+
+	// PCモード/書き込みモード スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum| 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+------------------+----------------------------------
+		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+
+		["-"],	// ブロック区切り
+
+		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
+		["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],"func":"M5.Lcd.setCursor({0},{1});"}],
+		["w", "print text %s",							"printText",		"test",		{"remote":["s"],	"func":"M5.Lcd.print({0});"}],
+		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],	"func":"M5.Lcd.println({0});"}],
+		["w", "draw text (%n ,%n ) font=%d.font %s",	"drawString",0,0,"Ascii16","1234",{"remote":["S","S","B","s"],"func":"M5.Lcd.drawString({3},{0},{1},{2});"}],
+
+		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],	"func":"M5.Lcd.fillScreen({0});"}],
+		["w", "draw circle at (%n ,%n ) r=%n with %d.color","drawCircle",100,100,50,"WHITE",{"remote":["S","S","S","S"],"func":"M5.Lcd.drawCircle({0},{1},{2},{3});"}],
+		["w", "fill circle at (%n ,%n ) r=%n with %d.color","fillCircle",100,100,50,"WHITE",{"remote":["S","S","S","S"],"func":"M5.Lcd.fillCircle({0},{1},{2},{3});"}],
+		["w", "draw rect (%n ,%n ) w=%n h=%n with %d.color","drawRect",	0,0,100,100,"WHITE",{"remote":["S","S","S","S","S"],"func":"M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
+		["w", "fill rect (%n ,%n ) w=%n h=%n with %d.color","fillRect",	0,0,100,100,"WHITE",{"remote":["S","S","S","S","S"],"func":"M5.Lcd.fillRect({0},{1},{2},{3},{4});"}],
+		["w", "draw triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color","drawTriangle",	0,0,100,0,0,100,"WHITE",{"remote":["S","S","S","S","S","S","S"],"func":"M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
+		["w", "fill triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color","fillTriangle",	0,0,100,0,0,100,"WHITE",{"remote":["S","S","S","S","S","S","S"],"func":"M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6});"}],
+
+		["w", "qrcode %s",								"qrcode",	"http://www.m5stack.com",{"remote":["s"],"func":"M5.Lcd.qrcode({0});"}],
+
+		["w", "draw jpg (%n ,%n ) %s",					"drawJpg",	0,0,"/AppIcon128.jpg",{"remote":["S","S","s"],"func":"M5.Lcd.drawJpgFile(SD,{2},{0},{1});"}],
+		["w", "draw bmp (%n ,%n ) %s",					"drawBmp",	0,0,"/AppIcon128.bmp",{"remote":["S","S","s"],"func":"M5.Lcd.drawBmpFile(SD,{2},{0},{1});"}],
+
+		["-"],
+
+		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"], "func":"M5.Speaker.tone({0},{1});delay({1});"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"], "func":"M5.Speaker.tone({0},{1});delay({1});"}],
+		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"], "func":"M5.Speaker.tone({0},{1});delay({1});"}],
+
+		["w", "Beep",									"Beep",							{"remote":[], "func":"M5.Speaker.beep();"}],
+
+
+		["B", "%d.button is pressed",					"checkButton",		"buttonA",	{"remote":["B","B"], "func":"checkButton({0})"}],
+
+		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"], "func":"getIMU({0})"}],
+
+		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B","B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+
+		["-"],
+	],
+	"menus": {
+		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
+		"button":["buttonA","buttonB","buttonC"],
+		"color":["BLACK","NAVY","DARKGREEN","DARKCYAN","MAROON","PURPLE","OLIVE","LIGHTGREY","DARKGREY","BLUE","GREEN","CYAN","RED","MAGENTA","YELLOW","WHITE","ORANGE","GREENYELLOW","PINK"],
+		"imu":["GyroX","GyroY","GyroZ","AccelX","AccelY","AccelZ","Pitch","Roll","Yaw","Temp"],
+
+		"font":["Ascii8","Ascii16","Ascii26","Num48","7Seg48","Num75"],
+
+		"note":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",
+				"C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",
+				"C6","D6","E6","F6","G6","A6","B6","C7","D7","E7","F7","G7","A7","B7","C8","D8"],
+		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
+		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
+		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
+		"beats":["Half","Quarter","Eighth","Whole","Double"],
+	},
+	"values":{
+		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
+		"buttonA":0,"buttonB":1,"buttonC":2,
+		"BLACK":0x0000,"NAVY":0x000F,"DARKGREEN":0x03E0,"DARKCYAN":0x03EF,"MAROON":0x7800,"PURPLE":0x780F,"OLIVE":0x7BE0,"LIGHTGREY":0xC618,"DARKGREY":0x7BEF,"BLUE":0x001F,"GREEN":0x07E0,"CYAN":0x07FF,"RED":0xF800,"MAGENTA":0xF81F,"YELLOW":0xFFE0,"WHITE":0xFFFF,"ORANGE":0xFD20,"GREENYELLOW":0xAFE5,"PINK":0xF81F,
+		"GyroX":0,"GyroY":1,"GyroZ":2,"AccelX":3,"AccelY":4,"AccelZ":5,"Pitch":6,"Roll":7,"Yaw":8,"Temp":9,
+
+		"Ascii8":1,"Ascii16":2,"Ascii26":4,"Num48":6,"7Seg48":7,"Num75":8,
+
+		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
+		"C3":131,"D3":147,"E3":165,"F3":175,"G3":196,"A3":220,"B3":247,
+		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
+		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
+		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
+		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
+		"C8":4186,"D8":4699,
+		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
+		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
+		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
+		"ド5":523,"レ5":587,"ミ5":659,"ファ5":698,"ソ5":784,"ラ5":880,"シ5":988,
+		"ド6":1047,"レ6":1175,"ミ6":1319,"ファ6":1397,"ソ6":1568,"ラ6":1760,"シ6":1976,
+		"ド7":2093,"レ7":2349,"ミ7":2637,"ファ7":2794,"ソ7":3136,"ラ7":3520,"シ7":3951,
+		"ド8":4186,"レ8":4699,
+
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+	},
+	"translators":{
+		"ja":{
+			"set LED %d.onoff"								:"LEDを %d.onoff",
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
+			"read digital pin %n"							:"デジタルピン %n",
+			"read digital pin A%n"							:"デジタルピン A%n",
+			"read analog pin A%n"							:"アナログピン A%n",
+		}
+	}
+}
+
+
+
+/*
+ *  System:
+        M5.begin();
+        M5.update();
+
+    Power:
+        M5.Power.setPowerBoostKeepOn()
+        M5.Power.setCharge(uint8_t mode);
+        M5.Power.setPowerBoostKeepOn(bool en);
+        M5.Power.isChargeFull();
+        M5.Power.setWakeupButton(uint8_t button);
+        M5.Power.powerOFF();
+
+        bool setPowerBoostOnOff(bool en);
+        bool setPowerBoostSet(bool en);
+        bool setPowerVin(bool en);
+        bool setPowerWLEDSet(bool en);
+
+    LCD:
+        M5.lcd.setBrightness(uint8_t brightness);
+        M5.Lcd.drawPixel(int16_t x, int16_t y, uint16_t color);
+        M5.Lcd.drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
+        M5.Lcd.fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+        M5.Lcd.fillScreen(uint16_t color);
+        M5.Lcd.drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
+        M5.Lcd.drawCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,uint16_t color);
+        M5.Lcd.fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
+        M5.Lcd.fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,int16_t delta, uint16_t color);
+        M5.Lcd.drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
+        M5.Lcd.fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
+        M5.Lcd.drawRoundRect(int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color);
+        M5.Lcd.fillRoundRect(int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color);
+        M5.Lcd.drawBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h, uint16_t color);
+        M5.Lcd.drawRGBBitmap(int16_t x, int16_t y, const uint16_t bitmap[], int16_t w, int16_t h),
+        M5.Lcd.drawChar(uint16_t x, uint16_t y, char c, uint16_t color, uint16_t bg, uint8_t size);
+        M5.Lcd.setCursor(uint16_t x0, uint16_t y0);
+        M5.Lcd.setTextColor(uint16_t color);
+        M5.Lcd.setTextColor(uint16_t color, uint16_t backgroundcolor);
+        M5.Lcd.setTextSize(uint8_t size);
+        M5.Lcd.setTextWrap(boolean w);
+        M5.Lcd.printf();
+        M5.Lcd.print();
+        M5.Lcd.println();
+        M5.Lcd.drawCentreString(const char *string, int dX, int poY, int font);
+        M5.Lcd.drawRightString(const char *string, int dX, int poY, int font);
+        M5.Lcd.drawJpg(const uint8_t *jpg_data, size_t jpg_len, uint16_t x, uint16_t y);
+        M5.Lcd.drawJpgFile(fs::FS &fs, const char *path, uint16_t x, uint16_t y);
+        M5.Lcd.drawBmpFile(fs::FS &fs, const char *path, uint16_t x, uint16_t y);
+
+    Button:
+        M5.BtnA/B/C.read();
+        M5.BtnA/B/C.isPressed();
+        M5.BtnA/B/C.isReleased();
+        M5.BtnA/B/C.wasPressed();
+        M5.BtnA/B/C.wasReleased();
+        M5.BtnA/B/C.wasreleasedFor()
+        M5.BtnA/B/C.pressedFor(uint32_t ms);
+        M5.BtnA/B/C.releasedFor(uint32_t ms);
+        M5.BtnA/B/C.lastChange();
+
+    Speaker:
+        M5.Speaker.tone(uint32_t freq);
+        M5.Speaker.tone(freq, time);
+        M5.Speaker.beep();
+        M5.Speaker.setBeep(uint16_t frequency, uint16_t duration);
+        M5.Speaker.mute();
+*/

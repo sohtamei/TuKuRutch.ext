@@ -59,6 +59,9 @@
 	var _rxBuf = [];
 	var _packetLen = 3;
 	function processData(bytes) {
+		if(_rxBuf.length == 0 && bytes.length >= 2 && bytes[0] == 0xff && bytes[1] == 0x55)
+			checkDevName = false;
+
 		if(checkDevName) {
 			for(var index = 0; index < bytes.length; index++) {
 				var c = bytes[index];

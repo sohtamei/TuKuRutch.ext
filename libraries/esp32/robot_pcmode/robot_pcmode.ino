@@ -1,17 +1,8 @@
 // copyright to SohtaMei 2019.
 
 
-#include <Arduino.h>
-#include <Servo.h>
-#include <Wire.h>
-#include <EEPROM.h>
-#include <remoconRoboLib.h>
 
-#define mVersion "RemoconRobo1.0"
-
-uint8_t initMP3 = 0;        // for playMP3
-Servo srvClass[3];          // for setServo
-const uint8_t srvPin[3] = {3,9,10};
+#define mVersion "ESP32 1.0"
 
 
 enum {
@@ -26,12 +17,7 @@ enum {
 void setup()
 {
     
-    remoconRobo_init();
-    digitalWrite(13, HIGH);
     Serial.begin(115200);
-    delay(500);
-    digitalWrite(13, LOW);
-    remoconRobo_tone(500, 50);
     
     Serial.println("PC mode: " mVersion);
 }
@@ -44,26 +30,9 @@ static uint8_t buffer[52];
 static void parseData()
 {
     switch(buffer[3]){
-        case 1: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
-        case 2: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 3: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 4: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 5: remoconRobo_setRobot(getByte(0),getByte(1));; callOK(); break;
-        case 6: remoconRobo_setRobot(0,0);; callOK(); break;
-        case 7: remoconRobo_setMotor(getByte(0)-1,getShort(1));; callOK(); break;
-        case 8: remoconRobo_incCalib(getShort(0));; callOK(); break;
-        case 9: remoconRobo_incCalib(-getShort(0));; callOK(); break;
-        case 10: sendShort((remoconRobo_getCalib())); break;
-        case 11: remoconRobo_setCalib(getShort(0));; callOK(); break;
-        case 19: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 20: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
-        case 21: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 22: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 23: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),1))); break;
-        case 24: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),getShort(1)))); break;
-        case 26: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
-        case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
-        case 28: remoconRobo_stopMP3();; callOK(); break;
+        case 3: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
+        case 4: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 5: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
@@ -146,7 +115,7 @@ static void callOK()
 {
     Serial.write(0xff);
     Serial.write(0x55);
-    Serial.write((uint8_t)0);
+    Serial.write(0);
 }
 
 static void sendByte(uint8_t data)
