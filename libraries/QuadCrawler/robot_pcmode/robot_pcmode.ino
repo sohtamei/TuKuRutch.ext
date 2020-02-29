@@ -10,7 +10,7 @@
 #include <Adafruit_NeoPixel.h>          // for quadCrawler
 #include "quadCrawler.h"
 
-#define mVersion "QuadCrawler1.0"
+#define mVersion "QuadCrawler1.1"
 
 const uint8_t sw_table[4] = {3,4,5,6};
 
@@ -77,35 +77,35 @@ static void parseData()
     }
 }
 
-static uint8_t index = 0;
+static uint8_t _index = 0;
 static uint8_t _packetLen = 4;
 
 void loop()
 {
     if(Serial.available()>0){
         uint8_t c = Serial.read();
-        buffer[index++] = c;
+        buffer[_index++] = c;
         
-        switch(index) {
+        switch(_index) {
             case 1:
             _packetLen = 4;
             if(c != 0xff)
-            index = 0;
+            _index = 0;
             break;
             case 2:
             if(c != 0x55) 
-            index = 0;
+            _index = 0;
             break;
             case 3:
             _packetLen = 3+c;
             break;
         }
-        if(index >= _packetLen) {
+        if(_index >= _packetLen) {
             parseData();
-            index = 0;
+            _index = 0;
         }
-        if(index >= sizeof(buffer)) {
-            index = 0;
+        if(_index >= sizeof(buffer)) {
+            _index = 0;
         }
     }
     
@@ -150,7 +150,7 @@ static void callOK()
 {
     Serial.write(0xff);
     Serial.write(0x55);
-    Serial.write(0);
+    Serial.write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)

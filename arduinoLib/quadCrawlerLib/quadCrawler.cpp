@@ -86,6 +86,8 @@ static uint8_t  servoState = 0;
 static uint32_t servoTime = 0;
 static uint16_t servoDelay = quadCrawler_fast;
 static const uint8_t (*servoMotion)[8] = NULL;
+static uint8_t servoStart[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
+static uint8_t servoEnd[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
 
 static uint8_t cur_com = stop;
 
@@ -100,7 +102,7 @@ static void set_servo_deg(uint8_t id, unsigned int deg) {
   if (setdata <= servo_max) {
     if (setdata >= servo_min) {
       pwm.setPWM(channel, 0, setdata);
-      delay(20);
+      //delay(20);
     }
   }
 }
@@ -108,8 +110,18 @@ static void set_servo_deg(uint8_t id, unsigned int deg) {
 static void set_servo_deg8(const uint8_t motion[8], uint8_t state) {
   uint8_t i;
   for(i = 0; i < 8; i++) {
-    if(motion[i] != -1)
-      set_servo_deg(i, motion[i]);
+    if(state >= ServoRepeat0 && state <= ServoRepeat3 || state == ServoNeutral) {
+      set_servo_deg(i, servoEnd[i]);
+      servoStart[i] = servoEnd[i];
+      if(motion[i] != 0xFF) {
+        servoEnd[i] = motion[i];
+      }
+    } else {
+      if(motion[i] != 0xFF) {
+        set_servo_deg(i, motion[i]);
+        servoEnd[i] = motion[i];
+      }
+    }
   }
   servoState = state;
   servoTime = timer0_millis;
@@ -173,9 +185,13 @@ uint8_t quadCrawler_checkServoON(void)
   return (servoState != ServoOff);
 }
 
+#define RATE  0.6
+static int32_t inv_accel = 1;
+static uint16_t accel_duration = 0;
+
 void quadCrawler_servoLoop(void)
 {
-  uint32_t elapsed = timer0_millis - servoTime;
+  int32_t elapsed = (timer0_millis - servoTime) & 0x7FFFFFFF;
   // サーボOFFか、サーボHoldか、delay時間が経過してないとき
   switch(servoState) {
   case ServoOff:
@@ -195,12 +211,26 @@ void quadCrawler_servoLoop(void)
     return;
 
   default:
-    if(elapsed < servoDelay)
+    if(elapsed < servoDelay * (1.0+RATE/2)) {
+	  uint8_t i;
+	  for(i = 0; i < 8; i++) {
+	    if(servoEnd[i] != servoStart[i]) {
+		  if(elapsed < accel_duration) {
+		    set_servo_deg(i, (((int)servoEnd[i] - (int)servoStart[i]) * elapsed * elapsed)/inv_accel + servoStart[i]);
+		  } else {
+	        set_servo_deg(i, (((int)servoEnd[i] - (int)servoStart[i]) * (elapsed-accel_duration/2))/servoDelay + servoStart[i]);
+	      }
+	    }
+	  }
       return;
+    }
     break;
   }
 
   // normal-なにもしない、repeat-動作を繰り返し
+  accel_duration = servoDelay * RATE;
+  inv_accel = 2UL * servoDelay * accel_duration;		// 1/(v/accel_duration/2), v = 1/servoDelay
+
   switch(servoState) {
   case ServoRepeat0:
     set_servo_deg8(servoMotion[1], ServoRepeat1);
@@ -439,6 +469,9 @@ void quadCrawler_theaterChaseRainbow(uint8_t wait) {
 */
 
 double quadCrawler_getSonner() {
+  if(digitalRead(Echo) == HIGH)
+    return 100.0;
+
   double data;
   double distance;
   digitalWrite(Trig, LOW);
@@ -470,7 +503,7 @@ void quadCrawler_init(void)
 {
   pinMode( Moter_EN, OUTPUT );
   digitalWrite( Moter_EN, HIGH);
-  pinMode( Echo, INPUT );
+  pinMode( Echo, INPUT_PULLUP );
   pinMode( Trig, OUTPUT );
   pinMode( Bz, OUTPUT );
   pinMode( Sw1, INPUT_PULLUP );

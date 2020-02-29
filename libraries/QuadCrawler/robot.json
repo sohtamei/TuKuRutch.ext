@@ -25,7 +25,7 @@
 #include <Adafruit_NeoPixel.h>          // for quadCrawler
 #include \"quadCrawler.h\"
 
-#define mVersion \"QuadCrawler1.0\"
+#define mVersion \"QuadCrawler1.1\"
 
 const uint8_t sw_table[4] = {3,4,5,6};
 ",

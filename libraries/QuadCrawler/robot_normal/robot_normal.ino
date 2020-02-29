@@ -1,4 +1,4 @@
-#define mVersion "QuadCrawler1.0"
+#define mVersion "QuadCrawler1.1"
 
 
 #include <stdint.h>
@@ -27,23 +27,27 @@ void setup() {
 static uint8_t lastkey = 0;
 static uint8_t originAdj = 0;
 static uint8_t lastSw4 = 1;
+static uint32_t sonner_time = 0;
+extern volatile unsigned long timer0_millis;
 
 void loop() {
   #define A_DOWN_OFFSET  0x10
   remoconRobo_checkRemoteUpdated(0);
   struct remoconData rData = remoconRobo_getRemoteData();
-  switch(rData.keys) {
+  uint8_t key = rData.keys;
+  switch(key) {
   case BUTTON_A_XY:
-    rData.keys = rData.xyKeys;
+    key = rData.xyKeys;
     break;
   case BUTTON_A_DOWN:
-    rData.keys = rData.xyKeys + A_DOWN_OFFSET;
+    key = rData.xyKeys + A_DOWN_OFFSET;
+    delay(20);
     break;
   }
 
-  if(rData.keys != lastkey) {
-    lastkey = rData.keys;
-    switch(rData.keys) {
+  if(key != lastkey) {
+    lastkey = key;
+    switch(key) {
       case BUTTON_POWER:
       case BUTTON_C:
       case BUTTON_B:
@@ -157,23 +161,27 @@ void loop() {
     originAdj = !originAdj;
   } else if(originAdj && !quadCrawler_checkServoON()) {
     quadCrawler_colorWipe(COLOR_PURPLE);
+    quadCrawler_beep(50);
     originAdj = 0;
   }
   lastSw4 = sw4;
 
-  quadCrawler_servoLoop();
   if(rData.xyLevel >= 10) {
     quadCrawler_setSpeed(25000 / rData.xyLevel);
   }
+  quadCrawler_servoLoop();
 
-  double sonner_val;
-  sonner_val = quadCrawler_getSonner();
-  //Serial.println(sonner_val);
-  if (sonner_val < 8){
-    quadCrawler_beep(sonner_val * 10);
-    delay(sonner_val * 10);
-  }
-  else {
-    delay(50);
+  uint16_t elapsed = (timer0_millis - sonner_time);
+  if(elapsed >= 100) {
+    sonner_time = timer0_millis;
+    double sonner_val = quadCrawler_getSonner();
+    if (sonner_val < 8){
+      quadCrawler_beep(sonner_val * 10);
+
+      if(lastkey == XY_UP || lastkey == BUTTON_UP) {
+        quadCrawler_colorWipe(COLOR_PURPLE);
+        quadCrawler_Walk(quadCrawler_fast, stop);
+      }
+    }
   }
 }
