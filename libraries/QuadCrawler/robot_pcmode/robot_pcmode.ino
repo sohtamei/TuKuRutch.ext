@@ -48,7 +48,7 @@ static uint8_t buffer[52];
 static void parseData()
 {
     switch(buffer[3]){
-        case 1: quadCrawler_Walk(getByte(1),getByte(0));; callOK(); break;
+        case 1: quadCrawler_Walk(getShort(1),getByte(0));; callOK(); break;
         case 2: quadCrawler_setPose1(0,getByte(0),getByte(1));; callOK(); break;
         case 3: quadCrawler_setPose1(1,getByte(0),getByte(1));; callOK(); break;
         case 4: quadCrawler_setPose1(2,getByte(0),getByte(1));; callOK(); break;
