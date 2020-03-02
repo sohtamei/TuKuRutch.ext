@@ -82,9 +82,14 @@ enum {
   ServoPose,
 };
 
+#define RATE  0.6
+
 static uint8_t  servoState = 0;
 static uint32_t servoTime = 0;
 static uint16_t servoDelay = quadCrawler_fast;
+static uint16_t accel_duration = 0;
+static int32_t inv_accel = 1;
+
 static const uint8_t (*servoMotion)[8] = NULL;
 static uint8_t servoStart[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
 static uint8_t servoEnd[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
@@ -185,10 +190,6 @@ uint8_t quadCrawler_checkServoON(void)
   return (servoState != ServoOff);
 }
 
-#define RATE  0.6
-static int32_t inv_accel = 1;
-static uint16_t accel_duration = 0;
-
 void quadCrawler_servoLoop(void)
 {
   int32_t elapsed = (timer0_millis - servoTime) & 0x7FFFFFFF;
@@ -211,16 +212,20 @@ void quadCrawler_servoLoop(void)
     return;
 
   default:
-    if(elapsed < servoDelay * (1.0+RATE/2)) {
+    if(elapsed < servoDelay + accel_duration/2) {	// 動作時間=servoDelay + accel_duration/2
+	  uint32_t k256;	// 距離の係数*256
+	  if(elapsed < accel_duration) {
+		// 等加速度運動 v=elapsed/inv_accel, x=elapsed^2/inv_accel/2
+	    k256 = (elapsed * elapsed * (256/2))/inv_accel;
+	  } else {
+	    // 等速運動 v=1/servoDelay, x=(elapsed - accel_duration/2)*v
+	    k256 = ((elapsed - accel_duration/2) * 256)/servoDelay;
+	  }
+
 	  uint8_t i;
 	  for(i = 0; i < 8; i++) {
-	    if(servoEnd[i] != servoStart[i]) {
-		  if(elapsed < accel_duration) {
-		    set_servo_deg(i, (((int)servoEnd[i] - (int)servoStart[i]) * elapsed * elapsed)/inv_accel + servoStart[i]);
-		  } else {
-	        set_servo_deg(i, (((int)servoEnd[i] - (int)servoStart[i]) * (elapsed-accel_duration/2))/servoDelay + servoStart[i]);
-	      }
-	    }
+	    if(servoEnd[i] != servoStart[i])
+		  set_servo_deg(i, ((((int)servoEnd[i] - (int)servoStart[i]) * k256)>>8) + servoStart[i]);
 	  }
       return;
     }
@@ -228,9 +233,6 @@ void quadCrawler_servoLoop(void)
   }
 
   // normal-なにもしない、repeat-動作を繰り返し
-  accel_duration = servoDelay * RATE;
-  inv_accel = 2UL * servoDelay * accel_duration;		// 1/(v/accel_duration/2), v = 1/servoDelay
-
   switch(servoState) {
   case ServoRepeat0:
     set_servo_deg8(servoMotion[1], ServoRepeat1);
@@ -252,10 +254,13 @@ void quadCrawler_servoLoop(void)
 
 void quadCrawler_setSpeed(uint16_t speed) {
   servoDelay = speed;
+  accel_duration = servoDelay * RATE;				// 加速時間
+  inv_accel = ((uint32_t)servoDelay) * accel_duration;	// v=1/servoDelay, 加速度係数=1/servoDelay/accel_duration,
+														// 加速度係数(逆数)=servoDelay*accel_duration
 }
 
 void quadCrawler_Walk(uint16_t speed, uint8_t com) {
-  servoDelay = speed;
+  quadCrawler_setSpeed(speed);
 
   if (cur_com == com) return;
   cur_com = com;
