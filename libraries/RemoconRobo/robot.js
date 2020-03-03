@@ -152,9 +152,9 @@
 			dev.open(115200, deviceOpened);
 	}
 
-	function deviceOpened(dev) {
+	function deviceOpened(dev, _checkDevName) {
 		device = dev;
-		checkDevName = true;
+		checkDevName = _checkDevName;
 		devName = "";
 		device.set_receive_handler(processData);
 	};
