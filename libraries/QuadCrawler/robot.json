@@ -5,8 +5,8 @@
 
 	"sort"			: 2,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_quadcrawler.html",
-	"productInfoURL": "https://camp-fire.jp/projects/view/213076",
+	"helpURL"		: "https://bit-trade-one.github.io/QuadCrawler/familyday_quadcrawler.html",
+	"productInfoURL": "https://github.com/bit-trade-one/QuadCrawler",
 	"sampleDir"		: "sample/QuadCrawler",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
