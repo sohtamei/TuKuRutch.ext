@@ -79,23 +79,20 @@ static void parseData()
         case 5: M5.Lcd.println(getString(0));; callOK(); break;
         case 6: M5.Lcd.drawString(getString(5),getShort(0),getShort(2),getByte(4));; callOK(); break;
         case 7: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
-        case 8: M5.Lcd.drawCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
-        case 9: M5.Lcd.fillCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
-        case 10: M5.Lcd.drawRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
-        case 11: M5.Lcd.fillRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
-        case 12: M5.Lcd.drawTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
-        case 13: M5.Lcd.fillTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
-        case 14: M5.Lcd.qrcode(getString(0));; callOK(); break;
-        case 15: M5.Lcd.drawJpgFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
-        case 16: M5.Lcd.drawBmpFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
-        case 18: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
-        case 19: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
-        case 20: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
-        case 21: M5.Speaker.beep();; callOK(); break;
-        case 22: sendByte((checkButton(getByte(0)))); break;
-        case 23: sendFloat((getIMU(getByte(0)))); break;
-        case 24: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 25: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 8: if(getByte(8)) M5.Lcd.fillCircle(getShort(0),getShort(2),getShort(4),getShort(6)); else M5.Lcd.drawCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
+        case 9: if(getByte(10)) M5.Lcd.fillRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8)); else M5.Lcd.drawRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
+        case 10: if(getByte(14)) M5.Lcd.fillTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12)); else M5.Lcd.drawTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
+        case 11: M5.Lcd.qrcode(getString(0));; callOK(); break;
+        case 12: M5.Lcd.drawJpgFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
+        case 13: M5.Lcd.drawBmpFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
+        case 15: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 16: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 17: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 18: M5.Speaker.beep();; callOK(); break;
+        case 19: sendByte((checkButton(getByte(0)))); break;
+        case 20: sendFloat((getIMU(getByte(0)))); break;
+        case 21: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 22: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h

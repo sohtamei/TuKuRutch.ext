@@ -1,7 +1,7 @@
 {
 	"name"			: "m5stack",
 	"port"			: 0,										// 変更禁止
-	"boardType"		: "esp32",
+	"boardType"		: "esp32:esp32:m5stack-core-esp32",			// package:platform:board
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
@@ -11,7 +11,14 @@
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"partition"		: "default",								// "Tool"-"Partition Scheme" -> ext/libraries/esp32/partition/default.bin
+	"prefs"			: ["custom_CPUFreq=esp32_240",
+						"custom_DebugLevel=m5stack-core-esp32_none",
+						"custom_FlashFreq=m5stack-core-esp32_80",
+						"custom_FlashMode=m5stack-core-esp32_qio",
+						"custom_FlashSize=esp32_4M",
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=m5stack-core-esp32_default",
+						"custom_UploadSpeed=m5stack-core-esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -94,12 +101,9 @@ M5.update();  // update button and speaker
 		["w", "draw text (%n ,%n ) font=%d.font %s",	"drawString",0,0,"Ascii16","1234",{"remote":["S","S","B","s"],"func":"M5.Lcd.drawString({3},{0},{1},{2});"}],
 
 		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],	"func":"M5.Lcd.fillScreen({0});"}],
-		["w", "draw circle at (%n ,%n ) r=%n with %d.color","drawCircle",100,100,50,"WHITE",{"remote":["S","S","S","S"],"func":"M5.Lcd.drawCircle({0},{1},{2},{3});"}],
-		["w", "fill circle at (%n ,%n ) r=%n with %d.color","fillCircle",100,100,50,"WHITE",{"remote":["S","S","S","S"],"func":"M5.Lcd.fillCircle({0},{1},{2},{3});"}],
-		["w", "draw rect (%n ,%n ) w=%n h=%n with %d.color","drawRect",	0,0,100,100,"WHITE",{"remote":["S","S","S","S","S"],"func":"M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
-		["w", "fill rect (%n ,%n ) w=%n h=%n with %d.color","fillRect",	0,0,100,100,"WHITE",{"remote":["S","S","S","S","S"],"func":"M5.Lcd.fillRect({0},{1},{2},{3},{4});"}],
-		["w", "draw triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color","drawTriangle",	0,0,100,0,0,100,"WHITE",{"remote":["S","S","S","S","S","S","S"],"func":"M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
-		["w", "fill triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color","fillTriangle",	0,0,100,0,0,100,"WHITE",{"remote":["S","S","S","S","S","S","S"],"func":"M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6});"}],
+		["w", "circle at (%n ,%n ) r=%n with %d.color %d.fill",				"drawCircle",	100,100,50,"WHITE","fill",		{"remote":["S","S","S","S","B"],			"func":"if({4}) M5.Lcd.fillCircle({0},{1},{2},{3}); else M5.Lcd.drawCircle({0},{1},{2},{3});"}],
+		["w", "rect (%n ,%n ) w=%n h=%n with %d.color %d.fill",				"drawRect",		0,0,100,100,"WHITE","fill",		{"remote":["S","S","S","S","S","B"],		"func":"if({5}) M5.Lcd.fillRect({0},{1},{2},{3},{4}); else M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
+		["w", "triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color %d.fill","drawTriangle",0,0,100,0,0,100,"WHITE","fill",	{"remote":["S","S","S","S","S","S","S","B"],"func":"if({7}) M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6}); else M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
 
 		["w", "qrcode %s",								"qrcode",	"http://www.m5stack.com",{"remote":["s"],"func":"M5.Lcd.qrcode({0});"}],
 
@@ -140,6 +144,7 @@ M5.update();  // update button and speaker
 		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
 		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
 		"beats":["Half","Quarter","Eighth","Whole","Double"],
+		"fill":["fill","draw"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
@@ -166,6 +171,7 @@ M5.update();  // update button and speaker
 		"ド8":4186,"レ8":4699,
 
 		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+		"fill":1,"draw":0,
 	},
 	"translators":{
 		"ja":{

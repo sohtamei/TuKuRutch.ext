@@ -115,7 +115,7 @@ static void callOK()
 {
     Serial.write(0xff);
     Serial.write(0x55);
-    Serial.write(0);
+    Serial.write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)

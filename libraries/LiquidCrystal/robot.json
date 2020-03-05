@@ -1,7 +1,7 @@
 {
 	"name"			: "LiquidCrystal",
 	"port"			: 0,										// 変更禁止
-	"boardType"		: "atmega328",
+	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
