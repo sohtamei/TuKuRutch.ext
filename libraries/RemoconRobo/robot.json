@@ -49,54 +49,54 @@ remoconRobo_tone(500, 50);
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
 
-	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum| 実行/取得関数
-	//-------+-----------------------------------------+-------------------+------------+------------------+----------------------------------
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],	"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
 
-		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
-		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
-		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"], "func":"remoconRobo_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
 
-		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"], "func":"remoconRobo_setRobot({0},{1});"}],
-		["w", "stop",									"stopRobot",					{"remote":[],		"func":"remoconRobo_setRobot(0,0);"}],
-		["w", "set motor%d.motorPort speed %d.motorvalue","setMotor",		1,0,		{"remote":["B","S"], "func":"remoconRobo_setMotor({0}-1,{1});"}],
+		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"],	"func":"remoconRobo_setRobot({0},{1});"}],
+		["w", "stop",									"stopRobot",					{"remote":[],			"func":"remoconRobo_setRobot(0,0);"}],
+		["w", "set motor%d.motorPort speed %d.motorvalue","setMotor",		1,0,		{"remote":["B","S"],	"func":"remoconRobo_setMotor({0}-1,{1});"}],
 
-		["w", "calibration right %n",					"incCalibRight",	1,			{"remote":["S"],	"func":"remoconRobo_incCalib({0});"}],
-		["w", "calibration left %n",					"incCalibLeft", 	1,			{"remote":["S"],	"func":"remoconRobo_incCalib(-{0});"}],
-		["R", "read calibration",						"getCalib",						{"remote":["S"],	"func":"remoconRobo_getCalib()"}],
-		["w", "set calibration %n",						"setCalib",			0,			{"remote":["S"],	"func":"remoconRobo_setCalib({0});"}],
+		["w", "calibration right %n",					"incCalibRight",	1,			{"remote":["S"],		"func":"remoconRobo_incCalib({0});"}],
+		["w", "calibration left %n",					"incCalibLeft", 	1,			{"remote":["S"],		"func":"remoconRobo_incCalib(-{0});"}],
+		["R", "read calibration",						"getCalib",						{"remote":[			"S"],"func":"remoconRobo_getCalib()"}],
+		["w", "set calibration %n",						"setCalib",			0,			{"remote":["S"],		"func":"remoconRobo_setCalib({0});"}],
 
 		["-"],	// ブロック区切り
 
 		// robot.js呼び出し
-		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 		"func":"remoconRobo_checkRemoteKey()"}],
-		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
-		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
-		["R", "get remote X",							"getRemoteX",					{"custom":"",		"func":"remoconRobo_getRemoteX()"}],
-		["R", "get remote Y",							"getRemoteY",					{"custom":"",		"func":"remoconRobo_getRemoteY()"}],
+		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 			"func":"remoconRobo_checkRemoteKey()"}],
+		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",			"func":"remoconRobo_isRemoteKey({0})"}],
+		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remoconRobo_isRemoteKey({0})"}],
+		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remoconRobo_getRemoteX()"}],
+		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remoconRobo_getRemoteY()"}],
 
 		["-"],
 
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"], "func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B","B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B","B"], "func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
-		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},1)"}],
-		["R", "read analog pin A%n average %n times",	"getAnalogAve",		0,10,		{"remote":["B","S","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},{1})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
+		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},1)"}],
+		["R", "read analog pin A%n average %n times",	"getAnalogAve",		0,10,		{"remote":["B","S",	"S"],"func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},{1})"}],
 
 		["-"],
 
-		["w", "set servo %d.servoSlot angle %d.servovalue","setServo",		"servo3",90,{"remote":["B","B"], "func":"if(!srvClass[{0}].attached()) srvClass[{0}].attach(srvPin[{0}]); srvClass[{0}].write({1});"}],
+		["w", "set servo %d.servoSlot angle %d.servovalue","setServo",		"servo3",90,{"remote":["B","B"],	"func":"if(!srvClass[{0}].attached()) srvClass[{0}].attach(srvPin[{0}]); srvClass[{0}].write({1});"}],
 
-		["w", "Play MP3 track %n with loop %d.onoff",	"playMP3",			1,"Off",	{"remote":["B","B"], "func":"if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3({0},{1});"}],
-		["w", "Stop MP3",								"stopMP3",						{"remote":[],		"func":"remoconRobo_stopMP3();"}],
+		["w", "Play MP3 track %n with loop %d.onoff",	"playMP3",			1,"Off",	{"remote":["B","B"],	"func":"if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3({0},{1});"}],
+		["w", "Stop MP3",								"stopMP3",						{"remote":[],			"func":"remoconRobo_stopMP3();"}],
 
 		// enum
-		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",			"func":"{0}"}],
-		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
-		["r", "%d.direction .",							"enumDirection", "run forward",	{"enum":"",			"func":"{0}"}],
+		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",				"func":"{0}"}],
+		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
+		["r", "%d.direction .",							"enumDirection", "run forward",	{"enum":"",				"func":"{0}"}],
 	],
 	"menus": {
 		"servoSlot":["servo3","servo9","servo10"],

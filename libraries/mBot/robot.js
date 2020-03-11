@@ -54,6 +54,7 @@
 		FLOAT	: 4,
 		DOUBLE	: 5,
 		STRING	: 6,
+		BYTES	: 7,
 	};
 
 	var _rxBuf = [];
@@ -76,7 +77,7 @@
 		}
 
 		for(var index = 0; index < bytes.length; index++){
-			var c = bytes[index];
+			var c = bytes[index];	// 0xFF,0x55,len,type,
 			_rxBuf.push(c);
 			switch(_rxBuf.length) {
 			case 1:
@@ -105,6 +106,7 @@
 					case rtype.FLOAT:	value = readFloat(_rxBuf, 4);	break;
 					case rtype.DOUBLE:	value = readDouble(_rxBuf, 4);	break;
 					case rtype.STRING:	value = readString(_rxBuf, 5, _rxBuf[2]-3);	break;
+					case rtype.BYTES:	value = readBytes(_rxBuf, 5, _rxBuf[2]-3);	break;
 
 					//### CUSTOMIZED ###
 					case CMD_CHECKREMOTEKEY:
@@ -144,6 +146,8 @@
 			value += String.fromCharCode(arr[ii+position]);
 		}
 		return value;
+	}
+	function readBytes(arr,position,len){
 	}
 
 	// Extension API interactions
