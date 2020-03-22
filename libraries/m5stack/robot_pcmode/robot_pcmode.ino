@@ -6,6 +6,8 @@
 // #define M5STACK_MPU6050
 // #define M5STACK_200Q
 #include <M5Stack.h>
+#include <Adafruit_NeoPixel.h>
+#include <WiFi.h>
 
 #define mVersion "M5STACK 1.0"
 
@@ -58,41 +60,95 @@ void setup()
     M5.Lcd.setTextColor(YELLOW);
     M5.Lcd.setTextSize(2);
     M5.Lcd.setCursor(0, 0);
-    M5.Lcd.println(mVersion);
+    M5.Lcd.println("PC mode: " mVersion);
     
     Serial.begin(115200);
     
     Serial.println("PC mode: " mVersion);
 }
 
-#define getByte(n)      (buffer[4+n])
-#define getShort(n)     (buffer[4+n]|(buffer[5+n]<<8))
-#define getLong(n)      (buffer[4+n]|(buffer[5+n]<<8UL)|(buffer[6+n]<<16UL)|(buffer[7+n]<<24UL))
-static uint8_t buffer[52];
+static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
+static uint8_t _packetLen = 4;
+
+#define ARG_NUM  16
+#define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
+static uint8_t offsetIdx[ARG_NUM] = {0};
+static const char ArgTypesTbl[][ARG_NUM] = {
+  {},
+  {},
+  {'S','B',},
+  {'S','S',},
+  {'s',},
+  {'s',},
+  {'s','S','S','B',},
+  {'S',},
+  {'S','S','S','S','B',},
+  {'S','S','S','S','S','B',},
+  {'S','S','S','S','S','S','S','B',},
+  {'s',},
+  {'S','S','s',},
+  {'S','S','s',},
+  {},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
+  {},
+  {'s','s',},
+  {},
+  {},
+  {'B',},
+  {'B',},
+  {'B','B',},
+  {'B',},
+  {},
+};
 
 static void parseData()
 {
+    uint8_t i;
+    if(buffer[3] >= ITEM_NUM) return;
+    
+    memset(offsetIdx, 0, sizeof(offsetIdx));
+    const char *ArgTypes = ArgTypesTbl[buffer[3]];
+    uint16_t offset = 0;
+    for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+        offsetIdx[i] = offset;
+        switch(ArgTypes[i]) {
+            case 'B': offset += 1; break;
+            case 'S': offset += 2; break;
+            case 'L': offset += 4; break;
+            case 'F': offset += 4; break;
+            case 'D': offset += 8; break;
+            case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+            default: break;
+        }
+        if(4+offset > _packetLen) return;
+    }
+    
     switch(buffer[3]){
-        case 2: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(2));; callOK(); break;
-        case 3: M5.Lcd.setCursor(getShort(0),getShort(2));; callOK(); break;
+        case 2: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
+        case 3: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
         case 4: M5.Lcd.print(getString(0));; callOK(); break;
         case 5: M5.Lcd.println(getString(0));; callOK(); break;
-        case 6: M5.Lcd.drawString(getString(5),getShort(0),getShort(2),getByte(4));; callOK(); break;
+        case 6: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
         case 7: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
-        case 8: if(getByte(8)) M5.Lcd.fillCircle(getShort(0),getShort(2),getShort(4),getShort(6)); else M5.Lcd.drawCircle(getShort(0),getShort(2),getShort(4),getShort(6));; callOK(); break;
-        case 9: if(getByte(10)) M5.Lcd.fillRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8)); else M5.Lcd.drawRect(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8));; callOK(); break;
-        case 10: if(getByte(14)) M5.Lcd.fillTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12)); else M5.Lcd.drawTriangle(getShort(0),getShort(2),getShort(4),getShort(6),getShort(8),getShort(10),getShort(12));; callOK(); break;
+        case 8: if(getByte(4)) M5.Lcd.fillCircle(getShort(0),getShort(1),getShort(2),getShort(3)); else M5.Lcd.drawCircle(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
+        case 9: if(getByte(5)) M5.Lcd.fillRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4)); else M5.Lcd.drawRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4));; callOK(); break;
+        case 10: if(getByte(7)) M5.Lcd.fillTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6)); else M5.Lcd.drawTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6));; callOK(); break;
         case 11: M5.Lcd.qrcode(getString(0));; callOK(); break;
-        case 12: M5.Lcd.drawJpgFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
-        case 13: M5.Lcd.drawBmpFile(SD,getString(4),getShort(0),getShort(2));; callOK(); break;
-        case 15: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
-        case 16: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
-        case 17: M5.Speaker.tone(getShort(0),getShort(2));delay(getShort(2));; callOK(); break;
+        case 12: M5.Lcd.drawJpgFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
+        case 13: M5.Lcd.drawBmpFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
+        case 15: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
+        case 16: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
+        case 17: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
         case 18: M5.Speaker.beep();; callOK(); break;
-        case 19: sendByte((checkButton(getByte(0)))); break;
-        case 20: sendFloat((getIMU(getByte(0)))); break;
-        case 21: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 22: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 19: WiFi.begin(getString(0),getString(1));; callOK(); break;
+        case 20: sendByte((WiFi.status())); break;
+        case 21: sendByte((WiFi.localIP()[3])); break;
+        case 22: sendByte((checkButton(getByte(0)))); break;
+        case 23: sendFloat((getIMU(getByte(0)))); break;
+        case 24: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 25: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
@@ -105,8 +161,6 @@ static void parseData()
 }
 
 static uint8_t _index = 0;
-static uint8_t _packetLen = 4;
-
 void loop()
 {
     if(Serial.available()>0){
@@ -150,27 +204,46 @@ union doubleConv {
     uint8_t _byte[8];
 };
 
+uint8_t getByte(uint8_t n)
+{
+    return buffer[4+offsetIdx[n]];
+}
+
+int16_t getShort(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8);
+}
+int32_t getLong(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8)|((uint32_t)buffer[x+2]<<16)|((uint32_t)buffer[x+3]<<24);
+}
+
 float getFloat(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union floatConv conv;
     for(uint8_t i=0; i<4; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._float;
 }
 
 double getDouble(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union doubleConv conv;
     for(uint8_t i=0; i<8; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._double;
 }
 
 char* getString(uint8_t n)
 {
-    return (char*)buffer+4+n;
+    uint8_t x = 4+offsetIdx[n];
+    return (char*)buffer+x;
 }
 
 static void callOK()
