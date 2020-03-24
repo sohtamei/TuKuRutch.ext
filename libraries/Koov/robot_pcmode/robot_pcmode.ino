@@ -180,11 +180,11 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'B',},
   {},
+  {'B',},
+  {'B',},
+  {'B',},
   {'B','B',},
   {'B','B',},
-  {'B',},
-  {'B',},
-  {'B',},
   {},
   {},
   {},
@@ -226,11 +226,11 @@ static void parseData()
         case 11: _setMultiLED(getByte(0));; callOK(); break;
         case 12: _setUsbLED(getByte(0));; callOK(); break;
         case 13: _setStatusLED(getByte(0));; callOK(); break;
-        case 15: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 16: pinMode(getByte(0),OUTPUT);analogWrite(getByte(0),getByte(1));; callOK(); break;
-        case 17: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 18: sendShort((pinMode(getByte(0),INPUT),analogRead(getByte(0)))); break;
-        case 19: sendByte((pinMode(getByte(0),INPUT_PULLUP),digitalRead(getByte(0))^1)); break;
+        case 15: sendByte((pinMode(getByte(0),INPUT_PULLUP),digitalRead(getByte(0))^1)); break;
+        case 16: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 17: sendShort((pinMode(getByte(0),INPUT),analogRead(getByte(0)))); break;
+        case 18: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 19: pinMode(getByte(0),OUTPUT);analogWrite(getByte(0),getByte(1));; callOK(); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h

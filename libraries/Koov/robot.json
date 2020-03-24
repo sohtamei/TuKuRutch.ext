@@ -195,12 +195,12 @@ Serial.begin(115200);
 
 		["-"],
 
-		["w", "set output %d.outp as %d.digital",		"setDigital",		"V2","HIGH",{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set output %d.outp as PWM %n",			"setAnalog",		"V2",255,	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);analogWrite({0},{1});"}],
-
+		["B", "check button %d.button",					"getButton",		"up",		{"remote":["B",		"B"], "func":"pinMode({0},INPUT_PULLUP),digitalRead({0})^1"}],
 		["B", "read digital pin %d.inp",				"getDigital",		"K2",		{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
 		["R", "read analog pin %d.inp",					"getAnalog",		"K2",		{"remote":["B",		"S"], "func":"pinMode({0},INPUT),analogRead({0})"}],
-		["B", "check button %d.button",					"getButton",		"up",		{"remote":["B",		"B"], "func":"pinMode({0},INPUT_PULLUP),digitalRead({0})^1"}],
+
+		["w", "set output %d.outp as %d.digital",		"setDigital",		"V2","HIGH",{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set output %d.outp as PWM %n",			"setAnalog",		"V2",255,	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);analogWrite({0},{1});"}],
 
 		["-"],
 
@@ -308,6 +308,13 @@ Serial.begin(115200);
 			"set USB LED %d.usb"							:"USB LEDを %d.usb にする",
 			"set Status LED %d.status"						:"ステータスLEDを %d.status にする",
 
+			"check button %d.button"						:"コアボタン %d.button がオン",
+			"read digital pin %d.inp"						:"デジタルピン %d.inp",
+			"read analog pin %d.inp"						:"アナログピン %d.inp",
+
+			"set output %d.outp as %d.digital"				:"%d.outp の出力を %d.digital にする",
+			"set output %d.outp as PWM %n"					:"%d.outp の出力を PWM %n にする",
+/*
 			"calibration right %n"							:"右に%n 補正",
 			"calibration left %n"							:"左に%n 補正",
 			"read calibration"								:"補正データ",
@@ -317,12 +324,7 @@ Serial.begin(115200);
 			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
 			"get remote X"									:"アナログXの値",
 			"get remote Y"									:"アナログYの値",
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read digital pin A%n"							:"デジタルピン A%n",
-			"read analog pin A%n"							:"アナログピン A%n",
-			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
+*/
 		}
 	}
 }
