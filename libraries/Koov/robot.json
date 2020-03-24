@@ -1,0 +1,328 @@
+{
+	"name"			: "Koov",
+	"port"			: 0,										// 変更禁止
+	"boardType"		: "arduino:samd:mzero_bl",					// package:platform:board
+
+	"sort"			: 50,										// メニュー上の表示順序
+	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_orgel.html",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_orgel.html",
+	"sampleDir"		: "",									// サンプルディレクトリ
+	"javascriptURL"	: "robot.js",
+	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// PCモード/書き込みモード ヘッダ (C言語)
+	"header":"
+#include <Arduino.h>
+#include <Servo.h>
+
+#define mVersion \"Koov1.0\"
+
+#define STATUS_AMB  0
+#define STATUS_BLUE 1
+//efine V2          2
+//efine V3          3
+#define V0_PWM      4
+#define V0_DIR      5
+//efine V4          6
+//efine V5          7
+//efine V6          8
+//efine V7          9
+#define V1_DIR      10
+//efine V8          11
+#define V1_PWM      12
+#define V9          13
+
+#define MULTI_BLUE  10
+#define MULTI_GREEN 12
+#define MULTI_RED   13
+
+#define V1V9_MULTI  18
+
+#define USB_YELLOW  20
+#define USB_BLUE    21
+
+#define K2_UP       24
+#define K3_RIGHT    25
+#define K4_DOWN     26
+#define K5_LEFT     27
+#define K6          28
+#define K7          29
+
+static void _setStatusLED(uint8_t color)
+{
+color ^= 5;
+pinMode(STATUS_BLUE,OUTPUT);
+pinMode(STATUS_AMB,OUTPUT);
+digitalWrite(STATUS_BLUE, (color>>0)&1);
+digitalWrite(STATUS_AMB, (color>>2)&1);
+}
+
+static void _setUsbLED(uint8_t color)
+{
+color ^= 3;
+pinMode(USB_BLUE, OUTPUT);
+pinMode(USB_YELLOW, OUTPUT);
+digitalWrite(USB_BLUE, (color>>0)&1);
+digitalWrite(USB_YELLOW, (color>>1)&1);
+}
+
+static void _setMultiLED(uint8_t color)
+{
+pinMode(MULTI_BLUE,OUTPUT);
+pinMode(MULTI_GREEN,OUTPUT);
+pinMode(MULTI_RED,OUTPUT);
+if(color) {
+  color ^= 7;
+  digitalWrite(V1V9_MULTI, LOW);
+  digitalWrite(MULTI_BLUE, (color>>0)&1);
+  digitalWrite(MULTI_GREEN, (color>>1)&1);
+  digitalWrite(MULTI_RED, (color>>2)&1);
+} else {
+  digitalWrite(V1V9_MULTI, HIGH);
+  digitalWrite(MULTI_BLUE, LOW);
+  digitalWrite(MULTI_GREEN, LOW);
+  digitalWrite(MULTI_RED, LOW);
+}
+}
+
+static void _setMotor(uint8_t ch, int16_t data)
+{
+uint8_t pwm;
+uint8_t dir;
+switch(ch) {
+  case 0:
+    pwm=V0_PWM; dir=V0_DIR;
+    break;
+  case 1:
+    digitalWrite(V1V9_MULTI, HIGH);
+    pwm=V1_PWM; dir=V1_DIR;
+    break;
+  default:
+    return;
+}
+//pinMode(pwm,OUTPUT);
+pinMode(dir,OUTPUT);
+if(data>=0){
+  analogWrite(pwm, data);
+  digitalWrite(dir, LOW);
+} else {
+  analogWrite(pwm, data+255);
+  digitalWrite(dir, HIGH);
+}
+}
+
+struct {
+  uint8_t  L;
+  uint8_t  R;
+} static const dir_table[6] = {
+  //L   R
+  { 1,  1}, // DIR_FORWARD
+  { 0,  1}, // DIR_LEFT,
+  { 1,  0}, // DIR_RIGHT,
+  {-1, -1}, // DIR_BACK,
+  {-1,  1}, // DIR_ROLL_LEFT,
+  { 1, -1}, // DIR_ROLL_RIGHT,
+};
+
+static void _setRobot(uint8_t direction, uint8_t speed)
+{
+_setMotor(1, speed * dir_table[direction].L);
+_setMotor(0, speed * dir_table[direction].R);
+}
+
+static void _tone(uint8_t port, uint16_t freq, uint16_t duration)
+{
+tone(port,freq,duration); delay(duration);
+}
+
+static Servo srvClass[14];          // for setServo
+static void _servo(uint8_t port, uint8_t deg)
+{
+if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
+
+if(!srvClass[port].attached()) {
+  pinMode(port, OUTPUT);
+  srvClass[port].attach(port);
+}
+if(port == V9) digitalWrite(V1V9_MULTI, HIGH);
+srvClass[port].write(deg);
+}
+
+",
+	// PCモード/書き込みモード setup処理 (C言語)
+	"setup":"
+pinMode(V1V9_MULTI,OUTPUT);
+digitalWrite(V1V9_MULTI, HIGH);
+Serial.begin(115200);
+",
+	// PCモード/書き込みモード loop処理 (C言語)
+	"loop":"",
+
+	// PCモード/書き込みモード スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum| 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+------------------+----------------------------------
+		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+
+		["w", "%d.direction at speed %d.speedvalue",	"setRobot",	"run forward",255,	{"remote":["B","B"], "func":"_setRobot({0},{1});"}],
+		["w", "set motor %d.motor as %d.motorvalue",	"setMotor",			"V0",255,	{"remote":["B","S"], "func":"_setMotor({0},{1});"}],
+		["w", "stop",									"stopRobot",					{"remote":[],		"func":"_setRobot(0,0);"}],
+
+		["-"],
+
+		["w", "set servo %d.outp2 angle %d.servovalue",	"setServo",			"V2",90,	{"remote":["B","B"], "func":"_servo({0},{1});"}],
+		["w", "play tone %d.outp on note %d.noteJ1 beat %d.beats","BuzzerJ1", "V2","ド2","Half", {"remote":["B","S","S"], "func":"_tone({0},{1},{2});"}],
+		["w", "play tone %d.outp on note %d.noteJ2 beat %d.beats","BuzzerJ2", "V2","ド4","Half", {"remote":["B","S","S"], "func":"_tone({0},{1},{2});"}],
+		["w", "play tone %d.outp on note %d.noteJ3 beat %d.beats","BuzzerJ3", "V2","ド6","Half", {"remote":["B","S","S"], "func":"_tone({0},{1},{2});"}],
+		["w", "set LED %d.outp as %d.onoff",			"setLED",			"V2","ON",	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+
+		["-"],
+
+		["w", "set Multi LED %d.multi",					"setMultiLED",		"blue",		{"remote":["B"],	"func":"_setMultiLED({0});"}],
+		["w", "set USB LED %d.usb",						"setUsbLED",		"blue",		{"remote":["B"],	"func":"_setUsbLED({0});"}],
+		["w", "set Status LED %d.status",				"setStatusLED",		"blue",		{"remote":["B"],	"func":"_setStatusLED({0});"}],
+
+		["-"],
+
+		["w", "set output %d.outp as %d.digital",		"setDigital",		"V2","HIGH",{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set output %d.outp as PWM %n",			"setAnalog",		"V2",255,	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);analogWrite({0},{1});"}],
+
+		["B", "read digital pin %d.inp",				"getDigital",		"K2",		{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read analog pin %d.inp",					"getAnalog",		"K2",		{"remote":["B",		"S"], "func":"pinMode({0},INPUT),analogRead({0})"}],
+		["B", "check button %d.button",					"getButton",		"up",		{"remote":["B",		"B"], "func":"pinMode({0},INPUT_PULLUP),digitalRead({0})^1"}],
+
+		["-"],
+
+/*
+		["w", "calibration right %n",					"incCalibRight",	1,			{"remote":["S"],	"func":"remoconRobo_incCalib({0});"}],
+		["w", "calibration left %n",					"incCalibLeft", 	1,			{"remote":["S"],	"func":"remoconRobo_incCalib(-{0});"}],
+		["R", "read calibration",						"getCalib",						{"remote":["S"],	"func":"remoconRobo_getCalib()"}],
+		["w", "set calibration %n",						"setCalib",			0,			{"remote":["S"],	"func":"remoconRobo_setCalib({0});"}],
+
+		["-"],	// ブロック区切り
+
+		// robot.js呼び出し
+		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 		"func":"remoconRobo_checkRemoteKey()"}],
+		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
+		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
+		["R", "get remote X",							"getRemoteX",					{"custom":"",		"func":"remoconRobo_getRemoteX()"}],
+		["R", "get remote Y",							"getRemoteY",					{"custom":"",		"func":"remoconRobo_getRemoteY()"}],
+*/
+		["-"],
+
+		// enum
+		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",			"func":"{0}"}],
+		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
+		["r", "%d.direction .",							"enumDirection", "run forward",	{"enum":"",			"func":"{0}"}],
+	],
+	"menus": {
+		"motor":["V0","V1"],
+		"motorvalue":[255,100,50,0,-50,-100,-255],
+		"direction":["run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"speedvalue":[255,100,50,0],
+
+		"outp":["V2","V3","V4","V5","V6","V7","V8","V9"],
+		"outp2":["V2","V3","V4","V5","V6","V7","V8"],
+		"servovalue":[0,45,90,135,180],
+
+		"inp":["K2","K3","K4","K5","K6","K7"],
+		"button":["up","right","down","left"],
+
+		"status":["off","blue","amb","purple"],
+		"usb":["off","blue","green","lightblue"],
+		"multi":["off","blue","green","lightblue","red","purple","yellow","white"],
+
+		"note":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",
+				"C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",
+				"C6","D6","E6","F6","G6","A6","B6","C7","D7","E7","F7","G7","A7","B7","C8","D8"],
+		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
+		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
+		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
+		"beats":["Half","Quarter","Eighth","Whole","Double"],
+		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
+		"ircode":["POWER","MENU","TEST","RETURN","R0","C","↑","↓","←","→","CENTER","R1","R2","R3","R4","R5","R6","R7","R8","R9","B",],
+		"ircodeA":["A CENTER","A↑","A→","A←","A↓",],
+	},
+	"values":{
+		"V0":0,"V1":1,
+		"run forward":0,"turn left":1,"turn right":2,"run backward":3,"rotate left":4,"rotate right":5,
+
+		"V2":2,"V3":3,"V4":6,"V5":7,"V6":8,"V7":9,"V8":11,"V9":13,
+
+		"K2":24,"K3":25,"K4":26,"K5":27,"K6":28,"K7":29,
+		"up":24,"right":25,"down":26,"left":27,
+
+		"off":0,
+		"blue":1,"amb":4,"purple":5,
+		"blue":1,"green":2,"lightblue":3,"red":4,"purple":5,"yellow":6,"white":7,
+
+		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
+		"C3":131,"D3":147,"E3":165,"F3":175,"G3":196,"A3":220,"B3":247,
+		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
+		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
+		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
+		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
+		"C8":4186,"D8":4699,
+		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
+		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
+		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
+		"ド5":523,"レ5":587,"ミ5":659,"ファ5":698,"ソ5":784,"ラ5":880,"シ5":988,
+		"ド6":1047,"レ6":1175,"ミ6":1319,"ファ6":1397,"ソ6":1568,"ラ6":1760,"シ6":1976,
+		"ド7":2093,"レ7":2349,"ミ7":2637,"ファ7":2794,"ソ7":3136,"ラ7":3520,"シ7":3951,
+		"ド8":4186,"レ8":4699,
+
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
+		"POWER":0x45,"B":0x46,"MENU":0x47,"TEST":0x44,"RETURN":0x43,"R0":0x16,"C":0x0D,"↑":0x40,"↓":0x19,"←":0x07,"→":0x09,"CENTER":0x15,
+		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
+		"A CENTER":0x61,"A↑":0x62,"A→":0x63,"A←":0x64,"A↓":0x65,
+	},
+	"translators":{
+		"ja":{
+			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
+			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
+
+			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
+			"set motor %d.motor as %d.motorvalue"			:"DCモーター %d.motor のはやさを %d.motorvalue にする",
+
+			"set servo %d.outp2 angle %d.servovalue"		:"サーボ %d.outp2 のかくどを %d.servovalue にする",
+			"play tone %d.outp on note %d.noteJ1 beat %d.beats":"ブザー %d.outp から %d.noteJ1 を %d.beats 鳴らす",
+			"play tone %d.outp on note %d.noteJ2 beat %d.beats":"ブザー %d.outp から %d.noteJ2 を %d.beats 鳴らす",
+			"play tone %d.outp on note %d.noteJ3 beat %d.beats":"ブザー %d.outp から %d.noteJ3 を %d.beats 鳴らす",
+		//	"play tone %d.outp on note %d.note beat %d.beats"		:"%d.note を %d.beats 鳴らす",
+			"set LED %d.outp as %d.onoff"					:"LED %d.outp を %d.onoff",
+			"set Multi LED %d.multi"						:"マルチLEDを %d.multi にする",
+			"set USB LED %d.usb"							:"USB LEDを %d.usb にする",
+			"set Status LED %d.status"						:"ステータスLEDを %d.status にする",
+
+			"calibration right %n"							:"右に%n 補正",
+			"calibration left %n"							:"左に%n 補正",
+			"read calibration"								:"補正データ",
+			"set calibration %n"							:"補正データを%n に設定",
+			"remote pressed"								:"リモコンボタンが押された",
+			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
+			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
+			"get remote X"									:"アナログXの値",
+			"get remote Y"									:"アナログYの値",
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
+			"read digital pin %n"							:"デジタルピン %n",
+			"read digital pin A%n"							:"デジタルピン A%n",
+			"read analog pin A%n"							:"アナログピン A%n",
+			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
+		}
+	}
+}
