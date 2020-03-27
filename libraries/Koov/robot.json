@@ -70,22 +70,27 @@ digitalWrite(USB_BLUE, (color>>0)&1);
 digitalWrite(USB_YELLOW, (color>>1)&1);
 }
 
+static void _setV1V9_MULTI(uint8_t onoff)
+{
+digitalWrite(V1_PWM, LOW);
+digitalWrite(V1_DIR, LOW);
+digitalWrite(V9, LOW);
+digitalWrite(V1V9_MULTI, onoff);
+}
+
 static void _setMultiLED(uint8_t color)
 {
 pinMode(MULTI_BLUE,OUTPUT);
 pinMode(MULTI_GREEN,OUTPUT);
 pinMode(MULTI_RED,OUTPUT);
 if(color) {
+  _setV1V9_MULTI(LOW);
   color ^= 7;
-  digitalWrite(V1V9_MULTI, LOW);
   digitalWrite(MULTI_BLUE, (color>>0)&1);
   digitalWrite(MULTI_GREEN, (color>>1)&1);
   digitalWrite(MULTI_RED, (color>>2)&1);
 } else {
-  digitalWrite(V1V9_MULTI, HIGH);
-  digitalWrite(MULTI_BLUE, LOW);
-  digitalWrite(MULTI_GREEN, LOW);
-  digitalWrite(MULTI_RED, LOW);
+  _setV1V9_MULTI(HIGH);
 }
 }
 
@@ -98,7 +103,7 @@ switch(ch) {
     pwm=V0_PWM; dir=V0_DIR;
     break;
   case 1:
-    digitalWrite(V1V9_MULTI, HIGH);
+    _setV1V9_MULTI(HIGH);
     pwm=V1_PWM; dir=V1_DIR;
     break;
   default:
@@ -134,12 +139,15 @@ _setMotor(1, speed * dir_table[direction].L);
 _setMotor(0, speed * dir_table[direction].R);
 }
 
+static Servo srvClass[14];          // for setServo
+
 static void _tone(uint8_t port, uint16_t freq, uint16_t duration)
 {
+if(port == V9) _setV1V9_MULTI(HIGH);
+if(srvClass[port].attached()) srvClass[port].detach();
 tone(port,freq,duration); delay(duration);
 }
 
-static Servo srvClass[14];          // for setServo
 static void _servo(uint8_t port, uint8_t deg)
 {
 if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
@@ -148,8 +156,17 @@ if(!srvClass[port].attached()) {
   pinMode(port, OUTPUT);
   srvClass[port].attach(port);
 }
-if(port == V9) digitalWrite(V1V9_MULTI, HIGH);
+if(port == V9) _setV1V9_MULTI(HIGH);
 srvClass[port].write(deg);
+}
+
+static void _stopServo(void)
+{
+uint8_t port;
+for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
+if(srvClass[port].attached())
+  srvClass[port].detach();
+}
 }
 
 ",
@@ -177,7 +194,7 @@ Serial.begin(115200);
 
 		["w", "%d.direction at speed %d.speedvalue",	"setRobot",	"run forward",255,	{"remote":["B","B"], "func":"_setRobot({0},{1});"}],
 		["w", "set motor %d.motor as %d.motorvalue",	"setMotor",			"V0",255,	{"remote":["B","S"], "func":"_setMotor({0},{1});"}],
-		["w", "stop",									"stopRobot",					{"remote":[],		"func":"_setRobot(0,0);"}],
+		["w", "stop",									"stopRobot",					{"remote":[],		"func":"_setRobot(0,0);_stopServo();"}],
 
 		["-"],
 
@@ -223,7 +240,7 @@ Serial.begin(115200);
 
 		// enum
 		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",			"func":"{0}"}],
-		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
+	//	["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
 		["r", "%d.direction .",							"enumDirection", "run forward",	{"enum":"",			"func":"{0}"}],
 	],
 	"menus": {

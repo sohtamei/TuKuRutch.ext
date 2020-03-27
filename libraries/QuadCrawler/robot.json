@@ -17,8 +17,9 @@
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
 #include <Arduino.h>
-#include <EEPROM.h>                     // for quadCrawlerRemocon
-#include \"quadCrawlerRemocon.h\"
+#include <analogRemote.h>
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+analogRemote remote(MODE_XYKEYS_MERGE, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
 #include <Wire.h>                       // for Adafruit_PWMServoDriver
 #include <Adafruit_PWMServoDriver.h>    // for quadCrawler
@@ -31,7 +32,6 @@ const uint8_t sw_table[4] = {3,4,5,6};
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
-remoconRobo_init();
 digitalWrite(13, HIGH);
 Serial.begin(115200);
 delay(500);
@@ -55,52 +55,51 @@ quadCrawler_servoLoop();
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
 
-	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum| 実行/取得関数
-	//-------+-----------------------------------------+-------------------+------------+------------------+----------------------------------
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
-		["w", "walk %d.walkcmd %d.speed",				"setWalk",			"fw","fast",{"remote":["B","S"],"func":"quadCrawler_Walk({1},{0});"}],
-		["w", "FrontR %d.knee %d.crotch",				"setPoseRF", "Neutral","Neutral",{"remote":["B","B"],"func":"quadCrawler_setPose1(0,{0},{1});"}],
-		["w", "RearR  %d.knee %d.crotch",				"setPoseRR", "Neutral","Neutral",{"remote":["B","B"],"func":"quadCrawler_setPose1(1,{0},{1});"}],
-		["w", "FrontL %d.knee %d.crotch",				"setPoseLF", "Neutral","Neutral",{"remote":["B","B"],"func":"quadCrawler_setPose1(2,{0},{1});"}],
-		["w", "RearL  %d.knee %d.crotch",				"setPoseLR", "Neutral","Neutral",{"remote":["B","B"],"func":"quadCrawler_setPose1(3,{0},{1});"}],
-		["w", "stop",									"setStop",						{"remote":[],		"func":"quadCrawler_Walk(200,0);"}],
+		["w", "walk %d.walkcmd %d.speed",				"setWalk",			"fw","fast",{"remote":["B","S"],	"func":"quadCrawler_Walk({1},{0});"}],
+		["w", "FrontR %d.knee %d.crotch",				"setPoseRF", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(0,{0},{1});"}],
+		["w", "RearR  %d.knee %d.crotch",				"setPoseRR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(1,{0},{1});"}],
+		["w", "FrontL %d.knee %d.crotch",				"setPoseLF", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(2,{0},{1});"}],
+		["w", "RearL  %d.knee %d.crotch",				"setPoseLR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(3,{0},{1});"}],
+		["w", "stop",									"setStop",						{"remote":[],			"func":"quadCrawler_Walk(200,0);"}],
 
-		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],	"func":"quadCrawler_colorWipe({0});"}],
-		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],	"func":"quadCrawler_rainbow({0});"}],
-		["w", "beep %d",								"setBeep",			50,			{"remote":["S"],	"func":"quadCrawler_beep({0});"}],
-		["R", "read Sonner",							"getSonner",					{"remote":["F"],	"func":"quadCrawler_getSonner()"}],
-		["B", "SW %d.sw is pressed",					"getSW",			1,			{"remote":["B","B"],"func":"(({0}>=1&&{0}<=4)?digitalRead(sw_table[{0}-1]):0)==0"}],
+		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
+		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
+		["w", "beep %d",								"setBeep",			50,			{"remote":["S"],		"func":"quadCrawler_beep({0});"}],
+		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
+		["B", "SW %d.sw is pressed",					"getSW",			1,			{"remote":["B",		"B"],"func":"(({0}>=1&&{0}<=4)?digitalRead(sw_table[{0}-1]):0)==0"}],
 
 		["-"],	// ブロック区切り
 
 		// robot.js呼び出し
-		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 		"func":"remoconRobo_checkRemoteKey()"}],
-		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
-		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",		"func":"remoconRobo_isRemoteKey({0})"}],
-		["R", "get remote X",							"getRemoteX",					{"custom":"",		"func":"remoconRobo_getRemoteX()"}],
-		["R", "get remote Y",							"getRemoteY",					{"custom":"",		"func":"remoconRobo_getRemoteY()"}],
+		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
+		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remote.x"}],
+		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remote.y"}],
 
 		["-"],
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],	"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
 
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"], "func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"], "func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B","B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B","B"], "func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
-		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},1)"}],
-		["R", "read analog pin A%n average %n times",	"getAnalogAve",		0,10,		{"remote":["B","S","S"], "func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},{1})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
+		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),analogRead(A0+{0})"}],
 
 		["-"],
 
 		// enum
-		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",			"func":"{0}"}],
-		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",			"func":"{0}"}],
-		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",			"func":"{0}"}],
-		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",			"func":"{0}"}],
-		["r", "%d.knee .",								"enumKnee",			"Neutral",	{"enum":"",			"func":"{0}"}],
-		["r", "%d.crotch .",							"enumCrotch",		"Neutral",	{"enum":"",			"func":"{0}"}],
+		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
+		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",				"func":"{0}"}],
+		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
+		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
+		["r", "%d.knee .",								"enumKnee",			"Neutral",	{"enum":"",				"func":"{0}"}],
+		["r", "%d.crotch .",							"enumCrotch",		"Neutral",	{"enum":"",				"func":"{0}"}],
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],

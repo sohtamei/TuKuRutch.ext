@@ -55,22 +55,27 @@ static void _setUsbLED(uint8_t color)
     digitalWrite(USB_YELLOW, (color>>1)&1);
 }
 
+static void _setV1V9_MULTI(uint8_t onoff)
+{
+    digitalWrite(V1_PWM, LOW);
+    digitalWrite(V1_DIR, LOW);
+    digitalWrite(V9, LOW);
+    digitalWrite(V1V9_MULTI, onoff);
+}
+
 static void _setMultiLED(uint8_t color)
 {
     pinMode(MULTI_BLUE,OUTPUT);
     pinMode(MULTI_GREEN,OUTPUT);
     pinMode(MULTI_RED,OUTPUT);
     if(color) {
+          _setV1V9_MULTI(LOW);
           color ^= 7;
-          digitalWrite(V1V9_MULTI, LOW);
           digitalWrite(MULTI_BLUE, (color>>0)&1);
           digitalWrite(MULTI_GREEN, (color>>1)&1);
           digitalWrite(MULTI_RED, (color>>2)&1);
     } else {
-          digitalWrite(V1V9_MULTI, HIGH);
-          digitalWrite(MULTI_BLUE, LOW);
-          digitalWrite(MULTI_GREEN, LOW);
-          digitalWrite(MULTI_RED, LOW);
+          _setV1V9_MULTI(HIGH);
     }
 }
 
@@ -83,7 +88,7 @@ static void _setMotor(uint8_t ch, int16_t data)
             pwm=V0_PWM; dir=V0_DIR;
             break;
           case 1:
-            digitalWrite(V1V9_MULTI, HIGH);
+            _setV1V9_MULTI(HIGH);
             pwm=V1_PWM; dir=V1_DIR;
             break;
           default:
@@ -119,12 +124,15 @@ static void _setRobot(uint8_t direction, uint8_t speed)
     _setMotor(0, speed * dir_table[direction].R);
 }
 
+static Servo srvClass[14];          // for setServo
+
 static void _tone(uint8_t port, uint16_t freq, uint16_t duration)
 {
+    if(port == V9) _setV1V9_MULTI(HIGH);
+    if(srvClass[port].attached()) srvClass[port].detach();
     tone(port,freq,duration); delay(duration);
 }
 
-static Servo srvClass[14];          // for setServo
 static void _servo(uint8_t port, uint8_t deg)
 {
     if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
@@ -133,8 +141,17 @@ static void _servo(uint8_t port, uint8_t deg)
           pinMode(port, OUTPUT);
           srvClass[port].attach(port);
     }
-    if(port == V9) digitalWrite(V1V9_MULTI, HIGH);
+    if(port == V9) _setV1V9_MULTI(HIGH);
     srvClass[port].write(deg);
+}
+
+static void _stopServo(void)
+{
+    uint8_t port;
+    for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
+        if(srvClass[port].attached())
+          srvClass[port].detach();
+    }
 }
 
 
@@ -189,7 +206,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {},
-  {},
 };
 
 static void parseData()
@@ -217,7 +233,7 @@ static void parseData()
     switch(buffer[3]){
         case 1: _setRobot(getByte(0),getByte(1));; callOK(); break;
         case 2: _setMotor(getByte(0),getShort(1));; callOK(); break;
-        case 3: _setRobot(0,0);; callOK(); break;
+        case 3: _setRobot(0,0);_stopServo();; callOK(); break;
         case 5: _servo(getByte(0),getByte(1));; callOK(); break;
         case 6: _tone(getByte(0),getShort(1),getShort(2));; callOK(); break;
         case 7: _tone(getByte(0),getShort(1),getShort(2));; callOK(); break;

@@ -21,8 +21,11 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <remoconRoboLib.h>
+#include <analogRemote.h>
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+analogRemote remote(MODE_NORMAL, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
-#define mVersion \"RemoconRobo1.0\"
+#define mVersion \"RemoconRobo1.1\"
 
 uint8_t initMP3 = 0;        // for playMP3
 Servo srvClass[3];          // for setServo
@@ -71,11 +74,11 @@ remoconRobo_tone(500, 50);
 		["-"],	// ブロック区切り
 
 		// robot.js呼び出し
-		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 			"func":"remoconRobo_checkRemoteKey()"}],
-		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",			"func":"remoconRobo_isRemoteKey({0})"}],
-		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remoconRobo_isRemoteKey({0})"}],
-		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remoconRobo_getRemoteX()"}],
-		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remoconRobo_getRemoteY()"}],
+		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
+		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remote.x"}],
+		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remote.y"}],
 
 		["-"],
 

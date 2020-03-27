@@ -6,8 +6,8 @@
 #include <Arduino.h>
 #include <util/delay.h>
 
-#include <EEPROM.h>                     // for quadCrawlerRemocon
-#include "quadCrawlerRemocon.h"
+#include <analogRemote.h>
+analogRemote remote(MODE_XYKEYS, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
 #include <Wire.h>                       // for Adafruit_PWMServoDriver
 #include <Adafruit_PWMServoDriver.h>    // for quadCrawler
@@ -15,7 +15,6 @@
 #include "quadCrawler.h"
 
 void setup() {
-  remoconRobo_init();
   quadCrawler_init();
   quadCrawler_colorWipe(COLOR_PURPLE);
   quadCrawler_beep(100);
@@ -32,15 +31,14 @@ extern volatile unsigned long timer0_millis;
 
 void loop() {
   #define A_DOWN_OFFSET  0x10
-  remoconRobo_checkRemoteUpdated(0);
-  struct remoconData rData = remoconRobo_getRemoteData();
-  uint8_t key = rData.keys;
+  remote.checkUpdated();
+  uint8_t key = remote.keys;
   switch(key) {
   case BUTTON_A_XY:
-    key = rData.xyKeys;
+    key = remote.xyKeys;
     break;
   case BUTTON_A_DOWN:
-    key = rData.xyKeys + A_DOWN_OFFSET;
+    key = remote.xyKeys + A_DOWN_OFFSET;
     delay(20);
     break;
   }
@@ -166,8 +164,8 @@ void loop() {
   }
   lastSw4 = sw4;
 
-  if(rData.xyLevel >= 10) {
-    quadCrawler_setSpeed(25000 / rData.xyLevel);
+  if(remote.xyLevel >= 10) {
+    quadCrawler_setSpeed(25000 / remote.xyLevel);
   }
   quadCrawler_servoLoop();
 

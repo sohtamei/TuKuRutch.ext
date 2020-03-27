@@ -4,21 +4,23 @@
 #include <stdlib.h>
 #include <Arduino.h>
 #include <util/delay.h>
+#include <EEPROM.h>
+#include <remoconRoboLib.h>
+#include <analogRemote.h>
 
-#include <EEPROM.h>		// for build error
-#include "remoconRoboLib.h"
-
+#define mVersion "RemoconRobo1.1"
 //#define DEF_CH4
 
 static int speed = 255;
 static const uint8_t SpeedTable[10] = { 48, 71, 94, 117, 140, 163, 186, 209, 232, 255};
 
-
+analogRemote remote(MODE_NORMAL, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 void setup()
 {
 	remoconRobo_init();
 
-//	Serial.begin(115200);
+	Serial.begin(115200);
+	Serial.println("Normal: " mVersion);
 #ifdef DEF_CH4
 	remoconRobo_initCh4();
 #endif
@@ -31,10 +33,9 @@ void setup()
 void loop()
 {
 	while (1) {
-		int updated = remoconRobo_checkRemoteUpdated();
-		struct remoconData rData = remoconRobo_getRemoteData();
+		int updated = remote.checkUpdated();
 
-		switch(rData.keys) {
+		switch(remote.keys) {
 		case BUTTON_POWER:	if(!remoconRobo_incCalib(-1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;
 		case BUTTON_B:
 		case BUTTON_MENU:	if(!remoconRobo_incCalib(+1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;
@@ -42,12 +43,12 @@ void loop()
 
 		if(updated) {
 
-			//char buf[64]; sprintf(buf, "%d, %d, %d\r\n", rData.keys, rData.y, rData.x); Serial.print(buf);
+			//char buf[64]; sprintf(buf, "%d, %d, %d\r\n", remote.keys, remote.y, remote.x); Serial.print(buf);
 			if(updated == REMOTE_ANALOG)
-				remoconRobo_setRobotLR(rData.y + rData.x,	// L
-									 rData.y - rData.x);	// R
+				remoconRobo_setRobotLR(remote.y + remote.x,	// L
+									 remote.y - remote.x);	// R
 
-			switch(rData.keys) {
+			switch(remote.keys) {
 			case BUTTON_A_RIGHT:
 			case BUTTON_TEST:	remoconRobo_setMotor(CH3,  speed); break;
 			case BUTTON_A_LEFT:

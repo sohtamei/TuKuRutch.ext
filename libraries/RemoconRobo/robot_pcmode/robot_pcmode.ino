@@ -6,8 +6,11 @@
 #include <Wire.h>
 #include <EEPROM.h>
 #include <remoconRoboLib.h>
+#include <analogRemote.h>
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+analogRemote remote(MODE_NORMAL, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
-#define mVersion "RemoconRobo1.0"
+#define mVersion "RemoconRobo1.1"
 
 uint8_t initMP3 = 0;        // for playMP3
 Servo srvClass[3];          // for setServo
@@ -80,23 +83,23 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 static void parseData()
 {
     uint8_t i;
-    if(buffer[3] >= ITEM_NUM) return;
-    
     memset(offsetIdx, 0, sizeof(offsetIdx));
-    const char *ArgTypes = ArgTypesTbl[buffer[3]];
-    uint16_t offset = 0;
-    for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
-        offsetIdx[i] = offset;
-        switch(ArgTypes[i]) {
-            case 'B': offset += 1; break;
-            case 'S': offset += 2; break;
-            case 'L': offset += 4; break;
-            case 'F': offset += 4; break;
-            case 'D': offset += 8; break;
-            case 's': offset += strlen((char*)buffer+4+offset)+1; break;
-            default: break;
+    if(buffer[3] < ITEM_NUM) {
+        const char *ArgTypes = ArgTypesTbl[buffer[3]];
+        uint16_t offset = 0;
+        for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+            offsetIdx[i] = offset;
+            switch(ArgTypes[i]) {
+                case 'B': offset += 1; break;
+                case 'S': offset += 2; break;
+                case 'L': offset += 4; break;
+                case 'F': offset += 4; break;
+                case 'D': offset += 8; break;
+                case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                default: break;
+            }
+            if(4+offset > _packetLen) return;
         }
-        if(4+offset > _packetLen) return;
     }
     
     switch(buffer[3]){
@@ -304,11 +307,11 @@ static void sendRemote(void)
     Serial.write(0x55);
     Serial.write(1+1+2+2);
     Serial.write(CMD_CHECKREMOTEKEY);
-    Serial.write(remoconRobo_checkRemoteKey());
-    data = remoconRobo_getRemoteX();
+    Serial.write(remote.checkRemoteKey());
+    data = remote.x;
     Serial.write(data&0xff);
     Serial.write(data>>8);
-    data = remoconRobo_getRemoteY();
+    data = remote.y;
     Serial.write(data&0xff);
     Serial.write(data>>8);
 }

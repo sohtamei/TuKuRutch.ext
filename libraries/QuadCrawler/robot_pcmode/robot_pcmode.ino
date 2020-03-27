@@ -2,8 +2,9 @@
 
 
 #include <Arduino.h>
-#include <EEPROM.h>                     // for quadCrawlerRemocon
-#include "quadCrawlerRemocon.h"
+#include <analogRemote.h>
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+analogRemote remote(MODE_XYKEYS_MERGE, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
 #include <Wire.h>                       // for Adafruit_PWMServoDriver
 #include <Adafruit_PWMServoDriver.h>    // for quadCrawler
@@ -27,7 +28,6 @@ enum {
 void setup()
 {
     
-    remoconRobo_init();
     digitalWrite(13, HIGH);
     Serial.begin(115200);
     delay(500);
@@ -40,13 +40,69 @@ void setup()
     Serial.println("PC mode: " mVersion);
 }
 
-#define getByte(n)      (buffer[4+n])
-#define getShort(n)     (buffer[4+n]|(buffer[5+n]<<8))
-#define getLong(n)      (buffer[4+n]|(buffer[5+n]<<8UL)|(buffer[6+n]<<16UL)|(buffer[7+n]<<24UL))
-static uint8_t buffer[52];
+static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
+static uint8_t _packetLen = 4;
+
+#define ARG_NUM  16
+#define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
+static uint8_t offsetIdx[ARG_NUM] = {0};
+static const char ArgTypesTbl[][ARG_NUM] = {
+  {},
+  {'B','S',},
+  {'B','B',},
+  {'B','B',},
+  {'B','B',},
+  {'B','B',},
+  {},
+  {'B',},
+  {'B',},
+  {'S',},
+  {},
+  {'B',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {'B',},
+  {'B','B',},
+  {'B','B',},
+  {'B',},
+  {'B',},
+  {'B',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+};
 
 static void parseData()
 {
+    uint8_t i;
+    memset(offsetIdx, 0, sizeof(offsetIdx));
+    if(buffer[3] < ITEM_NUM) {
+        const char *ArgTypes = ArgTypesTbl[buffer[3]];
+        uint16_t offset = 0;
+        for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+            offsetIdx[i] = offset;
+            switch(ArgTypes[i]) {
+                case 'B': offset += 1; break;
+                case 'S': offset += 2; break;
+                case 'L': offset += 4; break;
+                case 'F': offset += 4; break;
+                case 'D': offset += 8; break;
+                case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                default: break;
+            }
+            if(4+offset > _packetLen) return;
+        }
+    }
+    
     switch(buffer[3]){
         case 1: quadCrawler_Walk(getShort(1),getByte(0));; callOK(); break;
         case 2: quadCrawler_setPose1(0,getByte(0),getByte(1));; callOK(); break;
@@ -64,8 +120,7 @@ static void parseData()
         case 21: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
         case 22: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         case 23: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 24: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),1))); break;
-        case 25: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),getShort(1)))); break;
+        case 24: sendShort((pinMode(A0+getByte(0),INPUT),analogRead(A0+getByte(0)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
@@ -78,8 +133,6 @@ static void parseData()
 }
 
 static uint8_t _index = 0;
-static uint8_t _packetLen = 4;
-
 void loop()
 {
     if(Serial.available()>0){
@@ -123,27 +176,46 @@ union doubleConv {
     uint8_t _byte[8];
 };
 
+uint8_t getByte(uint8_t n)
+{
+    return buffer[4+offsetIdx[n]];
+}
+
+int16_t getShort(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8);
+}
+int32_t getLong(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8)|((uint32_t)buffer[x+2]<<16)|((uint32_t)buffer[x+3]<<24);
+}
+
 float getFloat(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union floatConv conv;
     for(uint8_t i=0; i<4; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._float;
 }
 
 double getDouble(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union doubleConv conv;
     for(uint8_t i=0; i<8; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._double;
 }
 
 char* getString(uint8_t n)
 {
-    return (char*)buffer+4+n;
+    uint8_t x = 4+offsetIdx[n];
+    return (char*)buffer+x;
 }
 
 static void callOK()
@@ -235,11 +307,11 @@ static void sendRemote(void)
     Serial.write(0x55);
     Serial.write(1+1+2+2);
     Serial.write(CMD_CHECKREMOTEKEY);
-    Serial.write(remoconRobo_checkRemoteKey());
-    data = remoconRobo_getRemoteX();
+    Serial.write(remote.checkRemoteKey());
+    data = remote.x;
     Serial.write(data&0xff);
     Serial.write(data>>8);
-    data = remoconRobo_getRemoteY();
+    data = remote.y;
     Serial.write(data&0xff);
     Serial.write(data>>8);
 }
