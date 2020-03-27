@@ -74,9 +74,9 @@ class analogRemote {
 public:
 	// for IR_RX, see https://www.arduino.cc/reference/en/language/functions/external-interrupts/attachinterrupt/
 	analogRemote(
-		uint8_t _mode_xyKeys= MODE_NORMAL,	// MODE_xx
-		uint8_t port_ir		= 2, 			// IR_RX port(L active)
-		uint8_t port_led	= 13);			// IR LED(H active)
+		uint8_t _mode_xyKeys = MODE_NORMAL,			// MODE_xx
+		uint8_t _port_irrx  = 2, 					// IR_RX port(L active)
+		void (*_funcLed)(uint8_t onoff) = NULL);	// turn LED on/off
 
 	int checkUpdated(void);				// return REMOTE_xx, update remocon data
 

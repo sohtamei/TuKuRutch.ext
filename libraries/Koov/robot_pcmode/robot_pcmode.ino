@@ -1,10 +1,11 @@
 // copyright to SohtaMei 2019.
 
 
+#define mVersion "Koov1.0"
+
 #include <Arduino.h>
 #include <Servo.h>
-
-#define mVersion "Koov1.0"
+#include <analogRemote.h>
 
 #define STATUS_AMB  0
 #define STATUS_BLUE 1
@@ -37,11 +38,13 @@
 #define K6          28
 #define K7          29
 
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+static void funcLed(uint8_t onoff) { digitalWrite(STATUS_AMB, onoff^1); }
+static analogRemote remote(MODE_NORMAL, K2_UP, funcLed);
+
 static void _setStatusLED(uint8_t color)
 {
     color ^= 5;
-    pinMode(STATUS_BLUE,OUTPUT);
-    pinMode(STATUS_AMB,OUTPUT);
     digitalWrite(STATUS_BLUE, (color>>0)&1);
     digitalWrite(STATUS_AMB, (color>>2)&1);
 }
@@ -49,14 +52,15 @@ static void _setStatusLED(uint8_t color)
 static void _setUsbLED(uint8_t color)
 {
     color ^= 3;
-    pinMode(USB_BLUE, OUTPUT);
-    pinMode(USB_YELLOW, OUTPUT);
     digitalWrite(USB_BLUE, (color>>0)&1);
     digitalWrite(USB_YELLOW, (color>>1)&1);
 }
 
+static uint8_t _V1V9_MULTI = 0xFF;
 static void _setV1V9_MULTI(uint8_t onoff)
 {
+    if(_V1V9_MULTI == onoff) return;
+    _V1V9_MULTI = onoff;
     digitalWrite(V1_PWM, LOW);
     digitalWrite(V1_DIR, LOW);
     digitalWrite(V9, LOW);
@@ -65,9 +69,6 @@ static void _setV1V9_MULTI(uint8_t onoff)
 
 static void _setMultiLED(uint8_t color)
 {
-    pinMode(MULTI_BLUE,OUTPUT);
-    pinMode(MULTI_GREEN,OUTPUT);
-    pinMode(MULTI_RED,OUTPUT);
     if(color) {
           _setV1V9_MULTI(LOW);
           color ^= 7;
@@ -81,33 +82,24 @@ static void _setMultiLED(uint8_t color)
 
 static void _setMotor(uint8_t ch, int16_t data)
 {
-    uint8_t pwm;
-    uint8_t dir;
-    switch(ch) {
-          case 0:
-            pwm=V0_PWM; dir=V0_DIR;
-            break;
-          case 1:
-            _setV1V9_MULTI(HIGH);
-            pwm=V1_PWM; dir=V1_DIR;
-            break;
-          default:
-            return;
-    }
-    //pinMode(pwm,OUTPUT);
-    pinMode(dir,OUTPUT);
+    if(data >  255) data =  255;
+    if(data < -255) data = -255;
+uint8_t pwm[2] = {V0_PWM, V1_PWM};
+uint8_t dir[2] = {V0_DIR, V1_DIR};
+    if(ch==1) _setV1V9_MULTI(HIGH);
+    
     if(data>=0){
-          analogWrite(pwm, data);
-          digitalWrite(dir, LOW);
+          analogWrite(pwm[ch], data);
+          digitalWrite(dir[ch], LOW);
     } else {
-          analogWrite(pwm, data+255);
-          digitalWrite(dir, HIGH);
+          analogWrite(pwm[ch], data+255);
+          digitalWrite(dir[ch], HIGH);
     }
 }
 
 struct {
-      uint8_t  L;
-      uint8_t  R;
+      int8_t  L;
+      int8_t  R;
 } static const dir_table[6] = {
       //L   R
   { 1,  1}, // DIR_FORWARD
@@ -118,7 +110,7 @@ struct {
   { 1, -1}, // DIR_ROLL_RIGHT,
 };
 
-static void _setRobot(uint8_t direction, uint8_t speed)
+static void _setRobot(uint8_t direction, int16_t speed)
 {
     _setMotor(1, speed * dir_table[direction].L);
     _setMotor(0, speed * dir_table[direction].R);
@@ -168,8 +160,17 @@ enum {
 void setup()
 {
     
-    pinMode(V1V9_MULTI,OUTPUT);
-    digitalWrite(V1V9_MULTI, HIGH);
+    pinMode(STATUS_AMB, OUTPUT);
+    pinMode(STATUS_BLUE, OUTPUT);
+    pinMode(V0_PWM, OUTPUT);
+    pinMode(V0_DIR, OUTPUT);
+    pinMode(MULTI_BLUE, OUTPUT);
+    pinMode(MULTI_GREEN, OUTPUT);
+    pinMode(MULTI_RED, OUTPUT);
+    pinMode(USB_YELLOW, OUTPUT);
+    pinMode(USB_BLUE, OUTPUT);
+    pinMode(V1V9_MULTI, OUTPUT);
+    _setV1V9_MULTI(HIGH);
     Serial.begin(115200);
     
     SerialUSB.println("PC mode: " mVersion);
@@ -206,28 +207,34 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
 };
 
 static void parseData()
 {
     uint8_t i;
-    if(buffer[3] >= ITEM_NUM) return;
-    
     memset(offsetIdx, 0, sizeof(offsetIdx));
-    const char *ArgTypes = ArgTypesTbl[buffer[3]];
-    uint16_t offset = 0;
-    for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
-        offsetIdx[i] = offset;
-        switch(ArgTypes[i]) {
-            case 'B': offset += 1; break;
-            case 'S': offset += 2; break;
-            case 'L': offset += 4; break;
-            case 'F': offset += 4; break;
-            case 'D': offset += 8; break;
-            case 's': offset += strlen((char*)buffer+4+offset)+1; break;
-            default: break;
+    if(buffer[3] < ITEM_NUM) {
+        const char *ArgTypes = ArgTypesTbl[buffer[3]];
+        uint16_t offset = 0;
+        for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+            offsetIdx[i] = offset;
+            switch(ArgTypes[i]) {
+                case 'B': offset += 1; break;
+                case 'S': offset += 2; break;
+                case 'L': offset += 4; break;
+                case 'F': offset += 4; break;
+                case 'D': offset += 8; break;
+                case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                default: break;
+            }
+            if(4+offset > _packetLen) return;
         }
-        if(4+offset > _packetLen) return;
     }
     
     switch(buffer[3]){
@@ -431,11 +438,11 @@ static void sendRemote(void)
     SerialUSB.write(0x55);
     SerialUSB.write(1+1+2+2);
     SerialUSB.write(CMD_CHECKREMOTEKEY);
-    SerialUSB.write(remoconRobo_checkRemoteKey());
-    data = remoconRobo_getRemoteX();
+    SerialUSB.write(remote.checkRemoteKey());
+    data = remote.x;
     SerialUSB.write(data&0xff);
     SerialUSB.write(data>>8);
-    data = remoconRobo_getRemoteY();
+    data = remote.y;
     SerialUSB.write(data&0xff);
     SerialUSB.write(data>>8);
 }

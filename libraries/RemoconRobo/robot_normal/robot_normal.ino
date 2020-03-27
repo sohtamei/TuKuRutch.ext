@@ -1,22 +1,23 @@
 // copyright to SohtaMei 2019.
+#define mVersion "RemoconRobo1.1"
 
-#include <stdint.h>
-#include <stdlib.h>
 #include <Arduino.h>
 #include <util/delay.h>
-#include <EEPROM.h>
 #include <remoconRoboLib.h>
 #include <analogRemote.h>
 
-#define mVersion "RemoconRobo1.1"
 //#define DEF_CH4
 
 static int speed = 255;
 static const uint8_t SpeedTable[10] = { 48, 71, 94, 117, 140, 163, 186, 209, 232, 255};
 
-analogRemote remote(MODE_NORMAL, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
+static void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+static analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
+
 void setup()
 {
+	pinMode(13, OUTPUT);
+	digitalWrite(13, LOW);
 	remoconRobo_init();
 
 	Serial.begin(115200);

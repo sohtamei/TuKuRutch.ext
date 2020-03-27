@@ -1,24 +1,20 @@
 #define mVersion "QuadCrawler1.1"
 
-
-#include <stdint.h>
-#include <stdlib.h>
 #include <Arduino.h>
 #include <util/delay.h>
-
+#include <quadCrawler.h>
 #include <analogRemote.h>
-analogRemote remote(MODE_XYKEYS, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
-#include <Wire.h>                       // for Adafruit_PWMServoDriver
-#include <Adafruit_PWMServoDriver.h>    // for quadCrawler
-#include <Adafruit_NeoPixel.h>          // for quadCrawler
-#include "quadCrawler.h"
+static void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+static analogRemote remote(MODE_XYKEYS, /*port*/2, funcLed);
 
-void setup() {
+void setup()
+{
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
   quadCrawler_init();
   quadCrawler_colorWipe(COLOR_PURPLE);
   quadCrawler_beep(100);
-
   Serial.begin(115200);
   Serial.println("Normal: " mVersion);
 }
@@ -29,7 +25,8 @@ static uint8_t lastSw4 = 1;
 static uint32_t sonner_time = 0;
 extern volatile unsigned long timer0_millis;
 
-void loop() {
+void loop()
+{
   #define A_DOWN_OFFSET  0x10
   remote.checkUpdated();
   uint8_t key = remote.keys;

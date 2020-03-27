@@ -1,16 +1,15 @@
 // copyright to SohtaMei 2019.
 
 
+#define mVersion "mBot1.0"
+
 #include <Arduino.h>
-#include <Servo.h>
-#include <Wire.h>
-#include <EEPROM.h>
 #include <remoconRoboLib.h>
 #include <analogRemote.h>
-#define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_NORMAL, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
 
-#define mVersion "mBot1.0"
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
 
 
 enum {
@@ -25,12 +24,11 @@ enum {
 void setup()
 {
     
-    remoconRobo_init();
-    digitalWrite(13, HIGH);
-    Serial.begin(115200);
-    delay(500);
+    pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
+    remoconRobo_init();
     remoconRobo_tone(500, 50);
+    Serial.begin(115200);
     
     Serial.println("PC mode: " mVersion);
 }

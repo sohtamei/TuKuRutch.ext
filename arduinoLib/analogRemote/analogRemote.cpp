@@ -6,8 +6,8 @@
 
 #include "analogRemote.h"
 
-static uint8_t port_ir_rx;
-static uint8_t port_led;
+static uint8_t port_irrx;
+static void (*funcLed)(uint8_t onoff) = NULL;
 
 enum {
 	STATE_H_IDLE,
@@ -15,7 +15,6 @@ enum {
 	STATE_H_BIT,
 	STATE_H_ANALOG,
 
-	// digital
 	STATE_L_HDR,
 	STATE_L_BIT,
 	STATE_L_ANALOG,
@@ -112,7 +111,7 @@ static void irq_irrx(void)
 			// 一旦timeoutし、repeatが来たとき
 				last_timer2 = millis();
 				updated = REMOTE_YES;
-				if(port_led!=0xFF) digitalWrite(port_led, HIGH);
+				if(funcLed) funcLed(1);
 			}
 		}
 		break;
@@ -125,7 +124,7 @@ static void irq_irrx(void)
 				rData.data = (rawData>>16) & 0xFF;
 				last_timer2 = millis();
 				updated = REMOTE_YES;
-				if(port_led!=0xFF) digitalWrite(port_led, HIGH);
+				if(funcLed) funcLed(1);
 			}
 		}
 		break;
@@ -168,14 +167,14 @@ static void irq_irrx(void)
 				rData.data = rawData;
 				last_timer2 = millis();
 				updated = REMOTE_ANALOG;
-				if(port_led!=0xFF) digitalWrite(port_led, HIGH);
+				if(funcLed) funcLed(1);
 			}
 			state = STATE_H_IDLE;
 		}
 		break;
 	}
 Error:
-	attachInterrupt(digitalPinToInterrupt(port_ir_rx), irq_irrx, (state >= STATE_L_HDR) ? RISING: FALLING);
+	attachInterrupt(digitalPinToInterrupt(port_irrx), irq_irrx, (state >= STATE_L_HDR) ? RISING: FALLING);
 }
 
 int analogRemote::checkUpdated(void)
@@ -245,7 +244,7 @@ int analogRemote::checkUpdated(void)
 			xyKeys = xyLevel = 0;
 			keys = x = y = 0;
 			updated = REMOTE_YES;
-			if(port_led!=0xFF) digitalWrite(port_led, LOW);
+			if(funcLed) funcLed(0);
 			last_timer2 = 0;
 			last_timer3 = millis();
 		}
@@ -260,9 +259,9 @@ int analogRemote::checkUpdated(void)
 		if(diff == 0) {
 			;
 		} else if((diff % 16) == 0) {	// 2048
-			if(port_led!=0xFF) digitalWrite(port_led, HIGH);
+			if(funcLed) funcLed(1);
 		} else if((diff % 16) == 1) {
-			if(port_led!=0xFF) digitalWrite(port_led, LOW);
+			if(funcLed) funcLed(0);
 		}
 	}
 	int _updated = updated;
@@ -275,18 +274,17 @@ int analogRemote::getRemoteCh(void)
 	return analog_ch;
 }
 
-analogRemote::analogRemote(uint8_t _mode_xyKeys, uint8_t _port_ir_rx, uint8_t _port_led)
+analogRemote::analogRemote(
+		uint8_t _mode_xyKeys,
+		uint8_t _port_irrx,
+		void (*_funcLed)(uint8_t onoff))
 {
 	mode_xyKeys	= _mode_xyKeys;
-	port_ir_rx	= _port_ir_rx;
-	port_led	= _port_led;
+	port_irrx	= _port_irrx;
+	funcLed		= _funcLed;
 
-	if(port_led!=0xFF) pinMode(port_led, OUTPUT);
-
-//	TCCR0A=0x03; TCCR0B=0x03;	// timer0:8bit高速PWM, 1/64(977Hz), PWM6,5/timer
-
-	pinMode(port_ir_rx, INPUT);
-	attachInterrupt(digitalPinToInterrupt(port_ir_rx), irq_irrx, FALLING);
+	pinMode(port_irrx, INPUT);
+	attachInterrupt(digitalPinToInterrupt(port_irrx), irq_irrx, FALLING);
 	state = STATE_H_IDLE;
 	rData.data = 0;
 

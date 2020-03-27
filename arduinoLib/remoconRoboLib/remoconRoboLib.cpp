@@ -20,7 +20,6 @@ struct MotorPort {
 #define PORT_TONE	8
 #define PORT_CH4F	9
 #define PORT_CH4R	10
-#define PORT_LED	13
 
 static volatile int calibLR;
 #define EEPROM_CALIB	0x00
@@ -45,7 +44,6 @@ void remoconRobo_init(void)
 		pinMode(MotorPort[ch].dir, OUTPUT);
 
 	pinMode(PORT_TONE, OUTPUT);
-	pinMode(PORT_LED, OUTPUT);
 
 	TCCR0A=0x03; TCCR0B=0x03;	// timer0:8bit高速PWM, 1/64(977Hz), PWM6,5/timer
 	TCCR1A=0x01; TCCR1B=0x0B;	// timer1:8bit高速PWM, 1/64(977Hz), PWM9,10/servo
@@ -53,8 +51,6 @@ void remoconRobo_init(void)
 
 	calibLR = EEPROM.read(EEPROM_CALIB);
 	if(calibLR >= 0x80) calibLR -= 0x100;
-
-//	Serial.begin(115200);
 }
 
 void remoconRobo_initCh4(void)

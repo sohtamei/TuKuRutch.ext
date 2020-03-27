@@ -1,17 +1,15 @@
 // copyright to SohtaMei 2019.
 
 
-#include <Arduino.h>
-#include <analogRemote.h>
-#define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_XYKEYS_MERGE, 2/*PORT_IR_RX*/, 13/*PORT_LED*/);
-
-#include <Wire.h>                       // for Adafruit_PWMServoDriver
-#include <Adafruit_PWMServoDriver.h>    // for quadCrawler
-#include <Adafruit_NeoPixel.h>          // for quadCrawler
-#include "quadCrawler.h"
-
 #define mVersion "QuadCrawler1.1"
+
+#include <Arduino.h>
+#include <quadCrawler.h>
+#include <analogRemote.h>
+
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/2, funcLed);
 
 const uint8_t sw_table[4] = {3,4,5,6};
 
@@ -28,14 +26,12 @@ enum {
 void setup()
 {
     
-    digitalWrite(13, HIGH);
-    Serial.begin(115200);
-    delay(500);
+    pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
-    
     quadCrawler_init();
     quadCrawler_colorWipe(COLOR_PURPLE);
     quadCrawler_beep(100);
+    Serial.begin(115200);
     
     Serial.println("PC mode: " mVersion);
 }
