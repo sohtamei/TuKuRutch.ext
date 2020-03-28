@@ -5,8 +5,8 @@
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_orgel.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_orgel.html",
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html",
 	"sampleDir"		: "sample/Koov",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
@@ -55,61 +55,61 @@
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
 static void funcLed(uint8_t onoff) { digitalWrite(STATUS_AMB, onoff^1); }
-static analogRemote remote(MODE_NORMAL, K2_UP, funcLed);
+static analogRemote remote(MODE_NORMAL, K7, funcLed);
 
 static void _setStatusLED(uint8_t color)
 {
-color ^= 5;
-digitalWrite(STATUS_BLUE, (color>>0)&1);
-digitalWrite(STATUS_AMB, (color>>2)&1);
+ color ^= 5;
+ digitalWrite(STATUS_BLUE, (color>>0)&1);
+ digitalWrite(STATUS_AMB, (color>>2)&1);
 }
 
 static void _setUsbLED(uint8_t color)
 {
-color ^= 3;
-digitalWrite(USB_BLUE, (color>>0)&1);
-digitalWrite(USB_YELLOW, (color>>1)&1);
+ color ^= 3;
+ digitalWrite(USB_BLUE, (color>>0)&1);
+ digitalWrite(USB_YELLOW, (color>>1)&1);
 }
 
 static uint8_t _V1V9_MULTI = 0xFF;
 static void _setV1V9_MULTI(uint8_t onoff)
 {
-if(_V1V9_MULTI == onoff) return;
-_V1V9_MULTI = onoff;
-digitalWrite(V1_PWM, LOW);
-digitalWrite(V1_DIR, LOW);
-digitalWrite(V9, LOW);
-digitalWrite(V1V9_MULTI, onoff);
+ if(_V1V9_MULTI == onoff) return;
+ _V1V9_MULTI = onoff;
+ digitalWrite(V1_PWM, LOW);
+ digitalWrite(V1_DIR, LOW);
+ digitalWrite(V9, LOW);
+ digitalWrite(V1V9_MULTI, onoff);
 }
 
 static void _setMultiLED(uint8_t color)
 {
-if(color) {
-  _setV1V9_MULTI(LOW);
-  color ^= 7;
-  digitalWrite(MULTI_BLUE, (color>>0)&1);
-  digitalWrite(MULTI_GREEN, (color>>1)&1);
-  digitalWrite(MULTI_RED, (color>>2)&1);
-} else {
-  _setV1V9_MULTI(HIGH);
-}
+ if(color) {
+   _setV1V9_MULTI(LOW);
+   color ^= 7;
+   digitalWrite(MULTI_BLUE, (color>>0)&1);
+   digitalWrite(MULTI_GREEN, (color>>1)&1);
+   digitalWrite(MULTI_RED, (color>>2)&1);
+ } else {
+   _setV1V9_MULTI(HIGH);
+ }
 }
 
 static void _setMotor(uint8_t ch, int16_t data)
 {
-if(data >  255) data =  255;
-if(data < -255) data = -255;
-uint8_t pwm[2] = {V0_PWM, V1_PWM};
-uint8_t dir[2] = {V0_DIR, V1_DIR};
-if(ch==1) _setV1V9_MULTI(HIGH);
+ if(data >  255) data =  255;
+ if(data < -255) data = -255;
+ uint8_t pwm[2] = {V0_PWM, V1_PWM};
+ uint8_t dir[2] = {V0_DIR, V1_DIR};
+ if(ch==1) _setV1V9_MULTI(HIGH);
 
-if(data>=0){
-  analogWrite(pwm[ch], data);
-  digitalWrite(dir[ch], LOW);
-} else {
-  analogWrite(pwm[ch], data+255);
-  digitalWrite(dir[ch], HIGH);
-}
+ if(data>=0){
+   analogWrite(pwm[ch], data);
+   digitalWrite(dir[ch], LOW);
+ } else {
+   analogWrite(pwm[ch], data+255);
+   digitalWrite(dir[ch], HIGH);
+ }
 }
 
 struct {
@@ -127,38 +127,38 @@ struct {
 
 static void _setRobot(uint8_t direction, int16_t speed)
 {
-_setMotor(1, speed * dir_table[direction].L);
-_setMotor(0, speed * dir_table[direction].R);
+ _setMotor(1, speed * dir_table[direction].L);
+ _setMotor(0, speed * dir_table[direction].R);
 }
 
 static Servo srvClass[14];          // for setServo
 
 static void _tone(uint8_t port, uint16_t freq, uint16_t duration)
 {
-if(port == V9) _setV1V9_MULTI(HIGH);
-if(srvClass[port].attached()) srvClass[port].detach();
-tone(port,freq,duration); delay(duration);
+ if(port == V9) _setV1V9_MULTI(HIGH);
+ if(srvClass[port].attached()) srvClass[port].detach();
+ tone(port,freq,duration); delay(duration);
 }
 
 static void _servo(uint8_t port, uint8_t deg)
 {
-if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
+ if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
 
-if(!srvClass[port].attached()) {
-  pinMode(port, OUTPUT);
-  srvClass[port].attach(port);
-}
-if(port == V9) _setV1V9_MULTI(HIGH);
-srvClass[port].write(deg);
+ if(!srvClass[port].attached()) {
+   pinMode(port, OUTPUT);
+   srvClass[port].attach(port);
+ }
+ if(port == V9) _setV1V9_MULTI(HIGH);
+ srvClass[port].write(deg);
 }
 
 static void _stopServo(void)
 {
-uint8_t port;
-for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
-if(srvClass[port].attached())
-  srvClass[port].detach();
-}
+ uint8_t port;
+ for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
+ if(srvClass[port].attached())
+   srvClass[port].detach();
+ }
 }
 
 ",
@@ -336,12 +336,12 @@ Serial.begin(115200);
 			"calibration left %n"							:"左に%n 補正",
 			"read calibration"								:"補正データ",
 			"set calibration %n"							:"補正データを%n に設定",
+*/
 			"remote pressed"								:"リモコンボタンが押された",
 			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
 			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
 			"get remote X"									:"アナログXの値",
 			"get remote Y"									:"アナログYの値",
-*/
 		}
 	}
 }
