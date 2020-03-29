@@ -1,17 +1,22 @@
 // copyright to SohtaMei 2019.
 
 
-#include <Arduino.h>
-#include <Servo.h>
-#include <Wire.h>
-#include <EEPROM.h>
-#include <remoconRoboLib.h>
-
 #define mVersion "Buzzer1.0"
 
-uint8_t initMP3 = 0;        // for playMP3
-Servo srvClass[3];          // for setServo
-const uint8_t srvPin[3] = {3,9,10};
+#include <Arduino.h>
+
+void _tone(int sound, int ms) { tone(12, sound, ms); delay(ms); }
+
+uint16_t _getAnalog(uint8_t ch, uint16_t count)
+{
+      if(count == 0) count = 1;
+      uint32_t sum = 0;
+      uint16_t i;
+      for(i = 0; i < count; i++)
+        sum += analogRead(ch);
+      sum = ((sum / count) * 625UL) / 128;  // 1024->5000
+      return sum;
+}
 
 
 enum {
@@ -26,35 +31,69 @@ enum {
 void setup()
 {
     
-    remoconRobo_init();
-    digitalWrite(13, HIGH);
-    Serial.begin(115200);
-    delay(500);
+    pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
-    remoconRobo_tone(500, 50);
+    pinMode(12, OUTPUT);
+    _tone(500, 50);
+    Serial.begin(115200);
     
     Serial.println("PC mode: " mVersion);
 }
 
-#define getByte(n)      (buffer[4+n])
-#define getShort(n)     (buffer[4+n]|(buffer[5+n]<<8))
-#define getLong(n)      (buffer[4+n]|(buffer[5+n]<<8UL)|(buffer[6+n]<<16UL)|(buffer[7+n]<<24UL))
-static uint8_t buffer[52];
+static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
+static uint8_t _packetLen = 4;
+
+#define ARG_NUM  16
+#define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
+static uint8_t offsetIdx[ARG_NUM] = {0};
+static const char ArgTypesTbl[][ARG_NUM] = {
+  {},
+  {'B',},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
+  {},
+  {'B','B',},
+  {'B','B',},
+  {'B',},
+  {'B',},
+  {'B',},
+  {'B','S',},
+};
 
 static void parseData()
 {
+    uint8_t i;
+    if(buffer[3] >= ITEM_NUM) return;
+    
+    memset(offsetIdx, 0, sizeof(offsetIdx));
+    const char *ArgTypes = ArgTypesTbl[buffer[3]];
+    uint16_t offset = 0;
+    for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+        offsetIdx[i] = offset;
+        switch(ArgTypes[i]) {
+            case 'B': offset += 1; break;
+            case 'S': offset += 2; break;
+            case 'L': offset += 4; break;
+            case 'F': offset += 4; break;
+            case 'D': offset += 8; break;
+            case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+            default: break;
+        }
+        if(4+offset > _packetLen) return;
+    }
+    
     switch(buffer[3]){
         case 1: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
-        case 2: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 3: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
-        case 4: remoconRobo_tone(getShort(0),getShort(2));; callOK(); break;
+        case 2: _tone(getShort(0),getShort(1));; callOK(); break;
+        case 3: _tone(getShort(0),getShort(1));; callOK(); break;
+        case 4: _tone(getShort(0),getShort(1));; callOK(); break;
         case 6: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
         case 7: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
         case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
         case 9: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 10: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),1))); break;
-        case 11: sendShort((pinMode(A0+getByte(0),INPUT),remoconRobo_getAnalog(A0+getByte(0),getShort(1)))); break;
-        case 13: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
+        case 10: sendShort((pinMode(A0+getByte(0),INPUT),_getAnalog(A0+getByte(0),1))); break;
+        case 11: sendShort((pinMode(A0+getByte(0),INPUT),_getAnalog(A0+getByte(0),getShort(1)))); break;
         
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
@@ -66,35 +105,33 @@ static void parseData()
     }
 }
 
-static uint8_t index = 0;
-static uint8_t _packetLen = 4;
-
+static uint8_t _index = 0;
 void loop()
 {
     if(Serial.available()>0){
         uint8_t c = Serial.read();
-        buffer[index++] = c;
+        buffer[_index++] = c;
         
-        switch(index) {
+        switch(_index) {
             case 1:
             _packetLen = 4;
             if(c != 0xff)
-            index = 0;
+            _index = 0;
             break;
             case 2:
             if(c != 0x55) 
-            index = 0;
+            _index = 0;
             break;
             case 3:
             _packetLen = 3+c;
             break;
         }
-        if(index >= _packetLen) {
+        if(_index >= _packetLen) {
             parseData();
-            index = 0;
+            _index = 0;
         }
-        if(index >= sizeof(buffer)) {
-            index = 0;
+        if(_index >= sizeof(buffer)) {
+            _index = 0;
         }
     }
     
@@ -110,34 +147,53 @@ union doubleConv {
     uint8_t _byte[8];
 };
 
+uint8_t getByte(uint8_t n)
+{
+    return buffer[4+offsetIdx[n]];
+}
+
+int16_t getShort(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8);
+}
+int32_t getLong(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8)|((uint32_t)buffer[x+2]<<16)|((uint32_t)buffer[x+3]<<24);
+}
+
 float getFloat(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union floatConv conv;
     for(uint8_t i=0; i<4; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._float;
 }
 
 double getDouble(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union doubleConv conv;
     for(uint8_t i=0; i<8; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._double;
 }
 
 char* getString(uint8_t n)
 {
-    return (char*)buffer+4+n;
+    uint8_t x = 4+offsetIdx[n];
+    return (char*)buffer+x;
 }
 
 static void callOK()
 {
     Serial.write(0xff);
     Serial.write(0x55);
-    Serial.write(0);
+    Serial.write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)

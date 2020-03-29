@@ -162,8 +162,6 @@ Serial.begin(115200);
 			"read analog pin A%n"							:"アナログピン A%n",
 			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
 			"set servo %d.servoSlot angle %d.servovalue"	:"サーボ %d.servoSlot の角度を %d.servovalue にする",
-			"Play MP3 track %n with loop %d.onoff"			:"MP3の%n 曲目をループ%d.onoff で再生",
-			"Stop MP3"										:"MP3を止める",
 		}
 	}
 }
