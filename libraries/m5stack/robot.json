@@ -61,9 +61,8 @@ float getIMU(uint8_t index)
     return data[0];
   }
 }
-
+/*
 enum {
-
 WL_NO_SHIELD        = 255,   // for compatibility with WiFi Shield library
 WL_IDLE_STATUS      = 0,
 WL_NO_SSID_AVAIL    = 1,
@@ -72,10 +71,8 @@ WL_CONNECTED        = 3,
 WL_CONNECT_FAILED   = 4,
 WL_CONNECTION_LOST  = 5,
 WL_DISCONNECTED     = 6
-
 };
-static uint8_t
-void 
+*/
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -119,13 +116,13 @@ M5.update();  // update button and speaker
 
 		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0});"}],
 		["w", "circle at (%n ,%n ) r=%n with %d.color %d.fill",
-														"drawCircle",	100,100,50,"WHITE","fill",		{"remote":["S","S","S","S","B"],			"func":"if({4}) M5.Lcd.fillCircle({0},{1},{2},{3}); else M5.Lcd.drawCircle({0},{1},{2},{3});"}],
+											"drawCircle",	100,100,50,"WHITE","fill",	{"remote":["S","S","S","S","B"],			"func":"if({4}) M5.Lcd.fillCircle({0},{1},{2},{3}); else M5.Lcd.drawCircle({0},{1},{2},{3});"}],
 		["w", "rect (%n ,%n ) w=%n h=%n with %d.color %d.fill",				
-														"drawRect",		0,0,100,100,"WHITE","fill",		{"remote":["S","S","S","S","S","B"],		"func":"if({5}) M5.Lcd.fillRect({0},{1},{2},{3},{4}); else M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
+											"drawRect",		0,0,100,100,"WHITE","fill",	{"remote":["S","S","S","S","S","B"],		"func":"if({5}) M5.Lcd.fillRect({0},{1},{2},{3},{4}); else M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
 		["w", "triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color %d.fill",
-														"drawTriangle",0,0,100,0,0,100,"WHITE","fill",	{"remote":["S","S","S","S","S","S","S","B"],"func":"if({7}) M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6}); else M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
+										"drawTriangle",0,0,100,0,0,100,"WHITE","fill",	{"remote":["S","S","S","S","S","S","S","B"],"func":"if({7}) M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6}); else M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
 
-		["w", "qrcode %s",								"qrcode",	"http://www.m5stack.com",{"remote":["s"],	"func":"M5.Lcd.qrcode({0});"}],
+		["w", "qrcode %s",							"qrcode",	"http://www.m5stack.com",{"remote":["s"],	"func":"M5.Lcd.qrcode({0});"}],
 
 		["w", "draw jpg (%n ,%n ) %s",					"drawJpg",	0,0,"/AppIcon128.jpg",{"remote":["S","S","s"],"func":"M5.Lcd.drawJpgFile(SD,{2},{0},{1});"}],
 		["w", "draw bmp (%n ,%n ) %s",					"drawBmp",	0,0,"/AppIcon128.bmp",{"remote":["S","S","s"],"func":"M5.Lcd.drawBmpFile(SD,{2},{0},{1});"}],

@@ -17,6 +17,10 @@ Servo srvClass[3];          // for setServo
 const uint8_t srvPin[3] = {3,9,10};
 
 
+#ifdef __AVR_ATmega328P__
+#include <avr/wdt.h>
+#endif
+
 enum {
     RSP_BYTE    = 1,
     RSP_SHORT   = 2,
@@ -28,6 +32,10 @@ enum {
 
 void setup()
 {
+    #ifdef __AVR_ATmega328P__
+    MCUSR = 0;
+    wdt_disable();
+    #endif
     
     pinMode(13, OUTPUT);
     digitalWrite(13, LOW);
@@ -122,7 +130,12 @@ static void parseData()
         case 26: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
         case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
         case 28: remoconRobo_stopMP3();; callOK(); break;
-        
+        case 0xFF:
+        #ifdef __AVR_ATmega328P__
+        wdt_enable(WDTO_15MS);
+        while(1);
+        #endif
+        break;
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
         #define CMD_CHECKREMOTEKEY  0x80

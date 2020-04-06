@@ -156,15 +156,25 @@
 			dev.open(115200, deviceOpened);
 	}
 
+	var resetReq = 0;
 	function deviceOpened(dev, _checkDevName) {
 		device = dev;
-		checkDevName = _checkDevName;
+		checkDevName = true;
+		resetReq = !_checkDevName;
 		devName = "";
 		device.set_receive_handler(processData);
+		if(resetReq) {
+			var bytes = [0,0xFF,0x55,0x01,0xFE];  // firmware name
+			device.send(bytes);
+		}
 	};
 
 	ext._deviceRemoved = function(dev) {
 		if(device != dev) return;
+		if(resetReq) {
+			var bytes = [0xFF,0x55,0x01,0xFF];  // reset
+			device.send(bytes);
+		}
 		device = null;
 	};
 	ext._getStatus = function() {

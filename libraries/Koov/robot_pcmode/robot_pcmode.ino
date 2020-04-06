@@ -40,61 +40,61 @@
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
 static void funcLed(uint8_t onoff) { digitalWrite(STATUS_AMB, onoff^1); }
-static analogRemote remote(MODE_NORMAL, K2_UP, funcLed);
+static analogRemote remote(MODE_NORMAL, K7, funcLed);
 
 static void _setStatusLED(uint8_t color)
 {
-    color ^= 5;
-    digitalWrite(STATUS_BLUE, (color>>0)&1);
-    digitalWrite(STATUS_AMB, (color>>2)&1);
+     color ^= 5;
+     digitalWrite(STATUS_BLUE, (color>>0)&1);
+     digitalWrite(STATUS_AMB, (color>>2)&1);
 }
 
 static void _setUsbLED(uint8_t color)
 {
-    color ^= 3;
-    digitalWrite(USB_BLUE, (color>>0)&1);
-    digitalWrite(USB_YELLOW, (color>>1)&1);
+     color ^= 3;
+     digitalWrite(USB_BLUE, (color>>0)&1);
+     digitalWrite(USB_YELLOW, (color>>1)&1);
 }
 
 static uint8_t _V1V9_MULTI = 0xFF;
 static void _setV1V9_MULTI(uint8_t onoff)
 {
-    if(_V1V9_MULTI == onoff) return;
-    _V1V9_MULTI = onoff;
-    digitalWrite(V1_PWM, LOW);
-    digitalWrite(V1_DIR, LOW);
-    digitalWrite(V9, LOW);
-    digitalWrite(V1V9_MULTI, onoff);
+     if(_V1V9_MULTI == onoff) return;
+     _V1V9_MULTI = onoff;
+     digitalWrite(V1_PWM, LOW);
+     digitalWrite(V1_DIR, LOW);
+     digitalWrite(V9, LOW);
+     digitalWrite(V1V9_MULTI, onoff);
 }
 
 static void _setMultiLED(uint8_t color)
 {
-    if(color) {
-          _setV1V9_MULTI(LOW);
-          color ^= 7;
-          digitalWrite(MULTI_BLUE, (color>>0)&1);
-          digitalWrite(MULTI_GREEN, (color>>1)&1);
-          digitalWrite(MULTI_RED, (color>>2)&1);
-    } else {
-          _setV1V9_MULTI(HIGH);
-    }
+     if(color) {
+           _setV1V9_MULTI(LOW);
+           color ^= 7;
+           digitalWrite(MULTI_BLUE, (color>>0)&1);
+           digitalWrite(MULTI_GREEN, (color>>1)&1);
+           digitalWrite(MULTI_RED, (color>>2)&1);
+     } else {
+           _setV1V9_MULTI(HIGH);
+     }
 }
 
 static void _setMotor(uint8_t ch, int16_t data)
 {
-    if(data >  255) data =  255;
-    if(data < -255) data = -255;
-uint8_t pwm[2] = {V0_PWM, V1_PWM};
-uint8_t dir[2] = {V0_DIR, V1_DIR};
-    if(ch==1) _setV1V9_MULTI(HIGH);
+     if(data >  255) data =  255;
+     if(data < -255) data = -255;
+ uint8_t pwm[2] = {V0_PWM, V1_PWM};
+ uint8_t dir[2] = {V0_DIR, V1_DIR};
+     if(ch==1) _setV1V9_MULTI(HIGH);
     
-    if(data>=0){
-          analogWrite(pwm[ch], data);
-          digitalWrite(dir[ch], LOW);
-    } else {
-          analogWrite(pwm[ch], data+255);
-          digitalWrite(dir[ch], HIGH);
-    }
+     if(data>=0){
+           analogWrite(pwm[ch], data);
+           digitalWrite(dir[ch], LOW);
+     } else {
+           analogWrite(pwm[ch], data+255);
+           digitalWrite(dir[ch], HIGH);
+     }
 }
 
 struct {
@@ -112,41 +112,51 @@ struct {
 
 static void _setRobot(uint8_t direction, int16_t speed)
 {
-    _setMotor(1, speed * dir_table[direction].L);
-    _setMotor(0, speed * dir_table[direction].R);
+     _setMotor(1, speed * dir_table[direction].L);
+     _setMotor(0, speed * dir_table[direction].R);
 }
 
 static Servo srvClass[14];          // for setServo
 
 static void _tone(uint8_t port, uint16_t freq, uint16_t duration)
 {
-    if(port == V9) _setV1V9_MULTI(HIGH);
-    if(srvClass[port].attached()) srvClass[port].detach();
-    tone(port,freq,duration); delay(duration);
+     if(port == V9) _setV1V9_MULTI(HIGH);
+     if(srvClass[port].attached()) srvClass[port].detach();
+     tone(port,freq,duration); delay(duration);
 }
 
 static void _servo(uint8_t port, uint8_t deg)
 {
-    if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
+     if(port >= sizeof(srvClass)/sizeof(srvClass[0])) return;
     
-    if(!srvClass[port].attached()) {
-          pinMode(port, OUTPUT);
-          srvClass[port].attach(port);
-    }
-    if(port == V9) _setV1V9_MULTI(HIGH);
-    srvClass[port].write(deg);
+     if(!srvClass[port].attached()) {
+           pinMode(port, OUTPUT);
+           srvClass[port].attach(port);
+     }
+     if(port == V9) _setV1V9_MULTI(HIGH);
+     srvClass[port].write(deg);
 }
 
 static void _stopServo(void)
 {
-    uint8_t port;
-    for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
-        if(srvClass[port].attached())
-          srvClass[port].detach();
-    }
+     uint8_t port;
+     for(port = 0; port < sizeof(srvClass)/sizeof(srvClass[0]); port++) {
+         if(srvClass[port].attached())
+           srvClass[port].detach();
+     }
 }
 
 
+
+#ifdef __AVR_ATmega328P__
+#include <avr/wdt.h>
+#endif
+
+#if defined(_SAMD21_)
+#define _Serial SerialUSB
+#else
+#define _Serial Serial
+#endif
 
 enum {
     RSP_BYTE    = 1,
@@ -159,6 +169,10 @@ enum {
 
 void setup()
 {
+    #ifdef __AVR_ATmega328P__
+    MCUSR = 0;
+    wdt_disable();
+    #endif
     
     pinMode(STATUS_AMB, OUTPUT);
     pinMode(STATUS_BLUE, OUTPUT);
@@ -173,7 +187,7 @@ void setup()
     _setV1V9_MULTI(HIGH);
     Serial.begin(115200);
     
-    SerialUSB.println("PC mode: " mVersion);
+    _Serial.println("PC mode: " mVersion);
 }
 
 static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
@@ -254,7 +268,19 @@ static void parseData()
         case 17: sendShort((pinMode(getByte(0),INPUT),analogRead(getByte(0)))); break;
         case 18: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
         case 19: pinMode(getByte(0),OUTPUT);analogWrite(getByte(0),getByte(1));; callOK(); break;
-        
+        case 0xFE:  // firmware name
+        _Serial.println("PC mode: " mVersion);
+        break;
+        case 0xFF:  // software reset
+        #if defined(__AVR_ATmega328P__)
+        wdt_enable(WDTO_15MS);
+        while(1);
+        #elif defined(_SAMD21_)
+        NVIC_SystemReset();
+        #elif defined(ESP32)
+        ESP.restart();
+        #endif
+        break;
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
         #define CMD_CHECKREMOTEKEY  0x80
@@ -268,8 +294,8 @@ static void parseData()
 static uint8_t _index = 0;
 void loop()
 {
-    if(SerialUSB.available()>0){
-        uint8_t c = SerialUSB.read();
+    if(_Serial.available()>0){
+        uint8_t c = _Serial.read();
         buffer[_index++] = c;
         
         switch(_index) {
@@ -351,40 +377,40 @@ char* getString(uint8_t n)
 
 static void callOK()
 {
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write((uint8_t)0);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)
 {
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+sizeof(uint8_t));
-    SerialUSB.write(RSP_BYTE);
-    SerialUSB.write(data);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint8_t));
+    _Serial.write(RSP_BYTE);
+    _Serial.write(data);
 }
 
 static void sendShort(uint16_t data)
 {
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+sizeof(uint16_t));
-    SerialUSB.write(RSP_SHORT);
-    SerialUSB.write(data&0xff);
-    SerialUSB.write(data>>8);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint16_t));
+    _Serial.write(RSP_SHORT);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
 }
 
 static void sendLong(uint32_t data)
 {
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+sizeof(uint32_t));
-    SerialUSB.write(RSP_LONG);
-    SerialUSB.write(data&0xff);
-    SerialUSB.write(data>>8);
-    SerialUSB.write(data>>16);
-    SerialUSB.write(data>>24);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint32_t));
+    _Serial.write(RSP_LONG);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
+    _Serial.write(data>>16);
+    _Serial.write(data>>24);
 }
 
 static void sendFloat(float data)
@@ -392,14 +418,14 @@ static void sendFloat(float data)
     union floatConv conv;
     conv._float = data;
     
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+sizeof(float));
-    SerialUSB.write(RSP_FLOAT);
-    SerialUSB.write(conv._byte[0]);
-    SerialUSB.write(conv._byte[1]);
-    SerialUSB.write(conv._byte[2]);
-    SerialUSB.write(conv._byte[3]);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(float));
+    _Serial.write(RSP_FLOAT);
+    _Serial.write(conv._byte[0]);
+    _Serial.write(conv._byte[1]);
+    _Serial.write(conv._byte[2]);
+    _Serial.write(conv._byte[3]);
 }
 
 static void sendDouble(double data)
@@ -407,12 +433,12 @@ static void sendDouble(double data)
     union doubleConv conv;
     conv._double = data;
     
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+sizeof(double));
-    SerialUSB.write(RSP_DOUBLE);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(double));
+    _Serial.write(RSP_DOUBLE);
     for(uint8_t i=0; i<8; i++) {
-        SerialUSB.write(conv._byte[i]);
+        _Serial.write(conv._byte[i]);
     }
 }
 
@@ -420,12 +446,12 @@ static void sendString(String s)
 {
     uint8_t l = s.length();
     
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+l);
-    SerialUSB.write(RSP_STRING);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+l);
+    _Serial.write(RSP_STRING);
     for(uint8_t i=0; i<l; i++) {
-        SerialUSB.write(s.charAt(i));
+        _Serial.write(s.charAt(i));
     }
 }
 
@@ -434,16 +460,16 @@ static void sendString(String s)
 static void sendRemote(void)
 {
     uint16_t data;
-    SerialUSB.write(0xff);
-    SerialUSB.write(0x55);
-    SerialUSB.write(1+1+2+2);
-    SerialUSB.write(CMD_CHECKREMOTEKEY);
-    SerialUSB.write(remote.checkRemoteKey());
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+1+2+2);
+    _Serial.write(CMD_CHECKREMOTEKEY);
+    _Serial.write(remote.checkRemoteKey());
     data = remote.x;
-    SerialUSB.write(data&0xff);
-    SerialUSB.write(data>>8);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
     data = remote.y;
-    SerialUSB.write(data&0xff);
-    SerialUSB.write(data>>8);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
 }
 #endif
