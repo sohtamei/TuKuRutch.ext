@@ -21,6 +21,12 @@ const uint8_t srvPin[3] = {3,9,10};
 #include <avr/wdt.h>
 #endif
 
+#if defined(_SAMD21_)
+#define _Serial SerialUSB
+#else
+#define _Serial Serial
+#endif
+
 enum {
     RSP_BYTE    = 1,
     RSP_SHORT   = 2,
@@ -29,6 +35,8 @@ enum {
     RSP_DOUBLE  = 5,
     RSP_STRING  = 6,
 };
+
+#define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
 void setup()
 {
@@ -43,7 +51,7 @@ void setup()
     remoconRobo_tone(500, 50);
     Serial.begin(115200);
     
-    Serial.println("PC mode: " mVersion);
+    _Serial.println("PC mode: " mVersion);
 }
 
 static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
@@ -103,6 +111,7 @@ static void parseData()
                 case 'F': offset += 4; break;
                 case 'D': offset += 8; break;
                 case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                case 'b': offset += buffer[4+offset]+1; break;
                 default: break;
             }
             if(4+offset > _packetLen) return;
@@ -130,10 +139,17 @@ static void parseData()
         case 26: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
         case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
         case 28: remoconRobo_stopMP3();; callOK(); break;
-        case 0xFF:
-        #ifdef __AVR_ATmega328P__
+        case 0xFE:  // firmware name
+        _Serial.println("PC mode: " mVersion);
+        break;
+        case 0xFF:  // software reset
+        #if defined(__AVR_ATmega328P__)
         wdt_enable(WDTO_15MS);
         while(1);
+        #elif defined(_SAMD21_)
+        NVIC_SystemReset();
+        #elif defined(ESP32)
+        ESP.restart();
         #endif
         break;
         //### CUSTOMIZED ###
@@ -149,8 +165,8 @@ static void parseData()
 static uint8_t _index = 0;
 void loop()
 {
-    if(Serial.available()>0){
-        uint8_t c = Serial.read();
+    if(_Serial.available()>0){
+        uint8_t c = _Serial.read();
         buffer[_index++] = c;
         
         switch(_index) {
@@ -232,40 +248,40 @@ char* getString(uint8_t n)
 
 static void callOK()
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write((uint8_t)0);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint8_t));
-    Serial.write(RSP_BYTE);
-    Serial.write(data);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint8_t));
+    _Serial.write(RSP_BYTE);
+    _Serial.write(data);
 }
 
 static void sendShort(uint16_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint16_t));
-    Serial.write(RSP_SHORT);
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint16_t));
+    _Serial.write(RSP_SHORT);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
 }
 
 static void sendLong(uint32_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint32_t));
-    Serial.write(RSP_LONG);
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
-    Serial.write(data>>16);
-    Serial.write(data>>24);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(uint32_t));
+    _Serial.write(RSP_LONG);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
+    _Serial.write(data>>16);
+    _Serial.write(data>>24);
 }
 
 static void sendFloat(float data)
@@ -273,14 +289,14 @@ static void sendFloat(float data)
     union floatConv conv;
     conv._float = data;
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(float));
-    Serial.write(RSP_FLOAT);
-    Serial.write(conv._byte[0]);
-    Serial.write(conv._byte[1]);
-    Serial.write(conv._byte[2]);
-    Serial.write(conv._byte[3]);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(float));
+    _Serial.write(RSP_FLOAT);
+    _Serial.write(conv._byte[0]);
+    _Serial.write(conv._byte[1]);
+    _Serial.write(conv._byte[2]);
+    _Serial.write(conv._byte[3]);
 }
 
 static void sendDouble(double data)
@@ -288,12 +304,12 @@ static void sendDouble(double data)
     union doubleConv conv;
     conv._double = data;
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(double));
-    Serial.write(RSP_DOUBLE);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+sizeof(double));
+    _Serial.write(RSP_DOUBLE);
     for(uint8_t i=0; i<8; i++) {
-        Serial.write(conv._byte[i]);
+        _Serial.write(conv._byte[i]);
     }
 }
 
@@ -301,12 +317,12 @@ static void sendString(String s)
 {
     uint8_t l = s.length();
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+l);
-    Serial.write(RSP_STRING);
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+l);
+    _Serial.write(RSP_STRING);
     for(uint8_t i=0; i<l; i++) {
-        Serial.write(s.charAt(i));
+        _Serial.write(s.charAt(i));
     }
 }
 
@@ -315,16 +331,16 @@ static void sendString(String s)
 static void sendRemote(void)
 {
     uint16_t data;
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+1+2+2);
-    Serial.write(CMD_CHECKREMOTEKEY);
-    Serial.write(remote.checkRemoteKey());
+    _Serial.write(0xff);
+    _Serial.write(0x55);
+    _Serial.write(1+1+2+2);
+    _Serial.write(CMD_CHECKREMOTEKEY);
+    _Serial.write(remote.checkRemoteKey());
     data = remote.x;
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
     data = remote.y;
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
+    _Serial.write(data&0xff);
+    _Serial.write(data>>8);
 }
 #endif

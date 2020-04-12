@@ -16,10 +16,10 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
+#define mVersion \"LiquidCrystal1.0\"
+
 #include <LiquidCrystal.h>
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
-
-#define mVersion \"LiquidCrystal1.0\"
 
 static void execCmd(uint8_t cmd)
 {
@@ -37,6 +37,13 @@ case 9: lcd.rightToLeft(); break;
 case 10: lcd.autoscroll(); break;
 case 11: lcd.noAutoscroll(); break;
 }
+}
+
+void lcdWriteN(char* buf, uint8_t n)
+{
+uint8_t i;
+for(i = 0; i < n; i++)
+lcd.write(buf[i]);
 }
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
@@ -64,6 +71,7 @@ lcd.print(\"init\");
 		["-"],	// ブロック区切り
 
 		["w", "print LCD %s",							"setLCD",		"Hello, World!",{"remote":["s"],		"func":"lcd.print({0});"}],
+		["w", "print LCD %s (hex)",						"setLCDhex",		"303132",	{"remote":["b"],		"func":"lcdWriteN({0});"}],
 		["w", "print LCD %n",							"setLCDnum",		"123",		{"remote":["S"],		"func":"lcd.print({0});"}],
 		["w", "set cursor %n %n",						"setCursor",		0,0,		{"remote":["B","B"],	"func":"lcd.setCursor({0},{1});"}],
 		["w", "clear LCD",								"clearLCD",						{"remote":[],			"func":"lcd.clear();"}],

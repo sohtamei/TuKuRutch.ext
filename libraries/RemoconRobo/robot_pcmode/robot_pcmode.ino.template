@@ -21,6 +21,8 @@ RSP_DOUBLE  = 5,
 RSP_STRING  = 6,
 };
 
+#define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
+
 void setup()
 {
 #ifdef __AVR_ATmega328P__
@@ -57,6 +59,7 @@ case 'L': offset += 4; break;
 case 'F': offset += 4; break;
 case 'D': offset += 8; break;
 case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+case 'b': offset += buffer[4+offset]+1; break;
 default: break;
 }
 if(4+offset > _packetLen) return;
