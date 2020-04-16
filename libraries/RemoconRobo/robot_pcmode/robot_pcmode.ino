@@ -3,7 +3,6 @@
 
 #define mVersion "RemoconRobo1.1"
 
-#include <Arduino.h>
 #include <Servo.h>
 #include <remoconRoboLib.h>
 #include <analogRemote.h>
@@ -54,7 +53,7 @@ void setup()
     _Serial.println("PC mode: " mVersion);
 }
 
-static uint8_t buffer[52];  // 0xFF,0x55,len,cmd,
+static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 static uint8_t _packetLen = 4;
 
 #define ARG_NUM  16

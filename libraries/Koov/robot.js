@@ -105,8 +105,8 @@
 					case rtype.LONG:	value = readInt(_rxBuf, 4, 4);	break;
 					case rtype.FLOAT:	value = readFloat(_rxBuf, 4);	break;
 					case rtype.DOUBLE:	value = readDouble(_rxBuf, 4);	break;
-					case rtype.STRING:	value = readString(_rxBuf, 5, _rxBuf[2]-3);	break;
-					case rtype.BYTES:	value = readBytes(_rxBuf, 5, _rxBuf[2]-3);	break;
+					case rtype.STRING:	value = readString(_rxBuf, 4, _rxBuf[2]-1);	break;
+					case rtype.BYTES:	value = readBytes(_rxBuf, 5, _rxBuf[2]-2);	break;
 
 					//### CUSTOMIZED ###
 					case CMD_CHECKREMOTEKEY:
