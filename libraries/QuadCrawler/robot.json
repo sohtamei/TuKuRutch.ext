@@ -9,8 +9,9 @@
 	"productInfoURL": "https://github.com/bit-trade-one/QuadCrawler",
 	"sampleDir"		: "sample/QuadCrawler",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
-	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+	"libraryPath"	: "quadCrawlerLib",							// 専用ライブラリ(option)
 
 	// C言語記述注意 : " を使うときは \" とすること
 
