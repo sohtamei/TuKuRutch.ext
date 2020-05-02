@@ -151,13 +151,9 @@
 	}
 
 	// Extension API interactions
-	ext._deviceConnected = function(dev) {
-		if (dev)
-			dev.open(115200, deviceOpened);
-	}
 
 	var resetReq = 0;
-	function deviceOpened(dev, _checkDevName) {
+	ext._deviceConnected = function(dev, _checkDevName) {
 		device = dev;
 		checkDevName = true;
 		resetReq = !_checkDevName;
