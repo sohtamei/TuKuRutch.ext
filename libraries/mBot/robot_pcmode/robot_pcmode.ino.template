@@ -43,6 +43,96 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 // ARG_TYPES_TBL
 };
 
+#if 0		// wifi debug
+#define DPRINT(a) _Serial.println(a)
+#define DWRITE(a) _Serial.write(a)
+#else
+#define DPRINT(a)
+#define DWRITE(a)
+#endif
+
+uint8_t wifi_uart = 0;
+
+void _write(uint8_t byte)
+{
+#if defined(ESP32)
+  if(wifi_uart)
+    client.write(byte);
+  else
+#endif
+    _Serial.write(byte);
+}
+
+void _println(char* mes)
+{
+#if defined(ESP32)
+  if(wifi_uart)
+    client.println(mes);
+  else
+#endif
+    _Serial.println(mes);
+}
+
+#if defined(ESP32)
+enum {
+  CONNECTION_NONE = 0,
+  CONNECTION_WIFI,
+  CONNECTION_TCP,
+};
+uint8_t connection_status = CONNECTION_NONE;
+uint32_t last_udp;
+#endif
+
+int16_t _read(void)
+{
+  if(_Serial.available()>0) {
+    wifi_uart = 0;
+    return _Serial.read();
+  }
+
+#if defined(ESP32)
+  switch(connection_status) {
+  case CONNECTION_NONE:
+    if(WiFi.status() != WL_CONNECTED) {
+      return -1;
+    }
+    server.begin();
+    M5.Lcd.clear(BLACK);
+    M5.Lcd.setCursor(0,0);
+    M5.Lcd.println(WiFi.localIP());
+    DPRINT(WiFi.localIP());
+    connection_status = CONNECTION_WIFI;
+
+  case CONNECTION_WIFI:
+    client = server.available();
+    if(!client) {
+      uint32_t cur = millis();
+      if(last_udp - cur > 1000) {
+        last_udp = cur;
+        udp.broadcastTo("m5stack", PORT);
+      }
+      return -1;
+    }
+    DPRINT("connected");
+    connection_status = CONNECTION_TCP;
+
+  case CONNECTION_TCP:
+    if(!client.connected()) {
+      DPRINT("disconnected");
+      client.stop();
+      connection_status = CONNECTION_WIFI;
+      return -1;
+    }
+    if(client.available()<=0) {
+      return -1;
+    }
+    wifi_uart = 1;
+    return client.read();
+  }
+#endif
+  return -1;
+}
+
 static void parseData()
 {
 uint8_t i;
@@ -69,7 +159,7 @@ if(4+offset > _packetLen) return;
 switch(buffer[3]){
 // WORK
 case 0xFE:  // firmware name
-_Serial.println("PC mode: " mVersion);
+_println("PC mode: " mVersion);
 break;
 case 0xFF:  // software reset
 #if defined(__AVR_ATmega328P__)
@@ -94,8 +184,9 @@ break;
 static uint8_t _index = 0;
 void loop()
 {
-if(_Serial.available()>0){
-uint8_t c = _Serial.read();
+int16_t c;
+while((c=_read()) >= 0) {
+DWRITE(c);
 buffer[_index++] = c;
 
 switch(_index) {
@@ -177,40 +268,40 @@ return (char*)buffer+x;
 
 static void callOK()
 {
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write((uint8_t)0);
+_write(0xff);
+_write(0x55);
+_write((uint8_t)0);
 }
 
 static void sendByte(uint8_t data)
 {
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+sizeof(uint8_t));
-_Serial.write(RSP_BYTE);
-_Serial.write(data);
+_write(0xff);
+_write(0x55);
+_write(1+sizeof(uint8_t));
+_write(RSP_BYTE);
+_write(data);
 }
 
 static void sendShort(uint16_t data)
 {
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+sizeof(uint16_t));
-_Serial.write(RSP_SHORT);
-_Serial.write(data&0xff);
-_Serial.write(data>>8);
+_write(0xff);
+_write(0x55);
+_write(1+sizeof(uint16_t));
+_write(RSP_SHORT);
+_write(data&0xff);
+_write(data>>8);
 }
 
 static void sendLong(uint32_t data)
 {
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+sizeof(uint32_t));
-_Serial.write(RSP_LONG);
-_Serial.write(data&0xff);
-_Serial.write(data>>8);
-_Serial.write(data>>16);
-_Serial.write(data>>24);
+_write(0xff);
+_write(0x55);
+_write(1+sizeof(uint32_t));
+_write(RSP_LONG);
+_write(data&0xff);
+_write(data>>8);
+_write(data>>16);
+_write(data>>24);
 }
 
 static void sendFloat(float data)
@@ -218,14 +309,14 @@ static void sendFloat(float data)
 union floatConv conv;
 conv._float = data;
 
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+sizeof(float));
-_Serial.write(RSP_FLOAT);
-_Serial.write(conv._byte[0]);
-_Serial.write(conv._byte[1]);
-_Serial.write(conv._byte[2]);
-_Serial.write(conv._byte[3]);
+_write(0xff);
+_write(0x55);
+_write(1+sizeof(float));
+_write(RSP_FLOAT);
+_write(conv._byte[0]);
+_write(conv._byte[1]);
+_write(conv._byte[2]);
+_write(conv._byte[3]);
 }
 
 static void sendDouble(double data)
@@ -233,12 +324,12 @@ static void sendDouble(double data)
 union doubleConv conv;
 conv._double = data;
 
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+sizeof(double));
-_Serial.write(RSP_DOUBLE);
+_write(0xff);
+_write(0x55);
+_write(1+sizeof(double));
+_write(RSP_DOUBLE);
 for(uint8_t i=0; i<8; i++) {
-_Serial.write(conv._byte[i]);
+_write(conv._byte[i]);
 }
 }
 
@@ -246,12 +337,12 @@ static void sendString(String s)
 {
 uint8_t l = s.length();
 
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+l);
-_Serial.write(RSP_STRING);
+_write(0xff);
+_write(0x55);
+_write(1+l);
+_write(RSP_STRING);
 for(uint8_t i=0; i<l; i++) {
-_Serial.write(s.charAt(i));
+_write(s.charAt(i));
 }
 }
 
@@ -260,16 +351,16 @@ _Serial.write(s.charAt(i));
 static void sendRemote(void)
 {
 uint16_t data;
-_Serial.write(0xff);
-_Serial.write(0x55);
-_Serial.write(1+1+2+2);
-_Serial.write(CMD_CHECKREMOTEKEY);
-_Serial.write(remote.checkRemoteKey());
+_write(0xff);
+_write(0x55);
+_write(1+1+2+2);
+_write(CMD_CHECKREMOTEKEY);
+_write(remote.checkRemoteKey());
 data = remote.x;
-_Serial.write(data&0xff);
-_Serial.write(data>>8);
+_write(data&0xff);
+_write(data>>8);
 data = remote.y;
-_Serial.write(data&0xff);
-_Serial.write(data>>8);
+_write(data&0xff);
+_write(data>>8);
 }
 #endif
