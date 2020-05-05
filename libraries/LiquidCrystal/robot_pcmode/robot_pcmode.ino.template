@@ -53,14 +53,14 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 
 uint8_t wifi_uart = 0;
 
-void _write(uint8_t byte)
+void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
   if(wifi_uart)
-    client.write(byte);
+    client.write(dp, count);
   else
 #endif
-    _Serial.write(byte);
+    _Serial.write(dp, count);
 }
 
 void _println(char* mes)
@@ -89,28 +89,32 @@ int16_t _read(void)
     wifi_uart = 0;
     return _Serial.read();
   }
-
 #if defined(ESP32)
+  if(WiFi.status() != WL_CONNECTED) {
+    connection_status = CONNECTION_NONE;
+    return -1;
+  }
+
+  uint32_t cur = millis();
+  if(cur - last_udp > 1000) {
+    last_udp = cur;
+    udp.broadcastTo(mVersion, PORT);
+  }
+
   switch(connection_status) {
   case CONNECTION_NONE:
-    if(WiFi.status() != WL_CONNECTED) {
-      return -1;
-    }
     server.begin();
+#ifdef _M5STACK_H_
     M5.Lcd.clear(BLACK);
     M5.Lcd.setCursor(0,0);
     M5.Lcd.println(WiFi.localIP());
+#endif
     DPRINT(WiFi.localIP());
     connection_status = CONNECTION_WIFI;
 
   case CONNECTION_WIFI:
     client = server.available();
     if(!client) {
-      uint32_t cur = millis();
-      if(last_udp - cur > 1000) {
-        last_udp = cur;
-        udp.broadcastTo("m5stack", PORT);
-      }
       return -1;
     }
     DPRINT("connected");
@@ -268,40 +272,47 @@ return (char*)buffer+x;
 
 static void callOK()
 {
-_write(0xff);
-_write(0x55);
-_write((uint8_t)0);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = (uint8_t)0;
+_write(buffer, dp-buffer);
 }
 
 static void sendByte(uint8_t data)
 {
-_write(0xff);
-_write(0x55);
-_write(1+sizeof(uint8_t));
-_write(RSP_BYTE);
-_write(data);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+sizeof(uint8_t);
+*dp++ = RSP_BYTE;
+*dp++ = data;
+_write(buffer, dp-buffer);
 }
 
 static void sendShort(uint16_t data)
 {
-_write(0xff);
-_write(0x55);
-_write(1+sizeof(uint16_t));
-_write(RSP_SHORT);
-_write(data&0xff);
-_write(data>>8);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+sizeof(uint16_t);
+*dp++ = RSP_SHORT;
+*dp++ = data&0xff;
+*dp++ = data>>8;
 }
 
 static void sendLong(uint32_t data)
 {
-_write(0xff);
-_write(0x55);
-_write(1+sizeof(uint32_t));
-_write(RSP_LONG);
-_write(data&0xff);
-_write(data>>8);
-_write(data>>16);
-_write(data>>24);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+sizeof(uint32_t);
+*dp++ = RSP_LONG;
+*dp++ = data&0xff;
+*dp++ = data>>8;
+*dp++ = data>>16;
+*dp++ = data>>24;
+_write(buffer, dp-buffer);
 }
 
 static void sendFloat(float data)
@@ -309,14 +320,16 @@ static void sendFloat(float data)
 union floatConv conv;
 conv._float = data;
 
-_write(0xff);
-_write(0x55);
-_write(1+sizeof(float));
-_write(RSP_FLOAT);
-_write(conv._byte[0]);
-_write(conv._byte[1]);
-_write(conv._byte[2]);
-_write(conv._byte[3]);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+sizeof(float);
+*dp++ = RSP_FLOAT;
+*dp++ = conv._byte[0];
+*dp++ = conv._byte[1];
+*dp++ = conv._byte[2];
+*dp++ = conv._byte[3];
+_write(buffer, dp-buffer);
 }
 
 static void sendDouble(double data)
@@ -324,26 +337,30 @@ static void sendDouble(double data)
 union doubleConv conv;
 conv._double = data;
 
-_write(0xff);
-_write(0x55);
-_write(1+sizeof(double));
-_write(RSP_DOUBLE);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+sizeof(double);
+*dp++ = RSP_DOUBLE;
 for(uint8_t i=0; i<8; i++) {
-_write(conv._byte[i]);
+*dp++ = conv._byte[i];
 }
+_write(buffer, dp-buffer);
 }
 
 static void sendString(String s)
 {
 uint8_t l = s.length();
 
-_write(0xff);
-_write(0x55);
-_write(1+l);
-_write(RSP_STRING);
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+l;
+*dp++ = RSP_STRING;
 for(uint8_t i=0; i<l; i++) {
-_write(s.charAt(i));
+*dp++ = s.charAt(i);
 }
+_write(buffer, dp-buffer);
 }
 
 //### CUSTOMIZED ###
@@ -351,16 +368,15 @@ _write(s.charAt(i));
 static void sendRemote(void)
 {
 uint16_t data;
-_write(0xff);
-_write(0x55);
-_write(1+1+2+2);
-_write(CMD_CHECKREMOTEKEY);
-_write(remote.checkRemoteKey());
-data = remote.x;
-_write(data&0xff);
-_write(data>>8);
-data = remote.y;
-_write(data&0xff);
-_write(data>>8);
+
+uint8_t* dp = buffer;
+*dp++ = 0xff;
+*dp++ = 0x55;
+*dp++ = 1+1+2+2;
+*dp++ = CMD_CHECKREMOTEKEY;
+*dp++ = remote.checkRemoteKey();
+data = remote.x; *dp++ = data&0xff; *dp++ = data>>8;
+data = remote.y; *dp++ = data&0xff; *dp++ = data>>8;
+_write(buffer, dp-buffer);
 }
 #endif

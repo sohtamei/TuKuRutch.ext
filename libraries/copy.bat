@@ -35,4 +35,8 @@ copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\r
 set DIRNAME=Spresense
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
+
+set DIRNAME=duke32
+copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
+copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
 pause

@@ -1,0 +1,355 @@
+{
+	"name"			: "duke32",
+	"port"			: 0,										// 変更禁止
+	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
+
+	"sort"			: 50,										// メニュー上の表示順序
+	"extensionAuthor": "Thousandiy",							// この拡張スクリプトの作者
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html",
+	"productInfoURL": "https://thousandiy.wordpress.com/",
+	"sampleDir"		: "",										// サンプルディレクトリ
+	"javascriptURL"	: "robot.js",
+	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+	"prefs"			: ["custom_CPUFreq=esp32_240",
+						"custom_DebugLevel=esp32_none",
+						"custom_FlashFreq=esp32_80",
+						"custom_FlashMode=esp32_qio",
+						"custom_FlashSize=esp32_4M",
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=esp32_default",
+						"custom_UploadSpeed=esp32_921600"],
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// PCモード/書き込みモード ヘッダ (C言語)
+	"header":"
+#define mVersion \"duke32 1.0\"
+//------------------------------------------
+// Moter Driver
+//------------------------------------------
+#define TB_A1   12  // moterA IN1
+#define TB_A2   13  // moterA IN2
+#define TB_Ap   18  // moterA PWM
+#define TB_B1   14  // moterB IN1
+#define TB_B2   15  // moterB IN2
+#define TB_Bp   19  // moterB PWM
+
+#define NEO_PIN     27
+#define Servo_PIN1  23
+#define Servo_PIN2   4
+
+#define ANA11   34
+#define ANA12   35
+
+#define DIGI01  32
+#define DIGI02  33
+#define DIGI11  26
+#define DIGI12  25
+
+#define I2CSDA  21
+#define I2CSCL  22
+
+// UART2
+#define UARTRXD 16
+#define UARTTXD 17
+
+#include <WiFi.h>
+#include <AsyncUDP.h>
+#include <Preferences.h>
+
+#include <Wire.h>
+
+#define PORT  54321
+
+char g_ssid[32] = {0};
+char g_password[32] = {0};
+WiFiServer server(PORT);
+WiFiClient client;
+AsyncUDP udp;
+Preferences preferences;
+
+// https://github.com/Makuna/NeoPixelBus
+#include <NeoPixelBus.h>
+#define colorSaturation 32
+#define interval        50
+const uint16_t PixelCount = 45; // this example assumes 4 pixels, making it smaller will cause a failure
+
+// three element pixels, in different order and speeds
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, NEO_PIN);
+//NeoPixelBus<NeoRgbFeature, Neo400KbpsMethod> strip(PixelCount, PixelPin);
+
+#define LEDC_CHANNEL_0  0  // channel of 16 channels (started from zero)
+#define LEDC_CHANNEL_1  1  // channel of 16 channels (started from zero)
+#define LEDC_TIMER_BIT 12  // use 12 bit precission for LEDC timer
+#define LEDC_BASE_FREQ 50  // use 50 Hz as a LEDC base frequency
+
+// Servo Range
+// int srvMin = 103; // (103/4096)*20ms ≒ 0.5 ms (-90°)
+// int srvMax = 491; // (491/4096)*20ms ≒ 2.4 ms (+90°)
+#define srvMin 300
+#define srvMax 480
+#define srvInterval 3
+
+/*
+ * NeoPixels
+ */
+RgbColor red(colorSaturation, 0, 0);
+RgbColor green(0, colorSaturation, 0);
+RgbColor blue(0, 0, colorSaturation);
+RgbColor white(colorSaturation);
+RgbColor black(0);
+
+void SetNeoPixel(uint8_t index){
+  RgbColor* npcolor = NULL;
+  switch(index) {
+  case 0: npcolor = &black; break;
+  case 1: npcolor = &red;   break;
+  case 2: npcolor = &green; break;
+  case 3: npcolor = &blue;  break;
+  case 4: npcolor = &white; break;
+  default: return;
+  }
+
+  for(uint8_t i=0; i<PixelCount; i++){
+    strip.SetPixelColor(i, *npcolor);
+    strip.Show();
+    delay(interval);
+  }
+}
+
+/*
+ * Servo
+ */
+void Servo_INIT(){
+  // Setup timer and attach timer to a servo pin
+  ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+  ledcAttachPin(Servo_PIN1, LEDC_CHANNEL_0);
+
+  ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
+  ledcAttachPin(Servo_PIN2, LEDC_CHANNEL_1);
+
+  ledcWrite(0, srvMin);
+  delay(500);
+  ledcWrite(1, srvMin);
+}
+
+void setServo(uint8_t index, uint16_t angle)
+{
+  if(index >= 2) return;
+  ledcWrite(index, angle);
+}
+
+/*
+ * Motor
+ */
+void Motor_INIT(){
+  pinMode( TB_A1, OUTPUT );
+  pinMode( TB_A2, OUTPUT );
+  pinMode( TB_Ap, OUTPUT );
+  pinMode( TB_B1, OUTPUT );
+  pinMode( TB_B2, OUTPUT );
+  pinMode( TB_Bp, OUTPUT );
+   
+  digitalWrite( TB_A1, LOW );
+  digitalWrite( TB_A2, LOW );
+  digitalWrite( TB_Ap, LOW );
+  digitalWrite( TB_B1, LOW );
+  digitalWrite( TB_B2, LOW );
+  digitalWrite( TB_Bp, LOW );
+}
+
+void motorA_forward(){
+  digitalWrite( TB_Ap, HIGH );
+  digitalWrite( TB_A1, HIGH );
+  digitalWrite( TB_A2, LOW );
+}
+void motorA_back(){
+  digitalWrite( TB_Ap, HIGH );
+  digitalWrite( TB_A1, LOW );
+  digitalWrite( TB_A2, HIGH );
+}
+void motorA_stop(){
+  digitalWrite( TB_Ap, LOW );
+}
+
+void motorB_forward(){
+  digitalWrite( TB_Bp, HIGH );
+  digitalWrite( TB_B1, HIGH );
+  digitalWrite( TB_B2, LOW );
+}
+void motorB_back(){
+  digitalWrite( TB_Bp, HIGH );
+  digitalWrite( TB_B1, LOW );
+  digitalWrite( TB_B2, HIGH );
+}
+void motorB_stop(){
+  digitalWrite( TB_Bp, LOW );
+}
+
+void setMotor(uint8_t index, uint8_t dir)
+{
+  if(index == 0) {
+    switch(dir) {
+    case 0: motorA_stop();    break;
+    case 1: motorA_forward(); break;
+    case 2: motorA_back();    break;
+    }
+  } else if(index == 1) {
+    switch(dir) {
+    case 0: motorB_stop();    break;
+    case 1: motorB_forward(); break;
+    case 2: motorB_back();    break;
+    }
+  }
+}
+
+struct {
+  int  L;
+  int  R;
+} static const dir_table[7] = {
+ //L  R
+  {0, 0},  // STOP
+  {2, 1},  // FORWARD
+  {0, 1},  // LEFT
+  {2, 0},  // RIGHT
+  {1, 2},  // BACK
+  {1, 1},  // ROLL_LEFT
+  {2, 2},  // ROLL_RIGHT
+};
+
+void setRobot(int direction)
+{
+  setMotor(0, dir_table[direction].L);
+  setMotor(1, dir_table[direction].R);
+}
+
+/*
+ * ADC
+ */
+void ADC_INIT(){
+  pinMode(ANA11, INPUT);
+  pinMode(ANA12, INPUT);
+}
+
+uint16_t getAdc(uint8_t index)
+{
+uint8_t adcCh[2] = {ANA11,ANA12};
+if(index>=2) return 0;
+return analogRead(adcCh[index]);
+}
+
+/*
+ * DIO in
+ */
+void DIO_INIT(){
+  pinMode(DIGI01, INPUT);
+  pinMode(DIGI02, INPUT);
+  pinMode(DIGI11, INPUT);
+  pinMode(DIGI12, INPUT);
+}
+
+uint8_t getDigital(uint8_t index)
+{
+uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
+if(index>=4) return 0;
+return digitalRead(din_ch[index]);
+}
+",
+	// PCモード/書き込みモード setup処理 (C言語)
+	"setup":"
+preferences.begin(\"tukurutch\", false);
+
+// reset all the neopixels to an off state
+strip.Begin();
+strip.Show();
+
+// init Servo
+Servo_INIT();
+
+// init Motor
+Motor_INIT();
+
+// init ADC
+ADC_INIT();
+
+// init DIO
+DIO_INIT();
+
+Serial2.begin(115200);
+
+Serial.begin(115200);
+
+preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
+preferences.getString(\"password\", g_password, sizeof(g_password));
+Serial.print(\"Connecting to \");    Serial.println(g_ssid);
+
+//WiFi.mode(WIFI_STA);
+//WiFi.disconnect();
+WiFi.begin(g_ssid, g_password);
+",
+	// PCモード/書き込みモード loop処理 (C言語)
+	"loop":"",
+
+	// PCモード/書き込みモード スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
+		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+
+		["-"],	// ブロック区切り
+
+		["w", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s"], "func":"preferences.putString(\"ssid\",{0});preferences.putString(\"password\",{1});WiFi.begin({0},{1});"}],
+		["R", "status WIFI",							"statusWifi",					{"remote":[			"B"],"func":"WiFi.status()"}],
+		["R", "IP address",								"localIpWifi",					{"remote":[			"B"],"func":"WiFi.localIP()[3]"}],
+		["R", "ssid",									"getSSID",						{"remote":[			"s"],"func":"preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid)),g_ssid"}],
+		["R", "password",								"getPassword",					{"remote":[			"s"],"func":"preferences.getString(\"password\", g_password, sizeof(g_password)),g_password"}],
+
+		["-"],
+
+		["w", "NeoPixel %d.neopixel",					"setNeoPixel",		"white",	{"remote":["B"],		"func":"SetNeoPixel({0});"}],
+		["w", " %d.direction ",							"setRobot",		"run forward",	{"remote":["B"],		"func":"setRobot({0});"}],
+		["w", "stop",									"stopRobot",					{"remote":[],			"func":"setRobot(0);"}],
+		["w", "set motor%d.motorport direction%d.motordir","setMotor",		0,"forward",{"remote":["B","B"],	"func":"setMotor({0},{1});"}],
+
+	//	["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %d.din",				"getDigital",		0,			{"remote":["B",		"B"],"func":"getDigital({0})"}],
+		["R", "read analog pin %d.analog",				"getAnalog",		0,			{"remote":["B",		"S"],"func":"getAdc({0})"}],
+	],
+	"menus": {
+		"neopixel":["black","red","green","blue","white"],
+		"motorport":[0,1],
+		"motordir":["stop","forward","back"],
+		"direction":["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"din":[0,1,2,3],
+		"analog":[0,1],
+
+		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
+		"fill":["fill","draw"],
+	},
+	"values":{
+		"black":0,"red":1,"green":2,"blue":3,"white":4,
+		"stop":0,"forward":1,"back":2,
+		"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
+
+		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
+		"fill":1,"draw":0,
+	},
+	"translators":{
+		"ja":{
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"read digital pin %d.din"						:"デジタルピン %d.din",
+			"read analog pin %d.analog"						:"アナログピン %d.analog",
+		}
+	}
+}
+
