@@ -1,5 +1,6 @@
 // copyright to SohtaMei 2019.
 
+#define PCMODE
 
 #define mVersion "duke32 1.0"
 //------------------------------------------
@@ -37,14 +38,15 @@
 
 #include <Wire.h>
 
-#define PORT  54321
+#define PORT  48586
 
 char g_ssid[32] = {0};
-char g_password[32] = {0};
+char g_pass[32] = {0};
 WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
 Preferences preferences;
+char buf[256];
 
 // https://github.com/Makuna/NeoPixelBus
 #include <NeoPixelBus.h>
@@ -233,6 +235,55 @@ uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
     return digitalRead(din_ch[index]);
 }
 
+uint8_t connectWifi(char* ssid, char*pass)
+{
+      strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
+      strncpy(g_pass, pass, sizeof(g_pass)-1);
+      preferences.putString("ssid",g_ssid);
+      preferences.putString("password",g_pass);
+      WiFi.begin(g_ssid, g_pass);
+      return waitWifi();
+}
+
+uint8_t waitWifi(void)
+{
+      for(int i=0;i<80;i++) {
+            delay(100);
+            if(WiFi.status()==WL_CONNECTED) break;
+      }
+      return WiFi.status();
+}
+
+char* statusWifi(void)
+{
+    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+    memset(buf, 0, sizeof(buf));
+    
+    if(WiFi.status() == WL_CONNECTED) {
+          IPAddress ip = WiFi.localIP();
+          snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+    } else {
+          snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+    }
+    return buf;
+}
+
+char* scanWifi(void)
+{
+    memset(buf, 0, sizeof(buf));
+    
+    int n = WiFi.scanNetworks();
+    for(int i = 0; i < n; i++) {
+          if(i == 0) {
+                snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+          } else {
+                int ofs = strlen(buf);
+                snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+          }
+    }
+    return buf;
+}
+
 
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
@@ -285,12 +336,16 @@ void setup()
     Serial.begin(115200);
     
     preferences.getString("ssid", g_ssid, sizeof(g_ssid));
-    preferences.getString("password", g_password, sizeof(g_password));
+    preferences.getString("password", g_pass, sizeof(g_pass));
     Serial.print("Connecting to ");    Serial.println(g_ssid);
     
     //WiFi.mode(WIFI_STA);
-    //WiFi.disconnect();
-    WiFi.begin(g_ssid, g_password);
+    if(g_ssid[0]) {
+          WiFi.begin(g_ssid, g_pass);
+          #ifndef PCMODE
+            waitWifi();
+          #endif
+    }
     
     _Serial.println("PC mode: " mVersion);
 }
@@ -304,12 +359,6 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {'s','s',},
-  {},
-  {},
-  {},
-  {},
-  {},
   {'B',},
   {},
   {'B','B',},
@@ -318,6 +367,10 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'B',},
   {'B',},
+  {},
+  {'s','s',},
+  {},
+  {},
 };
 
 #if 0		// wifi debug
@@ -438,17 +491,15 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: preferences.putString("ssid",getString(0));preferences.putString("password",getString(1));WiFi.begin(getString(0),getString(1));; callOK(); break;
-        case 3: sendByte((WiFi.status())); break;
-        case 4: sendByte((WiFi.localIP()[3])); break;
-        case 5: sendString((preferences.getString("ssid", g_ssid, sizeof(g_ssid)),g_ssid)); break;
-        case 6: sendString((preferences.getString("password", g_password, sizeof(g_password)),g_password)); break;
-        case 8: setRobot(getByte(0));; callOK(); break;
-        case 9: setRobot(0);; callOK(); break;
-        case 10: setMotor(getByte(0),getByte(1));; callOK(); break;
-        case 13: SetNeoPixel(getByte(0));; callOK(); break;
-        case 14: sendByte((getDigital(getByte(0)))); break;
-        case 15: sendShort((getAdc(getByte(0)))); break;
+        case 2: setRobot(getByte(0));; callOK(); break;
+        case 3: setRobot(0);; callOK(); break;
+        case 4: setMotor(getByte(0),getByte(1));; callOK(); break;
+        case 7: SetNeoPixel(getByte(0));; callOK(); break;
+        case 8: sendByte((getDigital(getByte(0)))); break;
+        case 9: sendShort((getAdc(getByte(0)))); break;
+        case 11: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 12: sendString((statusWifi())); break;
+        case 13: sendString((scanWifi())); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
