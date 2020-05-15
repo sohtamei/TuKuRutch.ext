@@ -1,9 +1,82 @@
 // copyright to SohtaMei 2019.
 
-
+#define PCMODE
 
 #define mVersion "ESP32 1.0"
 
+#include <WiFi.h>
+#include <AsyncUDP.h>
+#include <Preferences.h>
+
+#define PORT  54321
+
+char g_ssid[32] = {0};
+char g_pass[32] = {0};
+WiFiServer server(PORT);
+WiFiClient client;
+AsyncUDP udp;
+Preferences preferences;
+char buf[256];
+
+uint8_t connectWifi(char* ssid, char*pass)
+{
+      strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
+      strncpy(g_pass, pass, sizeof(g_pass)-1);
+      preferences.putString("ssid",g_ssid);
+      preferences.putString("password",g_pass);
+      WiFi.begin(g_ssid, g_pass);
+      return waitWifi();
+}
+
+uint8_t waitWifi(void)
+{
+      for(int i=0;i<80;i++) {
+            delay(100);
+            if(WiFi.status()==WL_CONNECTED) break;
+      }
+      return WiFi.status();
+}
+
+char* statusWifi(void)
+{
+    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+    memset(buf, 0, sizeof(buf));
+    
+    if(WiFi.status() == WL_CONNECTED) {
+          IPAddress ip = WiFi.localIP();
+          snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+    } else {
+          snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+    }
+    return buf;
+}
+
+char* scanWifi(void)
+{
+    memset(buf, 0, sizeof(buf));
+    
+    int n = WiFi.scanNetworks();
+    for(int i = 0; i < n; i++) {
+          if(i == 0) {
+                snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+          } else {
+                int ofs = strlen(buf);
+                snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+          }
+    }
+    return buf;
+}
+
+
+#ifdef __AVR_ATmega328P__
+#include <avr/wdt.h>
+#endif
+
+#if defined(_SAMD21_)
+#define _Serial SerialUSB
+#else
+#define _Serial Serial
+#endif
 
 enum {
     RSP_BYTE    = 1,
@@ -14,26 +87,189 @@ enum {
     RSP_STRING  = 6,
 };
 
+#define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
+
 void setup()
 {
+    #ifdef __AVR_ATmega328P__
+    MCUSR = 0;
+    wdt_disable();
+    #endif
+    
+    preferences.begin("tukurutch", false);
     
     Serial.begin(115200);
     
-    Serial.println("PC mode: " mVersion);
+    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+    preferences.getString("password", g_pass, sizeof(g_pass));
+    Serial.print("Connecting to ");    Serial.println(g_ssid);
+    
+    //WiFi.mode(WIFI_STA);
+    if(g_ssid[0]) {
+          WiFi.begin(g_ssid, g_pass);
+          #ifndef PCMODE
+            waitWifi();
+          #endif
+    }
+    
+    _Serial.println("PC mode: " mVersion);
 }
 
-#define getByte(n)      (buffer[4+n])
-#define getShort(n)     (buffer[4+n]|(buffer[5+n]<<8))
-#define getLong(n)      (buffer[4+n]|(buffer[5+n]<<8UL)|(buffer[6+n]<<16UL)|(buffer[7+n]<<24UL))
-static uint8_t buffer[52];
+static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+static uint8_t _packetLen = 4;
+
+#define ARG_NUM  16
+#define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
+static uint8_t offsetIdx[ARG_NUM] = {0};
+static const char ArgTypesTbl[][ARG_NUM] = {
+  {},
+  {},
+  {'B',},
+  {'B','B',},
+  {'B',},
+  {},
+  {'s','s',},
+  {},
+  {},
+};
+
+#if 0		// wifi debug
+#define DPRINT(a) _Serial.println(a)
+#define DWRITE(a) _Serial.write(a)
+#else
+#define DPRINT(a)
+#define DWRITE(a)
+#endif
+
+uint8_t wifi_uart = 0;
+
+void _write(uint8_t* dp, int count)
+{
+    #if defined(ESP32)
+      if(wifi_uart)
+        client.write(dp, count);
+      else
+    #endif
+        _Serial.write(dp, count);
+}
+
+void _println(char* mes)
+{
+    #if defined(ESP32)
+      if(wifi_uart)
+        client.println(mes);
+      else
+    #endif
+        _Serial.println(mes);
+}
+
+#if defined(ESP32)
+enum {
+      CONNECTION_NONE = 0,
+      CONNECTION_WIFI,
+      CONNECTION_TCP,
+};
+uint8_t connection_status = CONNECTION_NONE;
+uint32_t last_udp;
+#endif
+
+int16_t _read(void)
+{
+      if(_Serial.available()>0) {
+            wifi_uart = 0;
+            return _Serial.read();
+      }
+    #if defined(ESP32)
+      if(WiFi.status() != WL_CONNECTED) {
+            connection_status = CONNECTION_NONE;
+            return -1;
+      }
+    
+      uint32_t cur = millis();
+      if(cur - last_udp > 1000) {
+            last_udp = cur;
+            udp.broadcastTo(mVersion, PORT);
+      }
+    
+      switch(connection_status) {
+          case CONNECTION_NONE:
+            server.begin();
+        #ifdef _M5STACK_H_
+            M5.Lcd.clear(BLACK);
+            M5.Lcd.setCursor(0,0);
+            M5.Lcd.println(WiFi.localIP());
+        #endif
+            DPRINT(WiFi.localIP());
+            connection_status = CONNECTION_WIFI;
+        
+          case CONNECTION_WIFI:
+            client = server.available();
+            if(!client) {
+                  return -1;
+            }
+            DPRINT("connected");
+            connection_status = CONNECTION_TCP;
+        
+          case CONNECTION_TCP:
+            if(!client.connected()) {
+                  DPRINT("disconnected");
+                  client.stop();
+                  connection_status = CONNECTION_WIFI;
+                  return -1;
+            }
+            if(client.available()<=0) {
+                  return -1;
+            }
+            wifi_uart = 1;
+            return client.read();
+      }
+    #endif
+      return -1;
+}
 
 static void parseData()
 {
+    uint8_t i;
+    memset(offsetIdx, 0, sizeof(offsetIdx));
+    if(buffer[3] < ITEM_NUM) {
+        const char *ArgTypes = ArgTypesTbl[buffer[3]];
+        uint16_t offset = 0;
+        for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+            offsetIdx[i] = offset;
+            switch(ArgTypes[i]) {
+                case 'B': offset += 1; break;
+                case 'S': offset += 2; break;
+                case 'L': offset += 4; break;
+                case 'F': offset += 4; break;
+                case 'D': offset += 8; break;
+                case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                case 'b': offset += buffer[4+offset]+1; break;
+                default: break;
+            }
+            if(4+offset > _packetLen) return;
+        }
+    }
+    
     switch(buffer[3]){
-        case 3: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
-        case 4: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 5: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        
+        case 2: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
+        case 3: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 4: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 6: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 7: sendString((statusWifi())); break;
+        case 8: sendString((scanWifi())); break;
+        case 0xFE:  // firmware name
+        _println("PC mode: " mVersion);
+        break;
+        case 0xFF:  // software reset
+        #if defined(__AVR_ATmega328P__)
+        wdt_enable(WDTO_15MS);
+        while(1);
+        #elif defined(_SAMD21_)
+        NVIC_SystemReset();
+        #elif defined(ESP32)
+        ESP.restart();
+        #endif
+        break;
         //### CUSTOMIZED ###
         #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
         #define CMD_CHECKREMOTEKEY  0x80
@@ -45,12 +281,11 @@ static void parseData()
 }
 
 static uint8_t _index = 0;
-static uint8_t _packetLen = 4;
-
 void loop()
 {
-    if(Serial.available()>0){
-        uint8_t c = Serial.read();
+    int16_t c;
+    while((c=_read()) >= 0) {
+        DWRITE(c);
         buffer[_index++] = c;
         
         switch(_index) {
@@ -88,65 +323,91 @@ union doubleConv {
     uint8_t _byte[8];
 };
 
+uint8_t getByte(uint8_t n)
+{
+    return buffer[4+offsetIdx[n]];
+}
+
+int16_t getShort(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8);
+}
+int32_t getLong(uint8_t n)
+{
+    uint8_t x = 4+offsetIdx[n];
+    return buffer[x+0]|((uint32_t)buffer[x+1]<<8)|((uint32_t)buffer[x+2]<<16)|((uint32_t)buffer[x+3]<<24);
+}
+
 float getFloat(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union floatConv conv;
     for(uint8_t i=0; i<4; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._float;
 }
 
 double getDouble(uint8_t n)
 {
+    uint8_t x = 4+offsetIdx[n];
     union doubleConv conv;
     for(uint8_t i=0; i<8; i++) {
-        conv._byte[i] = buffer[4+n+i];
+        conv._byte[i] = buffer[x+i];
     }
     return conv._double;
 }
 
 char* getString(uint8_t n)
 {
-    return (char*)buffer+4+n;
+    uint8_t x = 4+offsetIdx[n];
+    return (char*)buffer+x;
 }
 
 static void callOK()
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write((uint8_t)0);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = (uint8_t)0;
+    _write(buffer, dp-buffer);
 }
 
 static void sendByte(uint8_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint8_t));
-    Serial.write(RSP_BYTE);
-    Serial.write(data);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint8_t);
+    *dp++ = RSP_BYTE;
+    *dp++ = data;
+    _write(buffer, dp-buffer);
 }
 
 static void sendShort(uint16_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint16_t));
-    Serial.write(RSP_SHORT);
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint16_t);
+    *dp++ = RSP_SHORT;
+    *dp++ = data&0xff;
+    *dp++ = data>>8;
 }
 
 static void sendLong(uint32_t data)
 {
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(uint32_t));
-    Serial.write(RSP_LONG);
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
-    Serial.write(data>>16);
-    Serial.write(data>>24);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint32_t);
+    *dp++ = RSP_LONG;
+    *dp++ = data&0xff;
+    *dp++ = data>>8;
+    *dp++ = data>>16;
+    *dp++ = data>>24;
+    _write(buffer, dp-buffer);
 }
 
 static void sendFloat(float data)
@@ -154,14 +415,16 @@ static void sendFloat(float data)
     union floatConv conv;
     conv._float = data;
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(float));
-    Serial.write(RSP_FLOAT);
-    Serial.write(conv._byte[0]);
-    Serial.write(conv._byte[1]);
-    Serial.write(conv._byte[2]);
-    Serial.write(conv._byte[3]);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(float);
+    *dp++ = RSP_FLOAT;
+    *dp++ = conv._byte[0];
+    *dp++ = conv._byte[1];
+    *dp++ = conv._byte[2];
+    *dp++ = conv._byte[3];
+    _write(buffer, dp-buffer);
 }
 
 static void sendDouble(double data)
@@ -169,26 +432,30 @@ static void sendDouble(double data)
     union doubleConv conv;
     conv._double = data;
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+sizeof(double));
-    Serial.write(RSP_DOUBLE);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(double);
+    *dp++ = RSP_DOUBLE;
     for(uint8_t i=0; i<8; i++) {
-        Serial.write(conv._byte[i]);
+        *dp++ = conv._byte[i];
     }
+    _write(buffer, dp-buffer);
 }
 
 static void sendString(String s)
 {
     uint8_t l = s.length();
     
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+l);
-    Serial.write(RSP_STRING);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+l;
+    *dp++ = RSP_STRING;
     for(uint8_t i=0; i<l; i++) {
-        Serial.write(s.charAt(i));
+        *dp++ = s.charAt(i);
     }
+    _write(buffer, dp-buffer);
 }
 
 //### CUSTOMIZED ###
@@ -196,16 +463,15 @@ static void sendString(String s)
 static void sendRemote(void)
 {
     uint16_t data;
-    Serial.write(0xff);
-    Serial.write(0x55);
-    Serial.write(1+1+2+2);
-    Serial.write(CMD_CHECKREMOTEKEY);
-    Serial.write(remoconRobo_checkRemoteKey());
-    data = remoconRobo_getRemoteX();
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
-    data = remoconRobo_getRemoteY();
-    Serial.write(data&0xff);
-    Serial.write(data>>8);
+    
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+1+2+2;
+    *dp++ = CMD_CHECKREMOTEKEY;
+    *dp++ = remote.checkRemoteKey();
+    data = remote.x; *dp++ = data&0xff; *dp++ = data>>8;
+    data = remote.y; *dp++ = data&0xff; *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 #endif

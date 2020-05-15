@@ -47,7 +47,7 @@ quadCrawler_servoLoop();
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
-	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
 	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)

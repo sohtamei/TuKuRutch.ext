@@ -1,5 +1,6 @@
 // copyright to SohtaMei 2019.
 
+#define PCMODE
 // HEADER
 
 #ifdef __AVR_ATmega328P__

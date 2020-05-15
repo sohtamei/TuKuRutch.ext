@@ -24,12 +24,88 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-
 #define mVersion \"ESP32 1.0\"
+
+#include <WiFi.h>
+#include <AsyncUDP.h>
+#include <Preferences.h>
+
+#define PORT  54321
+
+char g_ssid[32] = {0};
+char g_pass[32] = {0};
+WiFiServer server(PORT);
+WiFiClient client;
+AsyncUDP udp;
+Preferences preferences;
+char buf[256];
+
+uint8_t connectWifi(char* ssid, char*pass)
+{
+  strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
+  strncpy(g_pass, pass, sizeof(g_pass)-1);
+  preferences.putString(\"ssid\",g_ssid);
+  preferences.putString(\"password\",g_pass);
+  WiFi.begin(g_ssid, g_pass);
+  return waitWifi();
+}
+
+uint8_t waitWifi(void)
+{
+  for(int i=0;i<80;i++) {
+    delay(100);
+    if(WiFi.status()==WL_CONNECTED) break;
+  }
+  return WiFi.status();
+}
+
+char* statusWifi(void)
+{
+preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
+memset(buf, 0, sizeof(buf));
+
+if(WiFi.status() == WL_CONNECTED) {
+  IPAddress ip = WiFi.localIP();
+  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\\t%d.%d.%d.%d\", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+} else {
+  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\", WiFi.status(), g_ssid);
+}
+return buf;
+}
+
+char* scanWifi(void)
+{
+memset(buf, 0, sizeof(buf));
+
+int n = WiFi.scanNetworks();
+for(int i = 0; i < n; i++) {
+  if(i == 0) {
+    snprintf(buf, sizeof(buf)-1, \"%s\", WiFi.SSID(i).c_str());
+  } else {
+    int ofs = strlen(buf);
+    snprintf(buf+ofs, sizeof(buf)-1-ofs, \"\\t%s\", WiFi.SSID(i).c_str());
+  }
+}
+return buf;
+}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
+preferences.begin(\"tukurutch\", false);
+
 Serial.begin(115200);
+
+preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
+preferences.getString(\"password\", g_pass, sizeof(g_pass));
+Serial.print(\"Connecting to \");    Serial.println(g_ssid);
+
+//WiFi.mode(WIFI_STA);
+if(g_ssid[0]) {
+  WiFi.begin(g_ssid, g_pass);
+  #ifndef PCMODE
+    waitWifi();
+  #endif
+}
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"",
@@ -38,7 +114,7 @@ Serial.begin(115200);
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
-	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
 	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
@@ -49,9 +125,6 @@ Serial.begin(115200);
 
 		["-"],	// ブロック区切り
 
-
-		["-"],
-
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
 		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
 //		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
@@ -61,6 +134,9 @@ Serial.begin(115200);
 
 		["-"],
 
+		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
+		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
+		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],

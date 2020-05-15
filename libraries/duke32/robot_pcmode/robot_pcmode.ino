@@ -148,8 +148,6 @@ void motorA_back(){
 }
 void motorA_stop(){
       digitalWrite( TB_Ap, LOW );
-      digitalWrite( TB_A1, LOW );
-      digitalWrite( TB_A2, LOW );
 }
 
 void motorB_forward(){
@@ -164,8 +162,6 @@ void motorB_back(){
 }
 void motorB_stop(){
       digitalWrite( TB_Bp, LOW );
-      digitalWrite( TB_B1, LOW );
-      digitalWrite( TB_B2, LOW );
 }
 
 void setMotor(uint8_t index, uint8_t dir)
@@ -315,9 +311,11 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
-  {'B',},
   {},
   {'B','B',},
+  {},
+  {},
+  {'B',},
   {'B',},
   {'B',},
 };
@@ -445,12 +443,12 @@ static void parseData()
         case 4: sendByte((WiFi.localIP()[3])); break;
         case 5: sendString((preferences.getString("ssid", g_ssid, sizeof(g_ssid)),g_ssid)); break;
         case 6: sendString((preferences.getString("password", g_password, sizeof(g_password)),g_password)); break;
-        case 8: SetNeoPixel(getByte(0));; callOK(); break;
-        case 9: setRobot(getByte(0));; callOK(); break;
-        case 10: setRobot(0);; callOK(); break;
-        case 11: setMotor(getByte(0),getByte(1));; callOK(); break;
-        case 12: sendByte((getDigital(getByte(0)))); break;
-        case 13: sendShort((getAdc(getByte(0)))); break;
+        case 8: setRobot(getByte(0));; callOK(); break;
+        case 9: setRobot(0);; callOK(); break;
+        case 10: setMotor(getByte(0),getByte(1));; callOK(); break;
+        case 13: SetNeoPixel(getByte(0));; callOK(); break;
+        case 14: sendByte((getDigital(getByte(0)))); break;
+        case 15: sendShort((getAdc(getByte(0)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;

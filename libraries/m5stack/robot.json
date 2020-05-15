@@ -7,7 +7,7 @@
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
-	"sampleDir"		: "",										// サンプルディレクトリ
+	"sampleDir"		: "sample/m5stack",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
@@ -24,6 +24,8 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
+#define mVersion \"M5STACK 1.0\"
+
 #define M5STACK_MPU6886 
 // #define M5STACK_MPU9250 
 // #define M5STACK_MPU6050
@@ -35,16 +37,15 @@
 #include <AsyncUDP.h>
 #include <Preferences.h>
 
-#define mVersion \"M5STACK 1.0\"
-
 #define PORT  54321
 
 char g_ssid[32] = {0};
-char g_password[32] = {0};
+char g_pass[32] = {0};
 WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
 Preferences preferences;
+char buf[256];
 
 uint8_t checkButton(uint8_t button)
 {
@@ -90,6 +91,71 @@ String getHttp(char* url)
   return result;
 //	stringOne.toCharArray(charBuf, 50)
 }
+
+uint8_t weather[4];
+char* getWeather(char* index)
+{
+// 24:11/ 0. 0/5:10 17:00 東京都東京地方
+snprintf(buf,sizeof(buf),\"http://sohta02.web.fc2.com/w/%s.txt\",index);
+String str = getHttp(buf);
+strncpy(buf, str.c_str(), 11);
+buf[11] = 0;
+char tmp[3] = {0};
+for(int i = 0; i < 4; i++) {
+  memcpy(tmp, buf+i*3, 2);
+  weather[i] = strtoul(tmp, NULL, 10);
+}
+return buf;
+}
+
+uint8_t connectWifi(char* ssid, char*pass)
+{
+  strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
+  strncpy(g_pass, pass, sizeof(g_pass)-1);
+  preferences.putString(\"ssid\",g_ssid);
+  preferences.putString(\"password\",g_pass);
+  WiFi.begin(g_ssid, g_pass);
+  return waitWifi();
+}
+
+uint8_t waitWifi(void)
+{
+  for(int i=0;i<80;i++) {
+    delay(100);
+    if(WiFi.status()==WL_CONNECTED) break;
+  }
+  return WiFi.status();
+}
+
+char* statusWifi(void)
+{
+preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
+memset(buf, 0, sizeof(buf));
+
+if(WiFi.status() == WL_CONNECTED) {
+  IPAddress ip = WiFi.localIP();
+  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\\t%d.%d.%d.%d\", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+} else {
+  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\", WiFi.status(), g_ssid);
+}
+return buf;
+}
+
+char* scanWifi(void)
+{
+memset(buf, 0, sizeof(buf));
+
+int n = WiFi.scanNetworks();
+for(int i = 0; i < n; i++) {
+  if(i == 0) {
+    snprintf(buf, sizeof(buf)-1, \"%s\", WiFi.SSID(i).c_str());
+  } else {
+    int ofs = strlen(buf);
+    snprintf(buf+ofs, sizeof(buf)-1-ofs, \"\\t%s\", WiFi.SSID(i).c_str());
+  }
+}
+return buf;
+}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -105,13 +171,18 @@ M5.Lcd.setTextSize(2);
 Serial.begin(115200);
 
 preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
-preferences.getString(\"password\", g_password, sizeof(g_password));
+preferences.getString(\"password\", g_pass, sizeof(g_pass));
 M5.Lcd.setCursor(0, 0);
 M5.Lcd.println(\"PC mode: \" mVersion);
 Serial.print(\"Connecting to \");    Serial.println(g_ssid);
 
 //WiFi.mode(WIFI_STA);
-WiFi.begin(g_ssid, g_password);
+if(g_ssid[0]) {
+  WiFi.begin(g_ssid, g_pass);
+  #ifndef PCMODE
+    waitWifi();
+  #endif
+}
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
@@ -123,7 +194,7 @@ delay(50);
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
-	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
 	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
@@ -133,14 +204,6 @@ delay(50);
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
 		["-"],	// ブロック区切り
-
-		["w", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s"], "func":"preferences.putString(\"ssid\",{0});preferences.putString(\"password\",{1});WiFi.begin({0},{1});"}],
-		["R", "status WIFI",							"statusWifi",					{"remote":[			"B"],"func":"WiFi.status()"}],
-		["R", "IP address",								"localIpWifi",					{"remote":[			"B"],"func":"WiFi.localIP()[3]"}],
-		["R", "ssid",									"getSSID",						{"remote":[			"s"],"func":"preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid)),g_ssid"}],
-		["R", "password",								"getPassword",					{"remote":[			"s"],"func":"preferences.getString(\"password\", g_password, sizeof(g_password)),g_password"}],
-
-		["-"],
 
 		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"],	"func":"M5.Speaker.tone({0},{1});delay({1});"}],
 		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"],	"func":"M5.Speaker.tone({0},{1});delay({1});"}],
@@ -178,9 +241,24 @@ delay(50);
 		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
 		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
 
-		["R", "get http %s",							"getHttp",			"",			{"remote":["s",		"s"], "func":"getHttp({0})"}],
-	//	["R", "天気(関東甲信越) %s.kantoKoshin",		"getWKantoKoshin","東京都 東京",{"remote":["s",		"s"], "func":"getHttp(\"http://sohta02.web.fc2.com/w/\"+{0}+\".txt\")"}],
+		["R", "天気(北海道) %m.hokkaido",				"getWHokkaido",	"石狩",			{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(東北) %m.tohoku",					"getWTohoku",	"岩手県 内陸",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(関東甲信越) %m.kantoKoshin",		"getWKantoKoshin","東京都 東京",{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(北陸) %m.hokuriku",					"getWHokuriku",	"新潟県 上越",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(東海) %m.tokai",					"getWTokai",	"愛知県 西部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(近畿) %m.kinki",					"getWKinki",	"大阪府",		{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(中部) %m.chubu",					"getWChubu",	"広島県 南部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(四国) %m.shikoku",					"getWShikoku",	"徳島県 北部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(九州) %m.kyusyu",					"getWKyusyu",	"福岡県 福岡",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気(沖縄) %m.okinawa",					"getWOkinawa","沖縄本島 中南部",{"remote":["s",		"s"], "func":"getWeather({0})"}],
+		["R", "天気 %d.weather",						"getWeather",	"最高気温",		{"remote":["B",		"B"], "func":"weather[{0}]"}],
+		["R", "get http %s",							"getHttp","http://sohta02.web.fc2.com/w/319.3.txt",
+																						{"remote":["s",		"s"], "func":"getHttp({0})"}],
 		["-"],
+
+		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
+		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
+		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],
@@ -210,7 +288,7 @@ delay(50);
 "shikoku":["香川県", "愛媛県 中予", "愛媛県 東予", "愛媛県 南予", "徳島県 北部", "徳島県 南部", "高知県 中部", "高知県 東部", "高知県 西部",],
 "kyusyu":["福岡県 福岡", "福岡県 北九州", "福岡県 筑豊", "福岡県 筑後", "佐賀県 南部", "佐賀県 北部", "長崎県 南部", "長崎県 北部", "長崎県 壱岐･対馬", "長崎県 五島", "熊本県 熊本", "熊本県 阿蘇", "熊本県 天草･芦北", "熊本県 球磨", "大分県 中部", "大分県 北部", "大分県 西部", "大分県 南部", "宮崎県 南部平野部", "宮崎県 北部平野部", "宮崎県 南部山沿い", "宮崎県 北部山沿い", "鹿児島県 薩摩", "鹿児島県 大隅", "鹿児島県 種子島･屋久島", "鹿児島県 奄美",],
 "okinawa":["沖縄本島 中南部", "沖縄本島 北部", "久米島", "大東島", "宮古島", "石垣島", "与那国島",],
-
+"weather":["最高気温","最低気温","降水確率午前","降水確率午後",],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
@@ -249,6 +327,7 @@ delay(50);
 "香川県":"341.0", "愛媛県 中予":"342.2", "愛媛県 東予":"342.1", "愛媛県 南予":"342.0", "徳島県 北部":"343.1", "徳島県 南部":"343.0", "高知県 中部":"344.2", "高知県 東部":"344.1", "高知県 西部":"344.0",
 "福岡県 福岡":"346.3", "福岡県 北九州":"346.2", "福岡県 筑豊":"346.1", "福岡県 筑後":"346.0", "佐賀県 南部":"347.1", "佐賀県 北部":"347.0", "長崎県 南部":"348.3", "長崎県 北部":"348.2", "長崎県 壱岐･対馬":"348.1", "長崎県 五島":"348.0", "熊本県 熊本":"349.3", "熊本県 阿蘇":"349.2", "熊本県 天草･芦北":"349.1", "熊本県 球磨":"349.0", "大分県 中部":"350.3", "大分県 北部":"350.2", "大分県 西部":"350.1", "大分県 南部":"350.0", "宮崎県 南部平野部":"351.3", "宮崎県 北部平野部":"351.2", "宮崎県 南部山沿い":"351.1", "宮崎県 北部山沿い":"351.0", "鹿児島県 薩摩":"352.3", "鹿児島県 大隅":"352.2", "鹿児島県 種子島･屋久島":"352.1", "鹿児島県 奄美":"352.0",
 "沖縄本島 中南部":"353.2", "沖縄本島 北部":"353.1", "久米島":"353.0", "大東島":"354.0", "宮古島":"355.0", "石垣島":"356.1", "与那国島":"356.0", 
+"最高気温":0,"最低気温":1,"降水確率午前":2,"降水確率午後":3,
 	},
 	"translators":{
 		"ja":{
