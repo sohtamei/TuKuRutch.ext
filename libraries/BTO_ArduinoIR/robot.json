@@ -1,5 +1,5 @@
 {
-	"name"			: "BTO ArduinoIR remote",
+	"name"			: "BitTradeOne ArduinoIR remote",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
