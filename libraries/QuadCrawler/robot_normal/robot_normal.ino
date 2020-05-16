@@ -1,4 +1,4 @@
-#define mVersion "QuadCrawler1.1"
+#define mVersion "QuadCrawler1.2"
 
 #include <Arduino.h>
 #include <util/delay.h>
