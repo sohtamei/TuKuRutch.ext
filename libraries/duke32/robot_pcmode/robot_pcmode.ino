@@ -3,34 +3,6 @@
 #define PCMODE
 
 #define mVersion "duke32 1.0"
-//------------------------------------------
-// Moter Driver
-//------------------------------------------
-#define TB_A1   12  // moterA IN1
-#define TB_A2   13  // moterA IN2
-#define TB_Ap   18  // moterA PWM
-#define TB_B1   14  // moterB IN1
-#define TB_B2   15  // moterB IN2
-#define TB_Bp   19  // moterB PWM
-
-#define NEO_PIN     27
-#define Servo_PIN1  23
-#define Servo_PIN2   4
-
-#define ANA11   34
-#define ANA12   35
-
-#define DIGI01  32
-#define DIGI02  33
-#define DIGI11  26
-#define DIGI12  25
-
-#define I2CSDA  21
-#define I2CSCL  22
-
-// UART2
-#define UARTRXD 16
-#define UARTTXD 17
 
 #include <WiFi.h>
 #include <AsyncUDP.h>
@@ -48,15 +20,17 @@ AsyncUDP udp;
 Preferences preferences;
 char buf[256];
 
-// https://github.com/Makuna/NeoPixelBus
-#include <NeoPixelBus.h>
-#define colorSaturation 32
-#define interval        50
-const uint16_t PixelCount = 45; // this example assumes 4 pixels, making it smaller will cause a failure
+// duke32.h
+/********************************
+* for LED Control
+*********************************/
+#define NEO_PIN     27
 
-// three element pixels, in different order and speeds
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, NEO_PIN);
-//NeoPixelBus<NeoRgbFeature, Neo400KbpsMethod> strip(PixelCount, PixelPin);
+/********************************
+* for Servo Control
+*********************************/
+#define Servo_PIN1  23
+#define Servo_PIN2   4
 
 #define LEDC_CHANNEL_0  0  // channel of 16 channels (started from zero)
 #define LEDC_CHANNEL_1  1  // channel of 16 channels (started from zero)
@@ -64,121 +38,234 @@ NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> strip(PixelCount, NEO_PIN);
 #define LEDC_BASE_FREQ 50  // use 50 Hz as a LEDC base frequency
 
 // Servo Range
-// int srvMin = 103; // (103/4096)*20ms ≒ 0.5 ms (-90°)
-// int srvMax = 491; // (491/4096)*20ms ≒ 2.4 ms (+90°)
-#define srvMin 300
-#define srvMax 480
-#define srvInterval 3
+// int srvMin = 103; // (103/4096)*20ms = 0.5 ms (-90c)
+// int srvMax = 491; // (491/4096)*20ms = 2.4 ms (+90c)
+#define srvMin 103
+#define srvMax 491
 
-/*
- * NeoPixels
- */
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor white(colorSaturation);
-RgbColor black(0);
+/********************************
+* for Motor Control
+*********************************/
+#define MTR_A1  13  // moterA IN1
+#define MTR_A2  12  // moterA IN2
+#define MTR_AE  18  // moterA EN
+#define MTR_B1  14  // moterB IN1
+#define MTR_B2  15  // moterB IN2
+#define MTR_BE  19  // moterB EN
 
-void SetNeoPixel(uint8_t index){
-      RgbColor* npcolor = NULL;
-      switch(index) {
-          case 0: npcolor = &black; break;
-          case 1: npcolor = &red;   break;
-          case 2: npcolor = &green; break;
-          case 3: npcolor = &blue;  break;
-          case 4: npcolor = &white; break;
-          default: return;
-      }
-    
-      for(uint8_t i=0; i<PixelCount; i++){
-            strip.SetPixelColor(i, *npcolor);
-            strip.Show();
-            delay(interval);
-      }
-}
+#define LEDC_CHANNEL_2  2   // channel of 16 channels (started from zero)
+#define LEDC_CHANNEL_3  3   // channel of 16 channels (started from zero)
+#define LEDC_TIMER_BIT_MTR 8    // use 8 bit precission for LEDC timer
+#define LEDC_BASE_FREQ_MTR 255  // use 50 Hz as a LEDC base frequency
 
-/*
- * Servo
- */
-void Servo_INIT(){
+#define MotorL 2
+#define MotorR 3
+
+/********************************
+* for I/O Control
+*********************************/
+#define ANA11   34
+#define ANA12   35
+#define A34     34  //I, GPIO34, ADC1_CH6
+#define A35     35  //I, GPIO35, ADC1_CH7
+
+#define DIGI01  32
+#define DIGI02  33
+#define D32     32  //IO, GPIO32, ADC1_CH4, TOUCH9
+#define D33     33  //IO, GPIO33, ADC1_CH5, TOUCH8
+
+#define DIGI11  26
+#define DIGI12  25
+#define D26     26  //IO, GPIO25, DAC_1, ADC2_CH8
+#define D25     25  //IO, GPIO26, DAC_2, ADC2_CH9
+
+// I2C
+#define I2CSDA  21
+#define I2CSCL  22
+#define D21     21  //IO, GPIO21
+#define D22     22  //IO, GPIO22
+
+// UART2
+#define UARTRXD 16
+#define UARTTXD 17
+#define D16     16  //IO, GPIO16, U2RXD
+#define D17     17  //IO, GPIO17, U2TXD
+// --- duke32.h
+
+
+// robot_normal.ino
+#define useLED
+/********************************
+* for LED Control
+*********************************/
+#ifdef useLED
+  // https://github.com/Makuna/NeoPixelBus
+  #include <NeoPixelBus.h>
+  
+  const uint16_t PixelCount = 64;
+
+  // three element pixels, in different order and speeds
+  //NeoPixelBus<NeoRgbFeature, Neo400KbpsMethod> strip(PixelCount, NEO_PIN);
+  NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledStrip(PixelCount, NEO_PIN);
+
+  String ledValueR = String(0);
+  String ledValueG = String(0);
+  String ledValueB = String(0);
+
+  uint8_t colorR = ledValueR.toInt() / 2;
+  uint8_t colorG = ledValueG.toInt() / 2;
+  uint8_t colorB = ledValueB.toInt() / 2;
+#endif
+
+/********************************
+* for Servo Control
+*********************************/
+String servoValueL = String(90);
+String servoValueR = String(90);
+
+uint8_t servoNo;    // Set 0 or 1
+uint16_t angle;     // min=0, max=180
+uint16_t servoL = servoValueL.toInt();
+uint16_t servoR = servoValueR.toInt();
+
+
+/********************************
+* for Motor Control
+*********************************/
+const uint8_t motorInterval = 30;  //[ms]
+// --- robot_normal.ino
+
+
+// duke32.cpp
+/********************************
+* for Servo Control
+*********************************/
+void servoInit(){
       // Setup timer and attach timer to a servo pin
       ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
       ledcAttachPin(Servo_PIN1, LEDC_CHANNEL_0);
     
       ledcSetup(LEDC_CHANNEL_1, LEDC_BASE_FREQ, LEDC_TIMER_BIT);
       ledcAttachPin(Servo_PIN2, LEDC_CHANNEL_1);
+}
+
+void setServo(uint8_t servoNo, uint16_t angle){
+      uint16_t pwmWidth;
     
-      ledcWrite(0, srvMin);
-      delay(500);
-      ledcWrite(1, srvMin);
+      if(servoNo < 0){
+            servoNo = 0;
+      }else if(servoNo > 1){
+            servoNo = 1;
+      }
+    
+      if(angle < 0){
+            angle = 0;
+      }else if(angle > 180){
+            angle = 180;
+      }
+    
+      pwmWidth = ((srvMax - srvMin) / 180) * angle + srvMin;
+    
+      ledcWrite(servoNo, pwmWidth);
 }
 
-void setServo(uint8_t index, uint16_t angle)
-{
-      if(index >= 2) return;
-      ledcWrite(index, angle);
-}
-
-/*
- * Motor
- */
+/********************************
+* for Motor Control
+*********************************/
 void Motor_INIT(){
-      pinMode( TB_A1, OUTPUT );
-      pinMode( TB_A2, OUTPUT );
-      pinMode( TB_Ap, OUTPUT );
-      pinMode( TB_B1, OUTPUT );
-      pinMode( TB_B2, OUTPUT );
-      pinMode( TB_Bp, OUTPUT );
-       
-      digitalWrite( TB_A1, LOW );
-      digitalWrite( TB_A2, LOW );
-      digitalWrite( TB_Ap, LOW );
-      digitalWrite( TB_B1, LOW );
-      digitalWrite( TB_B2, LOW );
-      digitalWrite( TB_Bp, LOW );
+      pinMode(MTR_A1, OUTPUT);
+      pinMode(MTR_A2, OUTPUT);
+    //  pinMode(MTR_AE, OUTPUT);
+      pinMode(MTR_B1, OUTPUT);
+      pinMode(MTR_B2, OUTPUT);
+    //  pinMode(MTR_BE, OUTPUT);
+    
+      digitalWrite(MTR_A1, LOW);
+      digitalWrite(MTR_A2, LOW);
+    //  digitalWrite(MTR_AE, LOW);
+      digitalWrite(MTR_B1, LOW);
+      digitalWrite(MTR_B2, LOW);
+    //  digitalWrite(MTR_BE, LOW);
+    
+      // Setup timer and attach timer to a servo pin
+      ledcSetup(LEDC_CHANNEL_2, LEDC_BASE_FREQ_MTR, LEDC_TIMER_BIT_MTR);
+      ledcAttachPin(MTR_AE, LEDC_CHANNEL_2);
+    
+      ledcSetup(LEDC_CHANNEL_3, LEDC_BASE_FREQ_MTR, LEDC_TIMER_BIT_MTR);
+      ledcAttachPin(MTR_BE, LEDC_CHANNEL_3);
 }
 
-void motorA_forward(){
-      digitalWrite( TB_Ap, HIGH );
-      digitalWrite( TB_A1, HIGH );
-      digitalWrite( TB_A2, LOW );
-}
-void motorA_back(){
-      digitalWrite( TB_Ap, HIGH );
-      digitalWrite( TB_A1, LOW );
-      digitalWrite( TB_A2, HIGH );
-}
-void motorA_stop(){
-      digitalWrite( TB_Ap, LOW );
+void setMotorSpeed(uint8_t motorNo, uint8_t speed){
+      if(motorNo < 2){
+            motorNo = 2;
+      }else if(motorNo > 3){
+            motorNo = 3;
+      }
+    
+      if(speed < 0){
+            speed = 0;
+      }else if(speed > 255){
+            speed = 255;
+      }
+    
+      ledcWrite(motorNo, speed);
 }
 
-void motorB_forward(){
-      digitalWrite( TB_Bp, HIGH );
-      digitalWrite( TB_B1, HIGH );
-      digitalWrite( TB_B2, LOW );
+void motorL_forward(uint8_t speed){
+    //  digitalWrite(MTR_AE, HIGH);
+      setMotorSpeed(MotorL, speed);
+      digitalWrite(MTR_A1, HIGH);
+      digitalWrite(MTR_A2, LOW);
 }
-void motorB_back(){
-      digitalWrite( TB_Bp, HIGH );
-      digitalWrite( TB_B1, LOW );
-      digitalWrite( TB_B2, HIGH );
+
+void motorL_back(uint8_t speed){
+    //  digitalWrite(MTR_AE, HIGH);
+      setMotorSpeed(MotorL, speed);
+      digitalWrite(MTR_A1, LOW);
+      digitalWrite(MTR_A2, HIGH);
 }
-void motorB_stop(){
-      digitalWrite( TB_Bp, LOW );
+
+void motorL_stop(){
+    //  digitalWrite(MTR_AE, LOW);
+      setMotorSpeed(MotorL, 0);
+      digitalWrite(MTR_A1, LOW);
+      digitalWrite(MTR_A2, LOW);
 }
+
+void motorR_forward(uint8_t speed){
+    //  digitalWrite(MTR_BE, HIGH);
+      setMotorSpeed(MotorR, speed);
+      digitalWrite(MTR_B1, HIGH);
+      digitalWrite(MTR_B2, LOW);
+}
+void motorR_back(uint8_t speed){
+    //  digitalWrite(MTR_BE, HIGH);
+      setMotorSpeed(MotorR, speed);
+      digitalWrite(MTR_B1, LOW);
+      digitalWrite(MTR_B2, HIGH);
+}
+
+void motorR_stop(){
+    //  digitalWrite(MTR_BE, LOW);
+      setMotorSpeed(MotorR, 0);
+      digitalWrite(MTR_B1, LOW);
+      digitalWrite(MTR_B2, LOW);
+}
+// --- duke32.cpp
 
 void setMotor(uint8_t index, uint8_t dir)
 {
       if(index == 0) {
             switch(dir) {
-                case 0: motorA_stop();    break;
-                case 1: motorA_forward(); break;
-                case 2: motorA_back();    break;
+                case 0: motorL_stop();       break;
+                case 1: motorL_forward(255); break;
+                case 2: motorL_back(255);    break;
             }
       } else if(index == 1) {
             switch(dir) {
-                case 0: motorB_stop();    break;
-                case 1: motorB_forward(); break;
-                case 2: motorB_back();    break;
+                case 0: motorR_stop();       break;
+                case 1: motorR_forward(255); break;
+                case 2: motorR_back(255);    break;
             }
       }
 }
@@ -189,12 +276,12 @@ struct {
 } static const dir_table[7] = {
      //L  R
   {0, 0},  // STOP
-  {2, 1},  // FORWARD
+  {1, 1},  // FORWARD
   {0, 1},  // LEFT
-  {2, 0},  // RIGHT
-  {1, 2},  // BACK
-  {1, 1},  // ROLL_LEFT
-  {2, 2},  // ROLL_RIGHT
+  {1, 0},  // RIGHT
+  {2, 2},  // BACK
+  {2, 1},  // ROLL_LEFT
+  {1, 2},  // ROLL_RIGHT
 };
 
 void setRobot(int direction)
@@ -234,6 +321,35 @@ uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
     if(index>=4) return 0;
     return digitalRead(din_ch[index]);
 }
+
+#ifdef useLED
+/********************************
+* for LED Control
+*********************************/
+#define colorSaturation 32
+RgbColor red(colorSaturation, 0, 0);
+RgbColor green(0, colorSaturation, 0);
+RgbColor blue(0, 0, colorSaturation);
+RgbColor white(colorSaturation);
+RgbColor black(0);
+
+void SetNeoPixel(uint8_t index){
+    RgbColor* npcolor = NULL;
+    switch(index) {
+          case 0: npcolor = &black; break;
+          case 1: npcolor = &red;   break;
+          case 2: npcolor = &green; break;
+          case 3: npcolor = &blue;  break;
+          case 4: npcolor = &white; break;
+          default: return;
+    }
+    
+    for(uint8_t i=0; i<PixelCount; i++){
+        ledStrip.SetPixelColor(i, *npcolor);
+    }
+    ledStrip.Show();
+}
+#endif
 
 uint8_t connectWifi(char* ssid, char*pass)
 {
@@ -315,15 +431,23 @@ void setup()
     
     preferences.begin("tukurutch", false);
     
-    // reset all the neopixels to an off state
-    strip.Begin();
-    strip.Show();
+    // robot_normal.ino
+    Serial.begin(115200);
     
-    // init Servo
-    Servo_INIT();
+    #ifdef useLED
+      ledStrip.Begin();
+    #endif
     
-    // init Motor
+    // reset all Servo to initial Position
+    servoInit();
+    setServo(0, servoL);
+    setServo(1, servoR);
+    
+    // reset all Motor to initial Setting
     Motor_INIT();
+    delay(50);
+    setMotorSpeed(MotorL, 0);
+    setMotorSpeed(MotorR, 0);
     
     // init ADC
     ADC_INIT();
@@ -331,9 +455,6 @@ void setup()
     // init DIO
     DIO_INIT();
     
-    Serial2.begin(115200);
-    
-    Serial.begin(115200);
     
     preferences.getString("ssid", g_ssid, sizeof(g_ssid));
     preferences.getString("password", g_pass, sizeof(g_pass));
@@ -365,6 +486,7 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
+  {'B','B',},
   {'B',},
   {'B',},
   {},
@@ -495,11 +617,12 @@ static void parseData()
         case 3: setRobot(0);; callOK(); break;
         case 4: setMotor(getByte(0),getByte(1));; callOK(); break;
         case 7: SetNeoPixel(getByte(0));; callOK(); break;
-        case 8: sendByte((getDigital(getByte(0)))); break;
-        case 9: sendShort((getAdc(getByte(0)))); break;
-        case 11: sendByte((connectWifi(getString(0),getString(1)))); break;
-        case 12: sendString((statusWifi())); break;
-        case 13: sendString((scanWifi())); break;
+        case 8: setServo(getByte(0),getByte(1));; callOK(); break;
+        case 9: sendByte((getDigital(getByte(0)))); break;
+        case 10: sendShort((getAdc(getByte(0)))); break;
+        case 12: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 13: sendString((statusWifi())); break;
+        case 14: sendString((scanWifi())); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
