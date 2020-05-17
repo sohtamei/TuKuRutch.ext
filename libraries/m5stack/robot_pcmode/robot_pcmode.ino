@@ -53,7 +53,7 @@ float getIMU(uint8_t index)
       }
 }
 
-String getHttp(char* url)
+String getHttp(char* url, uint8_t withErrorMsg)
 {
       HTTPClient client;
       client.begin(url);
@@ -63,25 +63,37 @@ String getHttp(char* url)
       if(ret == 200) {
             result = client.getString();
       } else {
-            result = client.errorToString(ret);
+            result = withErrorMsg ? client.errorToString(ret): "";
       }
       client.end();
       return result;
     //	stringOne.toCharArray(charBuf, 50)
 }
 
-uint8_t weather[4];
+int8_t weather[4];
 char* getWeather(char* index)
 {
     // 24:11/ 0. 0/5:10 17:00 東京都東京地方
     snprintf(buf,sizeof(buf),"http://sohta02.web.fc2.com/w/%s.txt",index);
-    String str = getHttp(buf);
-    strncpy(buf, str.c_str(), 11);
-    buf[11] = 0;
-char tmp[3] = {0};
-    for(int i = 0; i < 4; i++) {
-          memcpy(tmp, buf+i*3, 2);
-          weather[i] = strtoul(tmp, NULL, 10);
+    String str = getHttp(buf, false);
+    int i;
+    memset(buf,0,sizeof(buf));
+    for(i = 0; i < 4; i++) weather[i] = -128; // INVALID
+    if(str.length() > 12) {
+          char tmp[5];
+      const char separator[4] = {':','/','.','/'};
+          char* dp2;
+          const char* dp1 = str.c_str();
+          for(int i = 0; i < 4; i++) {
+                dp2 = strchr(dp1, separator[i]);
+                if(dp2 == NULL) continue;
+                if(dp2-dp1<sizeof(tmp)-1 && memcmp(dp1,"--",2)) {
+                      memcpy(tmp, dp1, dp2-dp1);
+                      tmp[dp2-dp1] = 0;
+                      weather[i] = strtol(tmp, NULL, 10);
+                }
+                dp1 = dp2+1;
+          }
     }
     return buf;
 }
@@ -389,8 +401,8 @@ static void parseData()
         case 31: sendString((getWeather(getString(0)))); break;
         case 32: sendString((getWeather(getString(0)))); break;
         case 33: sendString((getWeather(getString(0)))); break;
-        case 34: sendByte((weather[getByte(0)])); break;
-        case 35: sendString((getHttp(getString(0)))); break;
+        case 34: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
+        case 35: sendString((getHttp(getString(0),true))); break;
         case 37: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 38: sendString((statusWifi())); break;
         case 39: sendString((scanWifi())); break;
