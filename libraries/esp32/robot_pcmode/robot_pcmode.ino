@@ -190,7 +190,8 @@ int16_t _read(void)
             last_udp = cur;
         //  udp.broadcastTo(mVersion, PORT);
             uint32_t adrs = WiFi.localIP();
-            udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|0xFF000000UL), PORT);
+            uint32_t subnet = WiFi.subnetMask();
+            udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|~subnet), PORT);
       }
     
       switch(connection_status) {
