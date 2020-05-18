@@ -9,7 +9,7 @@
 	"productInfoURL": "https://bit-trade-one.co.jp/product/module/adaudir/",
 	"sampleDir"		: "",										// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
-	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 
 	// C言語記述注意 : " を使うときは \" とすること

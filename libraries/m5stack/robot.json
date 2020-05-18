@@ -9,7 +9,7 @@
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
 	"sampleDir"		: "sample/m5stack",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
-	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
+	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=m5stack-core-esp32_none",
