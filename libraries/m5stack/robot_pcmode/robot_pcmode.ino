@@ -15,7 +15,7 @@
 #include <AsyncUDP.h>
 #include <Preferences.h>
 
-#define PORT  48586
+#define PORT  54321
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};
@@ -306,9 +306,11 @@ int16_t _read(void)
       }
     
       uint32_t cur = millis();
-      if(cur - last_udp > 1000) {
+      if(cur - last_udp > 2000) {
             last_udp = cur;
-            udp.broadcastTo(mVersion, PORT);
+        //  udp.broadcastTo(mVersion, PORT);
+            uint32_t adrs = WiFi.localIP();
+            udp.writeTo((uint8_t*)mVersion, sizeof(mVersion), IPAddress(adrs|0xFF000000UL), PORT);
       }
     
       switch(connection_status) {
