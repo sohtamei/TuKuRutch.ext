@@ -37,7 +37,7 @@
 #include <AsyncUDP.h>
 #include <Preferences.h>
 
-#define PORT  48586
+#define PORT  54321
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};
