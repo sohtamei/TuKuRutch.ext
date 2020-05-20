@@ -1,5 +1,5 @@
 {
-	"name"			: "m5stack",
+	"name"			: "M5Stack",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:m5stack-core-esp32",			// package:platform:board
 
