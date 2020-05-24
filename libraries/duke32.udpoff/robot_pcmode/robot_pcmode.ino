@@ -5,17 +5,20 @@
 #define mVersion "duke32 1.0"
 
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
 
 #include <Wire.h>
 
 #define PORT  54321
+#define REMOTE_PORT 10000
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};
 WiFiServer server(PORT);
 WiFiClient client;
+WiFiUDP remoteUdp;
 AsyncUDP udp;
 Preferences preferences;
 char buf[256];
@@ -58,8 +61,8 @@ char buf[256];
 #define LEDC_TIMER_BIT_MTR 8    // use 8 bit precission for LEDC timer
 #define LEDC_BASE_FREQ_MTR 255  // use 50 Hz as a LEDC base frequency
 
-#define MotorL 2
-#define MotorR 3
+#define MotorL 0
+#define MotorR 1
 
 /********************************
 * for I/O Control
@@ -136,6 +139,121 @@ const uint8_t motorInterval = 30;  //[ms]
 // --- robot_normal.ino
 
 
+/********************************
+* for RCWController
+*********************************/
+
+// UDP byte offset
+enum {
+      PACKET_BUTTON_H = 0,
+      PACKET_BUTTON_L,
+      PACKET_LEFT_X,
+      PACKET_LEFT_Y,
+      PACKET_RIGHT_X,
+      PACKET_RIGHT_Y,
+      PACKET_ACCEL_X,
+      PACKET_ACCEL_Y,
+      PACKET_ACCEL_Z,
+      PACKET_CONFIG,
+    
+      PACKET_SIZE,
+};
+
+// key code
+enum {
+      BUTTON_UP = 1,
+      BUTTON_DOWN,
+      BUTTON_RIGHT,
+      BUTTON_LEFT,
+      BUTTON_Y,
+      BUTTON_A,
+      BUTTON_B,
+      BUTTON_X,
+      BUTTON_L1,
+      BUTTON_L2,
+      BUTTON_R1,
+      BUTTON_R2,
+      BUTTON_START,		// 0x3
+      BUTTON_SELECT,	// 0xc
+};
+
+// bitN -> key code変換
+const uint8_t keyTable2[] = {
+      BUTTON_UP,
+      BUTTON_DOWN,
+      BUTTON_RIGHT,
+      BUTTON_LEFT,
+      BUTTON_Y,
+      BUTTON_A,
+      BUTTON_B,
+      0,
+    
+      BUTTON_X,
+      BUTTON_L1,
+      BUTTON_L2,
+      BUTTON_R1,
+      BUTTON_R2,
+};
+
+// config
+union config {
+      uint8_t byte;
+      struct {
+            uint8_t  rotate  :3;   // (1)portrait,(2)landscapeL,(3)landscapeR,(4)reverse
+            uint8_t  left    :1;   // (1)analog
+            uint8_t  right   :1;   // (1)analog
+            uint8_t  accel   :2;   // (0)off,(1)on,(2)left,(3)right
+      } b;
+};
+
+class WifiRemote {
+    public:
+      int16_t  x;
+      int16_t  y;
+      uint8_t  keys;  // BUTTON_xx
+    
+      WifiRemote() {
+            initialized = false;
+            keys = 0;
+      }
+      int checkRemoteKey(void) {
+            if(!initialized) {
+                  remoteUdp.begin(REMOTE_PORT);
+                  initialized = true;
+            }
+            return keys;
+      }
+      int isRemoteKey(uint8_t key) {
+            return (keys==key);
+      }
+      void updateRemote(void) {
+            if(!initialized) return;
+            int rlen = remoteUdp.parsePacket();
+            if(rlen>=PACKET_SIZE) {
+                  uint8_t buf[16];
+                  if(rlen >= sizeof(buf)) rlen = sizeof(buf);
+                  remoteUdp.read(buf, rlen);
+                  int d = buf[PACKET_BUTTON_L]|(buf[PACKET_BUTTON_H]<<8);
+                  keys = 0;
+                  for(int i=0; i<sizeof(keyTable2); i++) {
+                        if(d & (1<<i)) {
+                              keys = keyTable2[i];
+                              break;
+                        }
+                  }
+                  x = buf[PACKET_LEFT_X]-0x80;
+                  y = buf[PACKET_LEFT_Y]-0x80;
+                //  snprintf((char*)buf,sizeof(buf),"%d,%d,%d",keys,x,y);
+                //  Serial.println((char*)buf);
+            }
+      }
+    private:
+      uint8_t initialized;
+} remote;
+
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+
+
 // duke32.cpp
 /********************************
 * for Servo Control
@@ -194,100 +312,44 @@ void Motor_INIT(){
       ledcSetup(LEDC_CHANNEL_3, LEDC_BASE_FREQ_MTR, LEDC_TIMER_BIT_MTR);
       ledcAttachPin(MTR_BE, LEDC_CHANNEL_3);
 }
-
-void setMotorSpeed(uint8_t motorNo, uint8_t speed){
-      if(motorNo < 2){
-            motorNo = 2;
-      }else if(motorNo > 3){
-            motorNo = 3;
-      }
-    
-      if(speed < 0){
-            speed = 0;
-      }else if(speed > 255){
-            speed = 255;
-      }
-    
-      ledcWrite(motorNo, speed);
-}
-
-void motorL_forward(uint8_t speed){
-    //  digitalWrite(MTR_AE, HIGH);
-      setMotorSpeed(MotorL, speed);
-      digitalWrite(MTR_A1, HIGH);
-      digitalWrite(MTR_A2, LOW);
-}
-
-void motorL_back(uint8_t speed){
-    //  digitalWrite(MTR_AE, HIGH);
-      setMotorSpeed(MotorL, speed);
-      digitalWrite(MTR_A1, LOW);
-      digitalWrite(MTR_A2, HIGH);
-}
-
-void motorL_stop(){
-    //  digitalWrite(MTR_AE, LOW);
-      setMotorSpeed(MotorL, 0);
-      digitalWrite(MTR_A1, LOW);
-      digitalWrite(MTR_A2, LOW);
-}
-
-void motorR_forward(uint8_t speed){
-    //  digitalWrite(MTR_BE, HIGH);
-      setMotorSpeed(MotorR, speed);
-      digitalWrite(MTR_B1, HIGH);
-      digitalWrite(MTR_B2, LOW);
-}
-void motorR_back(uint8_t speed){
-    //  digitalWrite(MTR_BE, HIGH);
-      setMotorSpeed(MotorR, speed);
-      digitalWrite(MTR_B1, LOW);
-      digitalWrite(MTR_B2, HIGH);
-}
-
-void motorR_stop(){
-    //  digitalWrite(MTR_BE, LOW);
-      setMotorSpeed(MotorR, 0);
-      digitalWrite(MTR_B1, LOW);
-      digitalWrite(MTR_B2, LOW);
-}
 // --- duke32.cpp
 
-void setMotor(uint8_t index, uint8_t dir)
-{
-      if(index == 0) {
-            switch(dir) {
-                case 0: motorL_stop();       break;
-                case 1: motorL_forward(255); break;
-                case 2: motorL_back(255);    break;
-            }
-      } else if(index == 1) {
-            switch(dir) {
-                case 0: motorR_stop();       break;
-                case 1: motorR_forward(255); break;
-                case 2: motorR_back(255);    break;
-            }
+void setMotorSpeed(uint8_t motorNo, int16_t speed){
+      if(motorNo >= 2) return;
+    
+      int16_t abs = speed;
+      if(abs < 0)   abs = -abs;
+      if(abs > 255) abs = 255;
+      ledcWrite(motorNo+LEDC_CHANNEL_2, abs);
+    
+      switch(motorNo) {
+          case MotorL:
+            digitalWrite(MTR_A1, (speed>0) ? HIGH:LOW);
+            digitalWrite(MTR_A2, (speed<0) ? HIGH:LOW);
+            break;
+          case MotorR:
+            digitalWrite(MTR_B1, (speed>0) ? HIGH:LOW);
+            digitalWrite(MTR_B2, (speed<0) ? HIGH:LOW);
+            break;
       }
 }
 
-struct {
-      int  L;
-      int  R;
+struct { int16_t L; int16_t R;
 } static const dir_table[7] = {
-     //L  R
-  {0, 0},  // STOP
-  {1, 1},  // FORWARD
-  {0, 1},  // LEFT
-  {1, 0},  // RIGHT
-  {2, 2},  // BACK
-  {2, 1},  // ROLL_LEFT
-  {1, 2},  // ROLL_RIGHT
+    //  L   R
+  { 0,  0},  // STOP
+  { 1,  1},  // FORWARD
+  { 0,  1},  // LEFT
+  { 1,  0},  // RIGHT
+  {-1, -1},  // BACK
+  {-1,  1},  // ROLL_LEFT
+  { 1, -1},  // ROLL_RIGHT
 };
 
-void setRobot(int direction)
+void setRobot(uint8_t direction, uint8_t speed)
 {
-      setMotor(0, dir_table[direction].L);
-      setMotor(1, dir_table[direction].R);
+      setMotorSpeed(MotorL, speed * dir_table[direction].L);
+      setMotorSpeed(MotorR, speed * dir_table[direction].R);
 }
 
 /*
@@ -300,9 +362,9 @@ void ADC_INIT(){
 
 uint16_t getAdc(uint8_t index)
 {
-uint8_t adcCh[2] = {ANA11,ANA12};
-    if(index>=2) return 0;
-    return analogRead(adcCh[index]);
+  uint8_t adcCh[2] = {ANA11,ANA12};
+      if(index>=2) return 0;
+      return analogRead(adcCh[index]);
 }
 
 /*
@@ -317,9 +379,9 @@ void DIO_INIT(){
 
 uint8_t getDigital(uint8_t index)
 {
-uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
-    if(index>=4) return 0;
-    return digitalRead(din_ch[index]);
+  uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
+      if(index>=4) return 0;
+      return digitalRead(din_ch[index]);
 }
 
 #ifdef useLED
@@ -334,20 +396,20 @@ RgbColor white(colorSaturation);
 RgbColor black(0);
 
 void SetNeoPixel(uint8_t index){
-    RgbColor* npcolor = NULL;
-    switch(index) {
-          case 0: npcolor = &black; break;
-          case 1: npcolor = &red;   break;
-          case 2: npcolor = &green; break;
-          case 3: npcolor = &blue;  break;
-          case 4: npcolor = &white; break;
-          default: return;
-    }
+      RgbColor* npcolor = NULL;
+      switch(index) {
+            case 0: npcolor = &black; break;
+            case 1: npcolor = &red;   break;
+            case 2: npcolor = &green; break;
+            case 3: npcolor = &blue;  break;
+            case 4: npcolor = &white; break;
+            default: return;
+      }
     
-    for(uint8_t i=0; i<PixelCount; i++){
-        ledStrip.SetPixelColor(i, *npcolor);
-    }
-    ledStrip.Show();
+      for(uint8_t i=0; i<PixelCount; i++){
+            ledStrip.SetPixelColor(i, *npcolor);
+      }
+      ledStrip.Show();
 }
 #endif
 
@@ -372,32 +434,32 @@ uint8_t waitWifi(void)
 
 char* statusWifi(void)
 {
-    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
-    memset(buf, 0, sizeof(buf));
+      preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+      memset(buf, 0, sizeof(buf));
     
-    if(WiFi.status() == WL_CONNECTED) {
-          IPAddress ip = WiFi.localIP();
-          snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
-    } else {
-          snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
-    }
-    return buf;
+      if(WiFi.status() == WL_CONNECTED) {
+            IPAddress ip = WiFi.localIP();
+            snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+      } else {
+            snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+      }
+      return buf;
 }
 
 char* scanWifi(void)
 {
-    memset(buf, 0, sizeof(buf));
+      memset(buf, 0, sizeof(buf));
     
-    int n = WiFi.scanNetworks();
-    for(int i = 0; i < n; i++) {
-          if(i == 0) {
-                snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
-          } else {
-                int ofs = strlen(buf);
-                snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
-          }
-    }
-    return buf;
+      int n = WiFi.scanNetworks();
+      for(int i = 0; i < n; i++) {
+            if(i == 0) {
+                  snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+            } else {
+                  int ofs = strlen(buf);
+                  snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+            }
+      }
+      return buf;
 }
 
 
@@ -480,15 +542,20 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {'B',},
-  {},
   {'B','B',},
   {},
+  {'B','S',},
+  {},
   {},
   {'B',},
   {'B','B',},
   {'B',},
   {'B',},
+  {},
+  {},
+  {},
+  {},
+  {},
   {},
   {'s','s',},
   {},
@@ -618,16 +685,16 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: setRobot(getByte(0));; callOK(); break;
-        case 3: setRobot(0);; callOK(); break;
-        case 4: setMotor(getByte(0),getByte(1));; callOK(); break;
+        case 2: setRobot(getByte(0),getByte(1));; callOK(); break;
+        case 3: setRobot(0,0);; callOK(); break;
+        case 4: setMotorSpeed(getByte(0),getShort(1));; callOK(); break;
         case 7: SetNeoPixel(getByte(0));; callOK(); break;
         case 8: setServo(getByte(0),getByte(1));; callOK(); break;
         case 9: sendByte((getDigital(getByte(0)))); break;
         case 10: sendShort((getAdc(getByte(0)))); break;
-        case 12: sendByte((connectWifi(getString(0),getString(1)))); break;
-        case 13: sendString((statusWifi())); break;
-        case 14: sendString((scanWifi())); break;
+        case 17: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 18: sendString((statusWifi())); break;
+        case 19: sendString((scanWifi())); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -681,6 +748,8 @@ void loop()
             _index = 0;
         }
     }
+    
+    remote.updateRemote();
     
 }
 

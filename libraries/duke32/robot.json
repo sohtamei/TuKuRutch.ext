@@ -27,17 +27,20 @@
 #define mVersion \"duke32 1.0\"
 
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
 
 #include <Wire.h>
 
 #define PORT  54321
+#define REMOTE_PORT 10000
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};
 WiFiServer server(PORT);
 WiFiClient client;
+WiFiUDP remoteUdp;
 AsyncUDP udp;
 Preferences preferences;
 char buf[256];
@@ -80,8 +83,8 @@ char buf[256];
 #define LEDC_TIMER_BIT_MTR 8    // use 8 bit precission for LEDC timer
 #define LEDC_BASE_FREQ_MTR 255  // use 50 Hz as a LEDC base frequency
 
-#define MotorL 2
-#define MotorR 3
+#define MotorL 0
+#define MotorR 1
 
 /********************************
 * for I/O Control
@@ -158,6 +161,121 @@ const uint8_t motorInterval = 30;  //[ms]
 // --- robot_normal.ino
 
 
+/********************************
+* for RCWController
+*********************************/
+
+// UDP byte offset
+enum {
+  PACKET_BUTTON_H = 0,
+  PACKET_BUTTON_L,
+  PACKET_LEFT_X,
+  PACKET_LEFT_Y,
+  PACKET_RIGHT_X,
+  PACKET_RIGHT_Y,
+  PACKET_ACCEL_X,
+  PACKET_ACCEL_Y,
+  PACKET_ACCEL_Z,
+  PACKET_CONFIG,
+
+  PACKET_SIZE,
+};
+
+// key code
+enum {
+  BUTTON_UP = 1,
+  BUTTON_DOWN,
+  BUTTON_RIGHT,
+  BUTTON_LEFT,
+  BUTTON_Y,
+  BUTTON_A,
+  BUTTON_B,
+  BUTTON_X,
+  BUTTON_L1,
+  BUTTON_L2,
+  BUTTON_R1,
+  BUTTON_R2,
+  BUTTON_START,		// 0x3
+  BUTTON_SELECT,	// 0xc
+};
+
+// bitN -> key code変換
+const uint8_t keyTable2[] = {
+  BUTTON_UP,
+  BUTTON_DOWN,
+  BUTTON_RIGHT,
+  BUTTON_LEFT,
+  BUTTON_Y,
+  BUTTON_A,
+  BUTTON_B,
+  0,
+
+  BUTTON_X,
+  BUTTON_L1,
+  BUTTON_L2,
+  BUTTON_R1,
+  BUTTON_R2,
+};
+
+// config
+union config {
+  uint8_t byte;
+  struct {
+    uint8_t  rotate  :3;   // (1)portrait,(2)landscapeL,(3)landscapeR,(4)reverse
+    uint8_t  left    :1;   // (1)analog
+    uint8_t  right   :1;   // (1)analog
+    uint8_t  accel   :2;   // (0)off,(1)on,(2)left,(3)right
+  } b;
+};
+
+class WifiRemote {
+public:
+  int16_t  x;
+  int16_t  y;
+  uint8_t  keys;  // BUTTON_xx
+
+  WifiRemote() {
+    initialized = false;
+    keys = 0;
+  }
+  int checkRemoteKey(void) {
+    if(!initialized) {
+      remoteUdp.begin(REMOTE_PORT);
+      initialized = true;
+    }
+    return keys;
+  }
+  int isRemoteKey(uint8_t key) {
+    return (keys==key);
+  }
+  void updateRemote(void) {
+    if(!initialized) return;
+    int rlen = remoteUdp.parsePacket();
+    if(rlen>=PACKET_SIZE) {
+      uint8_t buf[16];
+      if(rlen >= sizeof(buf)) rlen = sizeof(buf);
+      remoteUdp.read(buf, rlen);
+      int d = buf[PACKET_BUTTON_L]|(buf[PACKET_BUTTON_H]<<8);
+      keys = 0;
+      for(int i=0; i<sizeof(keyTable2); i++) {
+        if(d & (1<<i)) {
+          keys = keyTable2[i];
+          break;
+        }
+      }
+      x = buf[PACKET_LEFT_X]-0x80;
+      y = buf[PACKET_LEFT_Y]-0x80;
+    //  snprintf((char*)buf,sizeof(buf),\"%d,%d,%d\",keys,x,y);
+    //  Serial.println((char*)buf);
+    }
+  }
+private:
+  uint8_t initialized;
+} remote;
+
+#define REMOTE_ENABLE	// for robot_pcmode.ino.template
+
+
 // duke32.cpp
 /********************************
 * for Servo Control
@@ -216,100 +334,44 @@ void Motor_INIT(){
   ledcSetup(LEDC_CHANNEL_3, LEDC_BASE_FREQ_MTR, LEDC_TIMER_BIT_MTR);
   ledcAttachPin(MTR_BE, LEDC_CHANNEL_3);
 }
-
-void setMotorSpeed(uint8_t motorNo, uint8_t speed){
-  if(motorNo < 2){
-    motorNo = 2;
-  }else if(motorNo > 3){
-    motorNo = 3;
-  }
-
-  if(speed < 0){
-    speed = 0;
-  }else if(speed > 255){
-    speed = 255;
-  }
-
-  ledcWrite(motorNo, speed);
-}
-
-void motorL_forward(uint8_t speed){
-//  digitalWrite(MTR_AE, HIGH);
-  setMotorSpeed(MotorL, speed);
-  digitalWrite(MTR_A1, HIGH);
-  digitalWrite(MTR_A2, LOW);
-}
-
-void motorL_back(uint8_t speed){
-//  digitalWrite(MTR_AE, HIGH);
-  setMotorSpeed(MotorL, speed);
-  digitalWrite(MTR_A1, LOW);
-  digitalWrite(MTR_A2, HIGH);
-}
-
-void motorL_stop(){
-//  digitalWrite(MTR_AE, LOW);
-  setMotorSpeed(MotorL, 0);
-  digitalWrite(MTR_A1, LOW);
-  digitalWrite(MTR_A2, LOW);
-}
-
-void motorR_forward(uint8_t speed){
-//  digitalWrite(MTR_BE, HIGH);
-  setMotorSpeed(MotorR, speed);
-  digitalWrite(MTR_B1, HIGH);
-  digitalWrite(MTR_B2, LOW);
-}
-void motorR_back(uint8_t speed){
-//  digitalWrite(MTR_BE, HIGH);
-  setMotorSpeed(MotorR, speed);
-  digitalWrite(MTR_B1, LOW);
-  digitalWrite(MTR_B2, HIGH);
-}
-
-void motorR_stop(){
-//  digitalWrite(MTR_BE, LOW);
-  setMotorSpeed(MotorR, 0);
-  digitalWrite(MTR_B1, LOW);
-  digitalWrite(MTR_B2, LOW);
-}
 // --- duke32.cpp
 
-void setMotor(uint8_t index, uint8_t dir)
-{
-  if(index == 0) {
-    switch(dir) {
-    case 0: motorL_stop();       break;
-    case 1: motorL_forward(255); break;
-    case 2: motorL_back(255);    break;
-    }
-  } else if(index == 1) {
-    switch(dir) {
-    case 0: motorR_stop();       break;
-    case 1: motorR_forward(255); break;
-    case 2: motorR_back(255);    break;
-    }
+void setMotorSpeed(uint8_t motorNo, int16_t speed){
+  if(motorNo >= 2) return;
+
+  int16_t abs = speed;
+  if(abs < 0)   abs = -abs;
+  if(abs > 255) abs = 255;
+  ledcWrite(motorNo+LEDC_CHANNEL_2, abs);
+
+  switch(motorNo) {
+  case MotorL:
+    digitalWrite(MTR_A1, (speed>0) ? HIGH:LOW);
+    digitalWrite(MTR_A2, (speed<0) ? HIGH:LOW);
+    break;
+  case MotorR:
+    digitalWrite(MTR_B1, (speed>0) ? HIGH:LOW);
+    digitalWrite(MTR_B2, (speed<0) ? HIGH:LOW);
+    break;
   }
 }
 
-struct {
-  int  L;
-  int  R;
+struct { int16_t L; int16_t R;
 } static const dir_table[7] = {
- //L  R
-  {0, 0},  // STOP
-  {1, 1},  // FORWARD
-  {0, 1},  // LEFT
-  {1, 0},  // RIGHT
-  {2, 2},  // BACK
-  {2, 1},  // ROLL_LEFT
-  {1, 2},  // ROLL_RIGHT
+//  L   R
+  { 0,  0},  // STOP
+  { 1,  1},  // FORWARD
+  { 0,  1},  // LEFT
+  { 1,  0},  // RIGHT
+  {-1, -1},  // BACK
+  {-1,  1},  // ROLL_LEFT
+  { 1, -1},  // ROLL_RIGHT
 };
 
-void setRobot(int direction)
+void setRobot(uint8_t direction, uint8_t speed)
 {
-  setMotor(0, dir_table[direction].L);
-  setMotor(1, dir_table[direction].R);
+  setMotorSpeed(MotorL, speed * dir_table[direction].L);
+  setMotorSpeed(MotorR, speed * dir_table[direction].R);
 }
 
 /*
@@ -322,9 +384,9 @@ void ADC_INIT(){
 
 uint16_t getAdc(uint8_t index)
 {
-uint8_t adcCh[2] = {ANA11,ANA12};
-if(index>=2) return 0;
-return analogRead(adcCh[index]);
+  uint8_t adcCh[2] = {ANA11,ANA12};
+  if(index>=2) return 0;
+  return analogRead(adcCh[index]);
 }
 
 /*
@@ -339,9 +401,9 @@ void DIO_INIT(){
 
 uint8_t getDigital(uint8_t index)
 {
-uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
-if(index>=4) return 0;
-return digitalRead(din_ch[index]);
+  uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
+  if(index>=4) return 0;
+  return digitalRead(din_ch[index]);
 }
 
 #ifdef useLED
@@ -356,20 +418,20 @@ RgbColor white(colorSaturation);
 RgbColor black(0);
 
 void SetNeoPixel(uint8_t index){
-RgbColor* npcolor = NULL;
-switch(index) {
-  case 0: npcolor = &black; break;
-  case 1: npcolor = &red;   break;
-  case 2: npcolor = &green; break;
-  case 3: npcolor = &blue;  break;
-  case 4: npcolor = &white; break;
-  default: return;
-}
+  RgbColor* npcolor = NULL;
+  switch(index) {
+    case 0: npcolor = &black; break;
+    case 1: npcolor = &red;   break;
+    case 2: npcolor = &green; break;
+    case 3: npcolor = &blue;  break;
+    case 4: npcolor = &white; break;
+    default: return;
+  }
 
-for(uint8_t i=0; i<PixelCount; i++){
-ledStrip.SetPixelColor(i, *npcolor);
-}
-ledStrip.Show();
+  for(uint8_t i=0; i<PixelCount; i++){
+    ledStrip.SetPixelColor(i, *npcolor);
+  }
+  ledStrip.Show();
 }
 #endif
 
@@ -394,32 +456,32 @@ uint8_t waitWifi(void)
 
 char* statusWifi(void)
 {
-preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
-memset(buf, 0, sizeof(buf));
+  preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
+  memset(buf, 0, sizeof(buf));
 
-if(WiFi.status() == WL_CONNECTED) {
-  IPAddress ip = WiFi.localIP();
-  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\\t%d.%d.%d.%d\", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
-} else {
-  snprintf(buf,sizeof(buf)-1,\"%d\\t%s\", WiFi.status(), g_ssid);
-}
-return buf;
+  if(WiFi.status() == WL_CONNECTED) {
+    IPAddress ip = WiFi.localIP();
+    snprintf(buf,sizeof(buf)-1,\"%d\\t%s\\t%d.%d.%d.%d\", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+  } else {
+    snprintf(buf,sizeof(buf)-1,\"%d\\t%s\", WiFi.status(), g_ssid);
+  }
+  return buf;
 }
 
 char* scanWifi(void)
 {
-memset(buf, 0, sizeof(buf));
+  memset(buf, 0, sizeof(buf));
 
-int n = WiFi.scanNetworks();
-for(int i = 0; i < n; i++) {
-  if(i == 0) {
-    snprintf(buf, sizeof(buf)-1, \"%s\", WiFi.SSID(i).c_str());
-  } else {
-    int ofs = strlen(buf);
-    snprintf(buf+ofs, sizeof(buf)-1-ofs, \"\\t%s\", WiFi.SSID(i).c_str());
+  int n = WiFi.scanNetworks();
+  for(int i = 0; i < n; i++) {
+    if(i == 0) {
+      snprintf(buf, sizeof(buf)-1, \"%s\", WiFi.SSID(i).c_str());
+    } else {
+      int ofs = strlen(buf);
+      snprintf(buf+ofs, sizeof(buf)-1-ofs, \"\\t%s\", WiFi.SSID(i).c_str());
+    }
   }
-}
-return buf;
+  return buf;
 }
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
@@ -464,7 +526,9 @@ if(g_ssid[0]) {
 }
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
-	"loop":"",
+	"loop":"
+remote.updateRemote();
+",
 
 	// PCモード/書き込みモード スクラッチブロック定義
 	"blockSpecs": [
@@ -481,9 +545,10 @@ if(g_ssid[0]) {
 
 		["-"],	// ブロック区切り
 
-		["w", "%d.direction .",							"setRobot",		  "run forward",{"remote":["B"],		"func":"setRobot({0});"}],
-		["w", "stop",									"stopRobot",					{"remote":[],			"func":"setRobot(0);"}],
-		["w", "set motor%d.servoch direction%d.motordir","setMotor",	"ch-L","forward",{"remote":["B","B"],	"func":"setMotor({0},{1});"}],
+		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"],	"func":"setRobot({0},{1});"}],
+		["w", "stop",									"stopRobot",					{"remote":[],			"func":"setRobot(0,0);"}],
+		["w", "set motor%d.servoch speed %d.motorvalue","setMotor",			"ch-L",255,	{"remote":["B","S"],	"func":"setMotorSpeed({0},{1});"}],
+
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 
 		["-"],
@@ -495,6 +560,15 @@ if(g_ssid[0]) {
 
 		["-"],
 
+		// robot.js呼び出し
+		["B", "[RCWCont..] remote pressed",				"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
+		["B", "[RCWCont..] ir remote %d.ircode pressed","isRemoteKey",		"UP",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["R", "[RCWCont..] get remote X",				"getRemoteX",					{"custom":"",			"func":"remote.x"}],
+		["R", "[RCWCont..] get remote Y",				"getRemoteY",					{"custom":"",			"func":"remote.y"}],
+
+		["-"],
+
+		// WiFi設定
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
 		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
@@ -506,6 +580,9 @@ if(g_ssid[0]) {
 		"din":[0,1,2,3],
 		"analog":[0,1],
 		"servoch":["ch-L","ch-R"],
+		"motorvalue":[255,100,50,0,-50,-100,-255],
+		"speedvalue":[255,100,50,0],
+		"ircode":["UP","DOWN","RIGHT","LEFT","Y","A","B","X","L1","L2","R1","R2","START","SELECT",],
 
 		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
@@ -515,6 +592,7 @@ if(g_ssid[0]) {
 		"stop":0,"forward":1,"back":2,
 		"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
+		"UP":1,"DOWN":2,"RIGHT":3,"LEFT":4,"Y":5,"A":6,"B":7,"X":8,"L1":9,"L2":10,"R1":11,"R2":12,"START":13,"SELECT":14,
 
 		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
@@ -522,8 +600,17 @@ if(g_ssid[0]) {
 	"translators":{
 		"ja":{
 			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
+			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
+			"set motor%d.servoch speed %d.motorvalue"		:"モーター %d.servoch の速さを %d.motorvalue にする",
+			"set motor%d.servoch direction%d.motordir"		:"モーター %d.servoch を %d.motordir へ動かす",
+			"set servo %m.servoch %n"						:"サーボ %d.servoch の角度を %n にする",
 			"read digital pin %d.din"						:"デジタルピン %d.din",
 			"read analog pin %d.analog"						:"アナログピン %d.analog",
+
+			"[RCWCont..] remote pressed"					:"[RCWCont..] リモコンボタンが押された",
+			"[RCWCont..] ir remote %d.ircode pressed"		:"[RCWCont..] 押されたのが %d.ircode のボタン",
+			"[RCWCont..] get remote X"						:"[RCWCont..] アナログXの値",
+			"[RCWCont..] get remote Y"						:"[RCWCont..] アナログYの値",
 		}
 	}
 }
