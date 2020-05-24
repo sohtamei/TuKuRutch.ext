@@ -108,8 +108,8 @@ int16_t _read(void)
   switch(connection_status) {
   case CONNECTION_NONE:
     server.begin();
-#ifdef _M5STACK_H_
-    M5.Lcd.clear(BLACK);
+#if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
+    M5.Lcd.fillScreen(BLACK);
     M5.Lcd.setCursor(0,0);
     M5.Lcd.println(WiFi.localIP());
 #endif

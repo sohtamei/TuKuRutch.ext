@@ -2,14 +2,9 @@
 
 #define PCMODE
 
-#define mVersion "M5STACK 1.0"
+#define mVersion "M5StickC 1.0"
 
-#define M5STACK_MPU6886 
-// #define M5STACK_MPU9250 
-// #define M5STACK_MPU6050
-// #define M5STACK_200Q
-#include <M5Stack.h>
-#include <Adafruit_NeoPixel.h>
+#include <M5StickC.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <AsyncUDP.h>
@@ -30,7 +25,7 @@ uint8_t checkButton(uint8_t button)
       switch(button) {
           case 0: return M5.BtnA.isPressed();
           case 1: return M5.BtnB.isPressed();
-          case 2: return M5.BtnC.isPressed();
+        //case 2: return M5.BtnC.isPressed();
       }
       return 0;
 }
@@ -120,32 +115,32 @@ uint8_t waitWifi(void)
 
 char* statusWifi(void)
 {
-    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
-    memset(buf, 0, sizeof(buf));
+      preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+      memset(buf, 0, sizeof(buf));
     
-    if(WiFi.status() == WL_CONNECTED) {
-          IPAddress ip = WiFi.localIP();
-          snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
-    } else {
-          snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
-    }
-    return buf;
+      if(WiFi.status() == WL_CONNECTED) {
+            IPAddress ip = WiFi.localIP();
+            snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+      } else {
+            snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+      }
+      return buf;
 }
 
 char* scanWifi(void)
 {
-    memset(buf, 0, sizeof(buf));
+      memset(buf, 0, sizeof(buf));
     
-    int n = WiFi.scanNetworks();
-    for(int i = 0; i < n; i++) {
-          if(i == 0) {
-                snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
-          } else {
-                int ofs = strlen(buf);
-                snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
-          }
-    }
-    return buf;
+      int n = WiFi.scanNetworks();
+      for(int i = 0; i < n; i++) {
+            if(i == 0) {
+                  snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+            } else {
+                  int ofs = strlen(buf);
+                  snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+            }
+      }
+      return buf;
 }
 
 
@@ -178,11 +173,11 @@ void setup()
     #endif
     
     preferences.begin("tukurutch", false);
-    M5.begin(true, true, true); // init lcd, sd card, serial
-    M5.Power.begin();    // use battery
+    M5.begin(true, true, true); // init lcd, power, serial
     M5.IMU.Init();
+    M5.Lcd.setRotation(3);
     
-    M5.Lcd.clear(BLACK);
+    M5.Lcd.fillScreen(BLACK);
     M5.Lcd.setTextSize(2);
     
     Serial.begin(115200);
@@ -213,11 +208,6 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {'S','S',},
-  {'S','S',},
-  {'S','S',},
-  {},
-  {},
   {'S','B',},
   {'S','S',},
   {'s',},
@@ -228,11 +218,10 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'S','S','S','S','S','B',},
   {'S','S','S','S','S','S','S','B',},
   {'s',},
-  {'S','S','s',},
-  {'S','S','s',},
   {},
   {'B',},
   {'B',},
+  {},
   {'B','B',},
   {'B',},
   {'s',},
@@ -374,41 +363,36 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 3: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 4: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 5: M5.Speaker.beep();; callOK(); break;
-        case 7: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
-        case 8: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
-        case 9: M5.Lcd.print(getString(0));; callOK(); break;
-        case 10: M5.Lcd.println(getString(0));; callOK(); break;
-        case 11: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-        case 12: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
-        case 13: if(getByte(4)) M5.Lcd.fillCircle(getShort(0),getShort(1),getShort(2),getShort(3)); else M5.Lcd.drawCircle(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-        case 14: if(getByte(5)) M5.Lcd.fillRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4)); else M5.Lcd.drawRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4));; callOK(); break;
-        case 15: if(getByte(7)) M5.Lcd.fillTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6)); else M5.Lcd.drawTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6));; callOK(); break;
-        case 16: M5.Lcd.qrcode(getString(0));; callOK(); break;
-        case 17: M5.Lcd.drawJpgFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
-        case 18: M5.Lcd.drawBmpFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
-        case 20: sendByte((checkButton(getByte(0)))); break;
-        case 21: sendFloat((getIMU(getByte(0)))); break;
-        case 22: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 23: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 2: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
+        case 3: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
+        case 4: M5.Lcd.print(getString(0));; callOK(); break;
+        case 5: M5.Lcd.println(getString(0));; callOK(); break;
+        case 6: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
+        case 7: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
+        case 8: if(getByte(4)) M5.Lcd.fillCircle(getShort(0),getShort(1),getShort(2),getShort(3)); else M5.Lcd.drawCircle(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
+        case 9: if(getByte(5)) M5.Lcd.fillRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4)); else M5.Lcd.drawRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4));; callOK(); break;
+        case 10: if(getByte(7)) M5.Lcd.fillTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6)); else M5.Lcd.drawTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6));; callOK(); break;
+        case 11: M5.Lcd.qrcode(getString(0));; callOK(); break;
+        case 13: sendByte((checkButton(getByte(0)))); break;
+        case 14: sendFloat((getIMU(getByte(0)))); break;
+        case 15: M5.IMU.Init();; callOK(); break;
+        case 16: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 17: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 18: sendString((getWeather(getString(0)))); break;
+        case 19: sendString((getWeather(getString(0)))); break;
+        case 20: sendString((getWeather(getString(0)))); break;
+        case 21: sendString((getWeather(getString(0)))); break;
+        case 22: sendString((getWeather(getString(0)))); break;
+        case 23: sendString((getWeather(getString(0)))); break;
         case 24: sendString((getWeather(getString(0)))); break;
         case 25: sendString((getWeather(getString(0)))); break;
         case 26: sendString((getWeather(getString(0)))); break;
         case 27: sendString((getWeather(getString(0)))); break;
-        case 28: sendString((getWeather(getString(0)))); break;
-        case 29: sendString((getWeather(getString(0)))); break;
-        case 30: sendString((getWeather(getString(0)))); break;
-        case 31: sendString((getWeather(getString(0)))); break;
-        case 32: sendString((getWeather(getString(0)))); break;
-        case 33: sendString((getWeather(getString(0)))); break;
-        case 34: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
-        case 35: sendString((getHttp(getString(0),true))); break;
-        case 37: sendByte((connectWifi(getString(0),getString(1)))); break;
-        case 38: sendString((statusWifi())); break;
-        case 39: sendString((scanWifi())); break;
+        case 28: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
+        case 29: sendString((getHttp(getString(0),true))); break;
+        case 31: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 32: sendString((statusWifi())); break;
+        case 33: sendString((scanWifi())); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
