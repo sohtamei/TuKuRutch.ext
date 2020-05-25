@@ -180,7 +180,11 @@ Serial.begin(115200);
 preferences.getString(\"ssid\", g_ssid, sizeof(g_ssid));
 preferences.getString(\"password\", g_pass, sizeof(g_pass));
 M5.Lcd.setCursor(0, 0);
-M5.Lcd.println(\"PC mode: \" mVersion);
+#ifdef PCMODE
+  M5.Lcd.println(\"PC mode: \" mVersion);
+#else
+  M5.Lcd.println(\"Arduino mode: \" mVersion);
+#endif
 Serial.print(\"Connecting to \");    Serial.println(g_ssid);
 
 //WiFi.mode(WIFI_STA);
