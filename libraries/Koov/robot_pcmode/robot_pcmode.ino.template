@@ -1,6 +1,13 @@
 // copyright to SohtaMei 2019.
 
 #define PCMODE
+#if 0		// wifi debug
+#define DPRINT(a) _Serial.println(a)
+#define DWRITE(a) _Serial.write(a)
+#else
+#define DPRINT(a)
+#define DWRITE(a)
+#endif
 // HEADER
 
 #ifdef __AVR_ATmega328P__
@@ -44,14 +51,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 // ARG_TYPES_TBL
 };
 
-#if 0		// wifi debug
-#define DPRINT(a) _Serial.println(a)
-#define DWRITE(a) _Serial.write(a)
-#else
-#define DPRINT(a)
-#define DWRITE(a)
-#endif
-
 uint8_t wifi_uart = 0;
 
 void _write(uint8_t* dp, int count)
@@ -74,16 +73,6 @@ void _println(char* mes)
     _Serial.println(mes);
 }
 
-#if defined(ESP32)
-enum {
-  CONNECTION_NONE = 0,
-  CONNECTION_WIFI,
-  CONNECTION_TCP,
-};
-uint8_t connection_status = CONNECTION_NONE;
-uint32_t last_udp;
-#endif
-
 int16_t _read(void)
 {
   if(_Serial.available()>0) {
@@ -91,51 +80,10 @@ int16_t _read(void)
     return _Serial.read();
   }
 #if defined(ESP32)
-  if(WiFi.status() != WL_CONNECTED) {
-    connection_status = CONNECTION_NONE;
-    return -1;
-  }
-
-  uint32_t cur = millis();
-  if(cur - last_udp > 2000) {
-    last_udp = cur;
-//  udp.broadcastTo(mVersion, PORT);
-    uint32_t adrs = WiFi.localIP();
-    uint32_t subnet = WiFi.subnetMask();
-    udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|~subnet), PORT);
-  }
-
-  switch(connection_status) {
-  case CONNECTION_NONE:
-    server.begin();
-#if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setCursor(0,0);
-    M5.Lcd.println(WiFi.localIP());
-#endif
-    DPRINT(WiFi.localIP());
-    connection_status = CONNECTION_WIFI;
-
-  case CONNECTION_WIFI:
-    client = server.available();
-    if(!client) {
-      return -1;
-    }
-    DPRINT("connected");
-    connection_status = CONNECTION_TCP;
-
-  case CONNECTION_TCP:
-    if(!client.connected()) {
-      DPRINT("disconnected");
-      client.stop();
-      connection_status = CONNECTION_WIFI;
-      return -1;
-    }
-    if(client.available()<=0) {
-      return -1;
-    }
+  int ret = readWifi();
+  if(ret != -1) {
     wifi_uart = 1;
-    return client.read();
+    return ret;
   }
 #endif
   return -1;

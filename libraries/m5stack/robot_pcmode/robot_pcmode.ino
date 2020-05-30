@@ -1,6 +1,13 @@
 // copyright to SohtaMei 2019.
 
 #define PCMODE
+#if 0		// wifi debug
+#define DPRINT(a) _Serial.println(a)
+#define DWRITE(a) _Serial.write(a)
+#else
+#define DPRINT(a)
+#define DWRITE(a)
+#endif
 
 #define mVersion "M5STACK 1.0"
 
@@ -99,6 +106,15 @@ char* getWeather(char* index)
       return buf;
 }
 
+enum {
+    CONNECTION_NONE = 0,
+    CONNECTION_CONNECTING,
+    CONNECTION_WIFI,
+    CONNECTION_TCP,
+};
+uint8_t connection_status = CONNECTION_NONE;
+uint32_t connection_start = 0;
+
 uint8_t connectWifi(char* ssid, char*pass)
 {
       strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
@@ -106,6 +122,8 @@ uint8_t connectWifi(char* ssid, char*pass)
       preferences.putString("ssid",g_ssid);
       preferences.putString("password",g_pass);
       WiFi.begin(g_ssid, g_pass);
+      connection_status = CONNECTION_CONNECTING;
+      connection_start = millis();
       return waitWifi();
 }
 
@@ -120,32 +138,99 @@ uint8_t waitWifi(void)
 
 char* statusWifi(void)
 {
-    preferences.getString("ssid", g_ssid, sizeof(g_ssid));
-    memset(buf, 0, sizeof(buf));
+      preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+      memset(buf, 0, sizeof(buf));
     
-    if(WiFi.status() == WL_CONNECTED) {
-          IPAddress ip = WiFi.localIP();
-          snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
-    } else {
-          snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
-    }
-    return buf;
+      if(WiFi.status() == WL_CONNECTED) {
+            IPAddress ip = WiFi.localIP();
+            snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+      } else {
+            snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+      }
+      return buf;
 }
 
 char* scanWifi(void)
 {
-    memset(buf, 0, sizeof(buf));
+      memset(buf, 0, sizeof(buf));
     
-    int n = WiFi.scanNetworks();
-    for(int i = 0; i < n; i++) {
-          if(i == 0) {
-                snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
-          } else {
-                int ofs = strlen(buf);
-                snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
-          }
-    }
-    return buf;
+      int n = WiFi.scanNetworks();
+      for(int i = 0; i < n; i++) {
+            if(i == 0) {
+                  snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+            } else {
+                  int ofs = strlen(buf);
+                  snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+            }
+      }
+      return buf;
+}
+
+// connect        : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED
+// disconnect     : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED->DISCONNECTED
+// no SSID        : DISCONNECTED->NO_SSID_AVAIL (timeout)
+// password error : DISCONNECTED (timeout)
+uint32_t last_udp;
+int readWifi(void)
+{
+      if(WiFi.status() != WL_CONNECTED) {
+            switch(connection_status) {
+                case CONNECTION_TCP:
+                case CONNECTION_WIFI:
+                  WiFi.disconnect();
+                  connection_status = CONNECTION_NONE;
+                  break;
+                case CONNECTION_CONNECTING:
+                  if(millis() - connection_start > 8000) {
+                        WiFi.disconnect();
+                        connection_status = CONNECTION_NONE;
+                  }
+                  break;
+            }
+            return -1;
+      }
+    
+      uint32_t cur = millis();
+      if(cur - last_udp > 2000) {
+            last_udp = cur;
+        //  udp.broadcastTo(mVersion, PORT);
+            uint32_t adrs = WiFi.localIP();
+            uint32_t subnet = WiFi.subnetMask();
+            udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|~subnet), PORT);
+      }
+    
+      switch(connection_status) {
+          case CONNECTION_NONE:
+          case CONNECTION_CONNECTING:
+            server.begin();
+        #if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
+            M5.Lcd.fillScreen(BLACK);
+            M5.Lcd.setCursor(0,0);
+            M5.Lcd.println(WiFi.localIP());
+        #endif
+            DPRINT(WiFi.localIP());
+            connection_status = CONNECTION_WIFI;
+        
+          case CONNECTION_WIFI:
+            client = server.available();
+            if(!client) {
+                  return -1;
+            }
+            DPRINT("connected");
+            connection_status = CONNECTION_TCP;
+        
+          case CONNECTION_TCP:
+            if(!client.connected()) {
+                  DPRINT("disconnected");
+                  client.stop();
+                  connection_status = CONNECTION_WIFI;
+                  return -1;
+            }
+            if(client.available()<=0) {
+                  return -1;
+            }
+            return client.read();
+      }
 }
 
 
@@ -182,7 +267,7 @@ void setup()
     M5.Power.begin();    // use battery
     M5.IMU.Init();
     
-    M5.Lcd.clear(BLACK);
+    M5.Lcd.fillScreen(BLACK);
     M5.Lcd.setTextSize(2);
     
     Serial.begin(115200);
@@ -190,12 +275,18 @@ void setup()
     preferences.getString("ssid", g_ssid, sizeof(g_ssid));
     preferences.getString("password", g_pass, sizeof(g_pass));
     M5.Lcd.setCursor(0, 0);
-    M5.Lcd.println("PC mode: " mVersion);
+    #ifdef PCMODE
+      M5.Lcd.println("PC mode: " mVersion);
+    #else
+      M5.Lcd.println("Arduino mode: " mVersion);
+    #endif
     Serial.print("Connecting to ");    Serial.println(g_ssid);
     
     //WiFi.mode(WIFI_STA);
     if(g_ssid[0]) {
           WiFi.begin(g_ssid, g_pass);
+          connection_status = CONNECTION_CONNECTING;
+          connection_start = millis();
           #ifndef PCMODE
             waitWifi();
           #endif
@@ -248,18 +339,10 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'s',},
   {},
+  {},
+  {},
   {'s','s',},
-  {},
-  {},
 };
-
-#if 0		// wifi debug
-#define DPRINT(a) _Serial.println(a)
-#define DWRITE(a) _Serial.write(a)
-#else
-#define DPRINT(a)
-#define DWRITE(a)
-#endif
 
 uint8_t wifi_uart = 0;
 
@@ -283,16 +366,6 @@ void _println(char* mes)
         _Serial.println(mes);
 }
 
-#if defined(ESP32)
-enum {
-      CONNECTION_NONE = 0,
-      CONNECTION_WIFI,
-      CONNECTION_TCP,
-};
-uint8_t connection_status = CONNECTION_NONE;
-uint32_t last_udp;
-#endif
-
 int16_t _read(void)
 {
       if(_Serial.available()>0) {
@@ -300,51 +373,10 @@ int16_t _read(void)
             return _Serial.read();
       }
     #if defined(ESP32)
-      if(WiFi.status() != WL_CONNECTED) {
-            connection_status = CONNECTION_NONE;
-            return -1;
-      }
-    
-      uint32_t cur = millis();
-      if(cur - last_udp > 2000) {
-            last_udp = cur;
-        //  udp.broadcastTo(mVersion, PORT);
-            uint32_t adrs = WiFi.localIP();
-            uint32_t subnet = WiFi.subnetMask();
-            udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|~subnet), PORT);
-      }
-    
-      switch(connection_status) {
-          case CONNECTION_NONE:
-            server.begin();
-        #if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
-            M5.Lcd.fillScreen(BLACK);
-            M5.Lcd.setCursor(0,0);
-            M5.Lcd.println(WiFi.localIP());
-        #endif
-            DPRINT(WiFi.localIP());
-            connection_status = CONNECTION_WIFI;
-        
-          case CONNECTION_WIFI:
-            client = server.available();
-            if(!client) {
-                  return -1;
-            }
-            DPRINT("connected");
-            connection_status = CONNECTION_TCP;
-        
-          case CONNECTION_TCP:
-            if(!client.connected()) {
-                  DPRINT("disconnected");
-                  client.stop();
-                  connection_status = CONNECTION_WIFI;
-                  return -1;
-            }
-            if(client.available()<=0) {
-                  return -1;
-            }
+      int ret = readWifi();
+      if(ret != -1) {
             wifi_uart = 1;
-            return client.read();
+            return ret;
       }
     #endif
       return -1;
@@ -406,9 +438,9 @@ static void parseData()
         case 33: sendString((getWeather(getString(0)))); break;
         case 34: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
         case 35: sendString((getHttp(getString(0),true))); break;
-        case 37: sendByte((connectWifi(getString(0),getString(1)))); break;
-        case 38: sendString((statusWifi())); break;
-        case 39: sendString((scanWifi())); break;
+        case 37: sendString((statusWifi())); break;
+        case 38: sendString((scanWifi())); break;
+        case 39: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;

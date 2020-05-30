@@ -433,7 +433,28 @@ void SetNeoPixel(uint8_t index){
   }
   ledStrip.Show();
 }
+
+void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b){
+  if(r>32) r=32;
+  if(g>32) g=32;
+  if(b>32) b=32;
+  RgbColor color(r,g,b);
+
+  for(uint8_t i=0; i<PixelCount; i++){
+    ledStrip.SetPixelColor(i, color);
+  }
+  ledStrip.Show();
+}
 #endif
+
+enum {
+CONNECTION_NONE = 0,
+CONNECTION_CONNECTING,
+CONNECTION_WIFI,
+CONNECTION_TCP,
+};
+uint8_t connection_status = CONNECTION_NONE;
+uint32_t connection_start = 0;
 
 uint8_t connectWifi(char* ssid, char*pass)
 {
@@ -442,6 +463,8 @@ uint8_t connectWifi(char* ssid, char*pass)
   preferences.putString(\"ssid\",g_ssid);
   preferences.putString(\"password\",g_pass);
   WiFi.begin(g_ssid, g_pass);
+  connection_status = CONNECTION_CONNECTING;
+  connection_start = millis();
   return waitWifi();
 }
 
@@ -483,6 +506,73 @@ char* scanWifi(void)
   }
   return buf;
 }
+
+// connect        : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED
+// disconnect     : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED->DISCONNECTED
+// no SSID        : DISCONNECTED->NO_SSID_AVAIL (timeout)
+// password error : DISCONNECTED (timeout)
+uint32_t last_udp;
+int readWifi(void)
+{
+  if(WiFi.status() != WL_CONNECTED) {
+    switch(connection_status) {
+    case CONNECTION_TCP:
+    case CONNECTION_WIFI:
+      WiFi.disconnect();
+      connection_status = CONNECTION_NONE;
+      break;
+    case CONNECTION_CONNECTING:
+      if(millis() - connection_start > 8000) {
+        WiFi.disconnect();
+        connection_status = CONNECTION_NONE;
+      }
+      break;
+    }
+    return -1;
+  }
+
+  uint32_t cur = millis();
+  if(cur - last_udp > 2000) {
+    last_udp = cur;
+//  udp.broadcastTo(mVersion, PORT);
+    uint32_t adrs = WiFi.localIP();
+    uint32_t subnet = WiFi.subnetMask();
+    udp.writeTo((uint8_t*)mVersion, sizeof(mVersion)-1, IPAddress(adrs|~subnet), PORT);
+  }
+
+  switch(connection_status) {
+  case CONNECTION_NONE:
+  case CONNECTION_CONNECTING:
+    server.begin();
+#if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
+    M5.Lcd.fillScreen(BLACK);
+    M5.Lcd.setCursor(0,0);
+    M5.Lcd.println(WiFi.localIP());
+#endif
+    DPRINT(WiFi.localIP());
+    connection_status = CONNECTION_WIFI;
+
+  case CONNECTION_WIFI:
+    client = server.available();
+    if(!client) {
+      return -1;
+    }
+    DPRINT(\"connected\");
+    connection_status = CONNECTION_TCP;
+
+  case CONNECTION_TCP:
+    if(!client.connected()) {
+      DPRINT(\"disconnected\");
+      client.stop();
+      connection_status = CONNECTION_WIFI;
+      return -1;
+    }
+    if(client.available()<=0) {
+      return -1;
+    }
+    return client.read();
+  }
+}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -520,6 +610,8 @@ Serial.print(\"Connecting to \");    Serial.println(g_ssid);
 //WiFi.mode(WIFI_STA);
 if(g_ssid[0]) {
   WiFi.begin(g_ssid, g_pass);
+  connection_status = CONNECTION_CONNECTING;
+  connection_start = millis();
   #ifndef PCMODE
     waitWifi();
   #endif
@@ -554,6 +646,7 @@ remote.updateRemote();
 		["-"],
 
 		["w", "NeoPixel %d.neopixel",					"setNeoPixel",		"white",	{"remote":["B"],		"func":"SetNeoPixel({0});"}],
+		["w", "NeoPixel red %n, green %n, blue %n",		"setNeoPixelRGB",	32,32,32,	{"remote":["B","B","B"],"func":"SetNeoPixelRGB({0},{1},{2});"}],
 		["w", "set servo %m.servoch %n",				"setServo",			"ch-L",90,	{"remote":["B","B"],	"func":"setServo({0},{1});"}],
 		["B", "read digital pin %d.din",				"getDigital",		0,			{"remote":["B",		"B"],"func":"getDigital({0})"}],
 		["R", "read analog pin %d.analog",				"getAnalog",		0,			{"remote":["B",		"S"],"func":"getAdc({0})"}],
@@ -569,12 +662,12 @@ remote.updateRemote();
 		["-"],
 
 		// WiFi設定
-		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
 		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
+		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
-		"neopixel":["black","red","green","blue","white"],
+		"neopixel":["off","red","green","blue","white"],
 		"motordir":["stop","forward","back"],
 		"direction":["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
 		"din":[0,1,2,3],
@@ -588,7 +681,7 @@ remote.updateRemote();
 		"onoff":["On","Off"],
 	},
 	"values":{
-		"black":0,"red":1,"green":2,"blue":3,"white":4,
+		"off":0,"red":1,"green":2,"blue":3,"white":4,
 		"stop":0,"forward":1,"back":2,
 		"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
