@@ -1,5 +1,5 @@
 {
-	"name"			: "duke32",
+	"name"			: "Duke32AIO",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
@@ -7,7 +7,7 @@
 	"extensionAuthor": "Thousandiy",							// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html",
 	"productInfoURL": "https://thousandiy.wordpress.com/",
-	"sampleDir"		: "sample/duke32",							// サンプルディレクトリ
+	"sampleDir"		: "sample/Duke32AIO",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
@@ -24,7 +24,7 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"duke32 1.0\"
+#define mVersion \"Duke32AIO 1.0\"
 
 #include <WiFi.h>
 #include <WiFiUdp.h>
