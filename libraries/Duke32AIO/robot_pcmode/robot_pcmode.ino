@@ -9,7 +9,7 @@
 #define DWRITE(a)
 #endif
 
-#define mVersion "duke32 1.0"
+#define mVersion "Duke32AIO 1.0"
 
 #include <WiFi.h>
 #include <WiFiUdp.h>
