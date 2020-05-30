@@ -35,6 +35,7 @@
 
 #define PORT  54321
 #define REMOTE_PORT 10000
+#define DPRINT(a) // _Serial.println(a) // for debug
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};

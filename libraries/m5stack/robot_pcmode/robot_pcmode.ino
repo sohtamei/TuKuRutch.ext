@@ -1,13 +1,6 @@
 // copyright to SohtaMei 2019.
 
 #define PCMODE
-#if 0		// wifi debug
-#define DPRINT(a) _Serial.println(a)
-#define DWRITE(a) _Serial.write(a)
-#else
-#define DPRINT(a)
-#define DWRITE(a)
-#endif
 
 #define mVersion "M5STACK 1.0"
 
@@ -23,6 +16,7 @@
 #include <Preferences.h>
 
 #define PORT  54321
+#define DPRINT(a) // _Serial.println(a) // for debug
 
 char g_ssid[32] = {0};
 char g_pass[32] = {0};
@@ -469,7 +463,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        DWRITE(c);
+        //_Serial.write(a)  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
