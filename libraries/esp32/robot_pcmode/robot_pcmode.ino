@@ -3,7 +3,6 @@
 #define PCMODE
 
 #define mVersion "ESP32 1.0"
-
 #include "TukurutchEsp.h"
 
 

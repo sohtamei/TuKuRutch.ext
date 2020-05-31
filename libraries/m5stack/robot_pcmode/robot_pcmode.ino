@@ -88,6 +88,13 @@ char* getWeather(char* index)
       return wbuf;
 }
 
+void connectedCB(String localIP)
+{
+      M5.Lcd.fillScreen(BLACK);
+      M5.Lcd.setCursor(0,0);
+      M5.Lcd.println(localIP);
+}
+
 
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
@@ -132,7 +139,7 @@ void setup()
     #endif
     
     Serial.begin(115200);
-    initWifi(mVersion);
+    initWifi(mVersion, connectedCB);
     
     _Serial.println("PC mode: " mVersion);
 }

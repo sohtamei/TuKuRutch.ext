@@ -104,6 +104,13 @@ char* getWeather(char* index)
   }
   return wbuf;
 }
+
+void connectedCB(String localIP)
+{
+  M5.Lcd.fillScreen(BLACK);
+  M5.Lcd.setCursor(0,0);
+  M5.Lcd.println(localIP);
+}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -122,7 +129,7 @@ M5.Lcd.setCursor(0, 0);
 #endif
 
 Serial.begin(115200);
-initWifi(mVersion);
+initWifi(mVersion, connectedCB);
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"

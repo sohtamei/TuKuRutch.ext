@@ -23,9 +23,11 @@ enum {
 uint8_t connection_status = CONNECTION_NONE;
 uint32_t connection_start = 0;
 const char* mVersion = NULL;
+void(*_connectedCB)(String localIP) = NULL;
 
-void initWifi(const char* ver)
+void initWifi(const char* ver, void(*connectedCB)(String localIP))
 {
+	_connectedCB = connectedCB;
 	mVersion = ver;
 	preferences.begin("tukurutch", false);
 	preferences.getString("ssid", g_ssid, sizeof(g_ssid));
@@ -131,11 +133,7 @@ int readWifi(void)
 		case CONNECTION_NONE:
 		case CONNECTION_CONNECTING:
 		server.begin();
-	  #if defined(_M5STACK_H_) || defined(_M5STICKC_H_)
-		M5.Lcd.fillScreen(BLACK);
-		M5.Lcd.setCursor(0,0);
-		M5.Lcd.println(WiFi.localIP());
-	  #endif
+		if(_connectedCB) _connectedCB(WiFi.localIP().toString());
 		DPRINT(WiFi.localIP());
 		connection_status = CONNECTION_WIFI;
 	  
