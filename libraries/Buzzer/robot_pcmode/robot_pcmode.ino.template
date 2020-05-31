@@ -50,7 +50,7 @@ void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
   if(wifi_uart)
-    client.write(dp, count);
+    writeWifi(dp, count);
   else
 #endif
     _Serial.write(dp, count);
@@ -60,7 +60,7 @@ void _println(char* mes)
 {
 #if defined(ESP32)
   if(wifi_uart)
-    client.println(mes);
+    printlnWifi(mes);
   else
 #endif
     _Serial.println(mes);
