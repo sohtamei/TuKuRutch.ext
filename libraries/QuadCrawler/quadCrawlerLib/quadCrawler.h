@@ -48,8 +48,10 @@ enum {
   pose,
 };
 
-void quadCrawler_Walk(uint16_t speed, uint8_t com);
-void quadCrawler_setSpeed(uint16_t speed);
+void quadCrawler_Walk(                          // ロボット動作、指定した動作を継続する。
+        uint16_t speed,                         //   quadCrawler_xx
+        uint8_t com);                           //   stop, 他
+void quadCrawler_setSpeed(uint16_t speed);      // ロボット動作の速度を更新する。
 
 enum {
   POSE_KEEP     = 0,
@@ -70,17 +72,20 @@ enum {
   FRONT_L   = 2,
   REAR_L    = 3,
 };
-void quadCrawler_setPose1(uint8_t index, uint8_t knee, uint8_t crach);
+void quadCrawler_setPose1(                      // 指定した足の上下、前後の姿勢を設定する。
+        uint8_t index,                          //   FRONT_R, 他
+        uint8_t knee,                           //   POSE_xx
+        uint8_t crach);                         //   POSE_xx
 
-void quadCrawler_servoLoop(void);
+void quadCrawler_servoLoop(void);               // ロボット動作を経過時間に応じて更新する。
 
 
-void quadCrawler_init(void);
+void quadCrawler_init(void);                    // 初期化処理、setup()で実行。
 
-double quadCrawler_getSonner();
-void quadCrawler_beep(int time);
+double quadCrawler_getSonner();                 // 超音波センサの値を取得する。
+void quadCrawler_beep(int time);                // ブザーを鳴らす。
 
-void quadCrawler_colorWipe(uint8_t color);
+void quadCrawler_colorWipe(uint8_t color);      // LEDを指定した色にする。COLOR_xx
 enum {
   COLOR_OFF = 0,
   COLOR_RED,
@@ -91,7 +96,7 @@ enum {
   COLOR_LIGHTBLUE,
 };
 
-void quadCrawler_rainbow(uint8_t wait);
+void quadCrawler_rainbow(uint8_t wait);         // LEDを７色に光らせる。
 uint8_t quadCrawler_checkServoON(void);
 
 #endif  // quadCrawler_h

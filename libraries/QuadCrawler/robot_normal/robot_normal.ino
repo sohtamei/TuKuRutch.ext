@@ -10,6 +10,7 @@ static analogRemote remote(MODE_XYKEYS, /*port*/2, funcLed);
 
 void setup()
 {
+  // 初期化処理
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
   quadCrawler_init();
@@ -27,15 +28,16 @@ extern volatile unsigned long timer0_millis;
 
 void loop()
 {
+  // リモコン処理：標準リモコン、アナログリモコンを受信し、キーコードに従ってロボットを動かす。
   #define A_DOWN_OFFSET  0x10
-  remote.checkUpdated();
-  uint8_t key = remote.keys;
+  remote.checkUpdated();            // リモコンコード受信
+  uint8_t key = remote.keys;        // 受信したリモコンコード取得
   switch(key) {
-  case BUTTON_A_XY:
+  case BUTTON_A_XY:                 // アナログリモコン JOYSTICK操作のとき
     key = remote.xyKeys;
     break;
   case BUTTON_A_DOWN:
-    key = remote.xyKeys + A_DOWN_OFFSET;
+    key = remote.xyKeys + A_DOWN_OFFSET;  // アナログリモコン D ボタン押し
     delay(20);
     break;
   }
@@ -48,17 +50,17 @@ void loop()
       case BUTTON_B:
       case BUTTON_CENTER:
         break;
-      case BUTTON_MENU:
+      case BUTTON_MENU:             // MENUボタン : ブザー3秒
         quadCrawler_beep(3000);
         break;
-      case BUTTON_0:
+      case BUTTON_0:                // 0ボタン : LEDレインボー
         quadCrawler_beep(50);
         for (int n = 0; n < 5; n++) {
           quadCrawler_rainbow(5);
         }
         break;
 
-      case XY_UP:
+      case XY_UP:                   // 上ボタン : 前進
       case BUTTON_UP:
         quadCrawler_colorWipe(COLOR_BLUE);
         quadCrawler_Walk(quadCrawler_fast, fw);
@@ -137,13 +139,14 @@ void loop()
         quadCrawler_colorWipe(COLOR_LIGHTBLUE);
         quadCrawler_Walk(quadCrawler_fast, all_up_dn);
         break;
-      default:
+      default:                      // ボタンを離したとき : 停止
         quadCrawler_colorWipe(COLOR_PURPLE);
         quadCrawler_Walk(quadCrawler_fast, stop);
         break;
     }
   }
 
+  // SW4を押したとき初期姿勢にする (組み立て用)
   uint8_t sw4 = digitalRead(Sw4);
   if(lastSw4!=sw4 && sw4==0) {
     if(!originAdj) {
@@ -161,7 +164,9 @@ void loop()
   }
   lastSw4 = sw4;
 
+  // 歩行などのモーション処理、経過時間に応じてサーボモーターを制御する。
   if(remote.xyLevel >= 10) {
+    // アナログリモコンのJOYSTICK操作のとき速度設定
     quadCrawler_setSpeed(25000 / remote.xyLevel);
   }
   quadCrawler_servoLoop();
@@ -169,6 +174,7 @@ void loop()
   uint16_t elapsed = (timer0_millis - sonner_time);
   if(elapsed >= 100) {
     sonner_time = timer0_millis;
+    // 超音波センサで障害物を検出したときブザーを鳴らす (100ms周期)
     double sonner_val = quadCrawler_getSonner();
     if (sonner_val < 8){
       quadCrawler_beep(sonner_val * 10);
