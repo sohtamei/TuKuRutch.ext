@@ -4,12 +4,10 @@
 
 #define mVersion "Duke32AIO 1.0"
 
-#include <WiFiUdp.h>
 #include <Wire.h>
 #include "TukurutchEsp.h"
 
-#define REMOTE_PORT 10000
-WiFiUDP remoteUdp;
+WifiRemote remote;
 
 // duke32.h
 /********************************
@@ -125,121 +123,6 @@ uint16_t servoR = servoValueR.toInt();
 *********************************/
 const uint8_t motorInterval = 30;  //[ms]
 // --- robot_normal.ino
-
-
-/********************************
-* for RCWController
-*********************************/
-
-// UDP byte offset
-enum {
-      PACKET_BUTTON_H = 0,
-      PACKET_BUTTON_L,
-      PACKET_LEFT_X,
-      PACKET_LEFT_Y,
-      PACKET_RIGHT_X,
-      PACKET_RIGHT_Y,
-      PACKET_ACCEL_X,
-      PACKET_ACCEL_Y,
-      PACKET_ACCEL_Z,
-      PACKET_CONFIG,
-    
-      PACKET_SIZE,
-};
-
-// key code
-enum {
-      BUTTON_UP = 1,
-      BUTTON_DOWN,
-      BUTTON_RIGHT,
-      BUTTON_LEFT,
-      BUTTON_Y,
-      BUTTON_A,
-      BUTTON_B,
-      BUTTON_X,
-      BUTTON_L1,
-      BUTTON_L2,
-      BUTTON_R1,
-      BUTTON_R2,
-      BUTTON_START,		// 0x3
-      BUTTON_SELECT,	// 0xc
-};
-
-// bitN -> key code変換
-const uint8_t keyTable2[] = {
-      BUTTON_UP,
-      BUTTON_DOWN,
-      BUTTON_RIGHT,
-      BUTTON_LEFT,
-      BUTTON_Y,
-      BUTTON_A,
-      BUTTON_B,
-      0,
-    
-      BUTTON_X,
-      BUTTON_L1,
-      BUTTON_L2,
-      BUTTON_R1,
-      BUTTON_R2,
-};
-
-// config
-union config {
-      uint8_t byte;
-      struct {
-            uint8_t  rotate  :3;   // (1)portrait,(2)landscapeL,(3)landscapeR,(4)reverse
-            uint8_t  left    :1;   // (1)analog
-            uint8_t  right   :1;   // (1)analog
-            uint8_t  accel   :2;   // (0)off,(1)on,(2)left,(3)right
-      } b;
-};
-
-class WifiRemote {
-    public:
-      int16_t  x;
-      int16_t  y;
-      uint8_t  keys;  // BUTTON_xx
-    
-      WifiRemote() {
-            initialized = false;
-            keys = 0;
-      }
-      int checkRemoteKey(void) {
-            if(!initialized) {
-                  remoteUdp.begin(REMOTE_PORT);
-                  initialized = true;
-            }
-            return keys;
-      }
-      int isRemoteKey(uint8_t key) {
-            return (keys==key);
-      }
-      void updateRemote(void) {
-            if(!initialized) return;
-            int rlen = remoteUdp.parsePacket();
-            if(rlen>=PACKET_SIZE) {
-                  uint8_t buf[16];
-                  if(rlen >= sizeof(buf)) rlen = sizeof(buf);
-                  remoteUdp.read(buf, rlen);
-                  int d = buf[PACKET_BUTTON_L]|(buf[PACKET_BUTTON_H]<<8);
-                  keys = 0;
-                  for(int i=0; i<sizeof(keyTable2); i++) {
-                        if(d & (1<<i)) {
-                              keys = keyTable2[i];
-                              break;
-                        }
-                  }
-                  x = buf[PACKET_LEFT_X]-0x80;
-                  y = buf[PACKET_LEFT_Y]-0x80;
-                //  snprintf((char*)buf,sizeof(buf),"%d,%d,%d",keys,x,y);
-                //  Serial.println((char*)buf);
-            }
-      }
-    private:
-      uint8_t initialized;
-} remote;
-
-#define REMOTE_ENABLE	// for robot_pcmode.ino.template
 
 
 // duke32.cpp
@@ -497,7 +380,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {},
-  {},
   {'s','s',},
 };
 
@@ -571,9 +453,9 @@ static void parseData()
         case 9: setServo(getByte(0),getByte(1));; callOK(); break;
         case 10: sendByte((getDigital(getByte(0)))); break;
         case 11: sendShort((getAdc(getByte(0)))); break;
-        case 18: sendString((statusWifi())); break;
-        case 19: sendString((scanWifi())); break;
-        case 20: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 17: sendString((statusWifi())); break;
+        case 18: sendString((scanWifi())); break;
+        case 19: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -628,6 +510,9 @@ void loop()
         }
     }
     
+    #ifndef PCMODE
+      sendNotifyArduinoMode();
+    #endif
     remote.updateRemote();
     
 }

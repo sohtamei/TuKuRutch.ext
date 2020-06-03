@@ -1,9 +1,11 @@
 #include <WiFi.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
+#include <WiFiUdp.h>
 #include "TukurutchEsp.h"
 
 #define PORT  54321
+#define REMOTE_PORT 54322
 #define DPRINT(a) // _Serial.println(a) // for debug
 
 char g_ssid[32] = {0};
@@ -11,6 +13,7 @@ char g_pass[32] = {0};
 WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
+WiFiUDP remoteUdp;
 Preferences preferences;
 char buf[256];
 
@@ -159,6 +162,20 @@ int readWifi(void)
 	}
 }
 
+void sendNotifyArduinoMode(void)
+{
+	uint32_t cur = millis();
+	if(cur - last_udp > 2000) {
+		last_udp = cur;
+	  //  udp.broadcastTo(mVersion, PORT);
+		uint32_t adrs = WiFi.localIP();
+		uint32_t subnet = WiFi.subnetMask();
+		char buf[32] = {0};
+		snprintf(buf, sizeof(buf)-1, "%s(ArduinoMode)", mVersion);
+		udp.writeTo((uint8_t*)buf, strlen(buf), IPAddress(adrs|~subnet), PORT);
+	}
+}
+
 void writeWifi(uint8_t* dp, int count)
 {
 	client.write(dp, count);
@@ -168,3 +185,26 @@ void printlnWifi(char* mes)
 {
 	client.println(mes);
 }
+
+int WifiRemote::checkRemoteKey(void) {
+	if(!initialized) {
+		remoteUdp.begin(REMOTE_PORT);
+		initialized = true;
+	}
+	return keys;
+}
+
+void WifiRemote::updateRemote(void) {
+	if(!initialized) return;
+	int rlen = remoteUdp.parsePacket();
+	if(rlen>=5) {
+		uint8_t buf[16];
+		if(rlen >= sizeof(buf)) rlen = sizeof(buf);
+		remoteUdp.read(buf, rlen);
+		keys = buf[0];
+		x = buf[1]|(buf[2]<<8);
+		y = buf[3]|(buf[4]<<8);
+	//	snprintf((char*)buf,sizeof(buf),\"%d,%d,%d\",keys,x,y);
+	//	Serial.println((char*)buf);
+	}
+};

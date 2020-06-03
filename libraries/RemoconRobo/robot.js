@@ -22,6 +22,9 @@
 	ext.checkRemoteKey = function() {
 		sendPackage(CMD_CHECKREMOTEKEY);
 	}
+	ext.checkRemoteKey2 = function() {
+		sendPackage(CMD_CHECKREMOTEKEY);
+	}
 	ext.isRemoteKey = function(code){
 		responseValue2(0,remoteKey==code);
 	}
