@@ -4,6 +4,7 @@
 
 #define mVersion "ESP32 1.0"
 #include "TukurutchEsp.h"
+WifiRemote remote;
 
 
 #ifdef __AVR_ATmega328P__
@@ -35,7 +36,11 @@ void setup()
     #endif
     
     Serial.begin(115200);
-    initWifi(mVersion);
+    #ifndef PCMODE
+    initWifi(mVersion, true);
+    #else
+    initWifi(mVersion, false);
+    #endif
     
     _Serial.println("PC mode: " mVersion);
 }

@@ -26,11 +26,16 @@
 	"header":"
 #define mVersion \"ESP32 1.0\"
 #include \"TukurutchEsp.h\"
+WifiRemote remote;
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
 Serial.begin(115200);
-initWifi(mVersion);
+#ifndef PCMODE
+initWifi(mVersion, true);
+#else
+initWifi(mVersion, false);
+#endif
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"",
