@@ -349,7 +349,11 @@ void setup()
     // init DIO
     DIO_INIT();
     
-    initWifi(mVersion);
+    #ifndef PCMODE
+    initWifi(mVersion, true);
+    #else
+    initWifi(mVersion, false);
+    #endif
     
     _Serial.println("PC mode: " mVersion);
 }

@@ -30,6 +30,9 @@
 #include <HTTPClient.h>
 #include \"TukurutchEsp.h\"
 
+WifiRemote remote;
+#define ROVER_ADDRESS	0X38
+
 uint8_t checkButton(uint8_t button)
 {
   switch(button) {
@@ -56,6 +59,66 @@ float getIMU(uint8_t index)
     M5.IMU.getTempData(data+0);
     return data[0];
   }
+}
+
+void RoverC_Init(void)    //sda  0     scl  26
+{
+  Wire.begin(0,26,100);
+}
+
+void Send_iic(uint8_t Register, int16_t Speed)
+{
+  if(Speed >  100) Speed =  100;
+  if(Speed < -100) Speed = -100;
+  Wire.beginTransmission(ROVER_ADDRESS);
+  Wire.write(Register);
+  Wire.write(Speed);
+  Wire.endTransmission();
+}
+
+void setRoverC(int16_t F_L, int16_t F_R, int16_t R_L, int16_t R_R)
+{
+  Send_iic(0x00, F_L);
+  Send_iic(0x01, F_R);
+  Send_iic(0x02, R_L);
+  Send_iic(0x03, R_R);
+}
+
+void setRoverC_XYR(int16_t x, int16_t y, int16_t role)
+{
+  int16_t left = y+x;
+  int16_t right = y-x;
+  int16_t invK = 100;
+
+  if(abs(left) > 100) invK = abs(left);
+  else if(abs(right) > 100) invK = abs(right);
+
+  if(invK != 100) {
+    left  = (left*100)/invK;
+    right = (right*100)/invK;
+  }
+  setRoverC(left+role, right-role, right+role, left-role);
+}
+
+struct { int8_t x; int8_t y; int8_t r; } const dir_table[] = {
+//  X  Y  R
+  { 0, 0, 0},  // STOP
+  { 1, 1, 0},  // UP_R
+  { 0, 1, 0},  // UP
+  {-1, 1, 0},  // UP_L
+  { 1, 0, 0},  // RIGHT
+  {-1, 0, 0},  // LEFT
+  { 1,-1, 0},  // DOWN_R
+  { 0,-1, 0},  // DOWN
+  {-1,-1, 0},  // DOWN_L
+  { 0, 0, 1},  // ROLL_R
+  { 0, 0,-1},  // ROLL_L
+};
+
+void moveRoverC(uint8_t dir, uint8_t speed)
+{
+  if(dir >= sizeof(dir_table)/sizeof(dir_table[0])) return;
+  setRoverC_XYR(speed*dir_table[dir].x, speed*dir_table[dir].y, speed*dir_table[dir].r);
 }
 
 String getHttp(char* url, uint8_t withErrorMsg)
@@ -128,13 +191,22 @@ M5.Lcd.setCursor(0, 0);
   M5.Lcd.println(\"Arduino mode: \" mVersion);
 #endif
 
+RoverC_Init();
 Serial.begin(115200);
-initWifi(mVersion, connectedCB);
+#ifndef PCMODE
+initWifi(mVersion, true, connectedCB);
+#else
+initWifi(mVersion, false, connectedCB);
+#endif
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
 M5.update();  // update button and speaker
 delay(50);
+#ifndef PCMODE
+  sendNotifyArduinoMode();
+#endif
+remote.updateRemote();
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -178,6 +250,8 @@ delay(50);
 		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
 		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
 
+		["-"],
+
 		["R", "天気(北海道) %m.hokkaido",				"getWHokkaido",	"石狩",			{"remote":["s",		"s"], "func":"getWeather({0})"}],
 		["R", "天気(東北) %m.tohoku",					"getWTohoku",	"岩手県 内陸",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
 		["R", "天気(関東甲信越) %m.kantoKoshin",		"getWKantoKoshin","東京都 東京",{"remote":["s",		"s"], "func":"getWeather({0})"}],
@@ -191,6 +265,23 @@ delay(50);
 		["R", "天気 %d.weather",						"getWeather",	"最高気温",		{"remote":["B",		"s"], "func":"(weather[{0}]==-128?\"\":String(weather[{0}]))"}],
 		["R", "get http %s",							"getHttp","http://sohta02.web.fc2.com/w/319.3.txt",
 																						{"remote":["s",		"s"], "func":"getHttp({0},true)"}],
+		["-"],
+
+		// robot.js呼び出し
+//		["B", "[WifiRemote] remote pressed",			"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
+//		["B", "[WifiRemote] ir remote %d.ircode pressed","isRemoteKey",		"UP",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
+		["w", "[WifiRemote] update remote",				"checkRemoteKey2",				{"custom":"", 			"func":"remote.checkRemoteKey();"}],
+		["R", "[WifiRemote] get remote X",				"getRemoteX",					{"custom":"",			"func":"remote.x"}],
+		["R", "[WifiRemote] get remote Y",				"getRemoteY",					{"custom":"",			"func":"remote.y"}],
+
+		["-"],
+
+		// RoverC
+		["w", "[RoverC] FL %n FR %n RL %n RR %n",		"setRoverC",	0,0,0,0,		{"remote":["S","S","S","S"],	"func":"setRoverC({0},{1},{2},{3});"}],
+		["w", "[RoverC] x %n y %n role %n",				"setRoverC_XYR",0,0,0,			{"remote":["S","S","S"],		"func":"setRoverC_XYR({0},{1},{2});"}],
+		["w", "[RoverC] dir %d.direction speed %n",		"moveRoverC",	"UP",100,		{"remote":["B","B"],			"func":"moveRoverC({0},{1});"}],
+		["R", "[RoverC] %d.direction .",				"enumDirection","UP",			{"enum":"",						"func":"{0}"}],
+
 		["-"],
 
 		// WiFi設定
@@ -227,6 +318,8 @@ delay(50);
 "kyusyu":["福岡県 福岡", "福岡県 北九州", "福岡県 筑豊", "福岡県 筑後", "佐賀県 南部", "佐賀県 北部", "長崎県 南部", "長崎県 北部", "長崎県 壱岐･対馬", "長崎県 五島", "熊本県 熊本", "熊本県 阿蘇", "熊本県 天草･芦北", "熊本県 球磨", "大分県 中部", "大分県 北部", "大分県 西部", "大分県 南部", "宮崎県 南部平野部", "宮崎県 北部平野部", "宮崎県 南部山沿い", "宮崎県 北部山沿い", "鹿児島県 薩摩", "鹿児島県 大隅", "鹿児島県 種子島･屋久島", "鹿児島県 奄美",],
 "okinawa":["沖縄本島 中南部", "沖縄本島 北部", "久米島", "大東島", "宮古島", "石垣島", "与那国島",],
 "weather":["最高気温","最低気温","降水確率午前","降水確率午後",],
+
+		"direction":["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
@@ -266,6 +359,8 @@ delay(50);
 "福岡県 福岡":"346.3", "福岡県 北九州":"346.2", "福岡県 筑豊":"346.1", "福岡県 筑後":"346.0", "佐賀県 南部":"347.1", "佐賀県 北部":"347.0", "長崎県 南部":"348.3", "長崎県 北部":"348.2", "長崎県 壱岐･対馬":"348.1", "長崎県 五島":"348.0", "熊本県 熊本":"349.3", "熊本県 阿蘇":"349.2", "熊本県 天草･芦北":"349.1", "熊本県 球磨":"349.0", "大分県 中部":"350.3", "大分県 北部":"350.2", "大分県 西部":"350.1", "大分県 南部":"350.0", "宮崎県 南部平野部":"351.3", "宮崎県 北部平野部":"351.2", "宮崎県 南部山沿い":"351.1", "宮崎県 北部山沿い":"351.0", "鹿児島県 薩摩":"352.3", "鹿児島県 大隅":"352.2", "鹿児島県 種子島･屋久島":"352.1", "鹿児島県 奄美":"352.0",
 "沖縄本島 中南部":"353.2", "沖縄本島 北部":"353.1", "久米島":"353.0", "大東島":"354.0", "宮古島":"355.0", "石垣島":"356.1", "与那国島":"356.0", 
 "最高気温":0,"最低気温":1,"降水確率午前":2,"降水確率午後":3,
+
+		"STOP":0,"UP_R":1,"UP":2,"UP_L":3,"RIGHT":4,"LEFT":5,"DOWN_R":6,"DOWN":7,"DOWN_L":8,"ROLL_R":9,"ROLL_L":10,
 	},
 	"translators":{
 		"ja":{
@@ -275,6 +370,12 @@ delay(50);
 			"read digital pin %n"							:"デジタルピン %n",
 			"read digital pin A%n"							:"デジタルピン A%n",
 			"read analog pin A%n"							:"アナログピン A%n",
+
+			"[WifiRemote] remote pressed"					:"[WifiRemote] リモコンボタンが押された",
+			"[WifiRemote] ir remote %d.ircode pressed"		:"[WifiRemote] 押されたのが %d.ircode のボタン",
+			"[WifiRemote] update remote"					:"[WifiRemote] リモコン情報更新",
+			"[WifiRemote] get remote X"						:"[WifiRemote] アナログXの値",
+			"[WifiRemote] get remote Y"						:"[WifiRemote] アナログYの値",
 		}
 	}
 }

@@ -35,6 +35,8 @@
 #include <HTTPClient.h>
 #include \"TukurutchEsp.h\"
 
+WifiRemote remote;
+
 uint8_t checkButton(uint8_t button)
 {
   switch(button) {
@@ -134,7 +136,11 @@ M5.Lcd.setCursor(0, 0);
 #endif
 
 Serial.begin(115200);
-initWifi(mVersion, connectedCB);
+#ifndef PCMODE
+initWifi(mVersion, true, connectedCB);
+#else
+initWifi(mVersion, false, connectedCB);
+#endif
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
@@ -192,6 +198,8 @@ delay(50);
 
 		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
 		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+
+		["-"],
 
 		["R", "天気(北海道) %m.hokkaido",				"getWHokkaido",	"石狩",			{"remote":["s",		"s"], "func":"getWeather({0})"}],
 		["R", "天気(東北) %m.tohoku",					"getWTohoku",	"岩手県 内陸",	{"remote":["s",		"s"], "func":"getWeather({0})"}],

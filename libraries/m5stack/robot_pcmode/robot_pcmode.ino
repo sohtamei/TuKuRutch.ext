@@ -13,6 +13,8 @@
 #include <HTTPClient.h>
 #include "TukurutchEsp.h"
 
+WifiRemote remote;
+
 uint8_t checkButton(uint8_t button)
 {
       switch(button) {
@@ -139,7 +141,11 @@ void setup()
     #endif
     
     Serial.begin(115200);
-    initWifi(mVersion, connectedCB);
+    #ifndef PCMODE
+    initWifi(mVersion, true, connectedCB);
+    #else
+    initWifi(mVersion, false, connectedCB);
+    #endif
     
     _Serial.println("PC mode: " mVersion);
 }
@@ -175,6 +181,7 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'B','B',},
   {'B',},
+  {},
   {'s',},
   {'s',},
   {'s',},
@@ -275,7 +282,6 @@ static void parseData()
         case 21: sendFloat((getIMU(getByte(0)))); break;
         case 22: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
         case 23: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 24: sendString((getWeather(getString(0)))); break;
         case 25: sendString((getWeather(getString(0)))); break;
         case 26: sendString((getWeather(getString(0)))); break;
         case 27: sendString((getWeather(getString(0)))); break;
@@ -285,11 +291,12 @@ static void parseData()
         case 31: sendString((getWeather(getString(0)))); break;
         case 32: sendString((getWeather(getString(0)))); break;
         case 33: sendString((getWeather(getString(0)))); break;
-        case 34: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
-        case 35: sendString((getHttp(getString(0),true))); break;
-        case 37: sendString((statusWifi())); break;
-        case 38: sendString((scanWifi())); break;
-        case 39: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 34: sendString((getWeather(getString(0)))); break;
+        case 35: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
+        case 36: sendString((getHttp(getString(0),true))); break;
+        case 38: sendString((statusWifi())); break;
+        case 39: sendString((scanWifi())); break;
+        case 40: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;

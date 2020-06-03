@@ -344,7 +344,11 @@ ADC_INIT();
 // init DIO
 DIO_INIT();
 
-initWifi(mVersion);
+#ifndef PCMODE
+initWifi(mVersion, true);
+#else
+initWifi(mVersion, false);
+#endif
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"

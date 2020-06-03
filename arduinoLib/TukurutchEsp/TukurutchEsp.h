@@ -1,7 +1,7 @@
 #ifndef TUKURUTCH_ESP
 #define TUKURUTCH_ESP
 
-void initWifi(const char* ver, void(*connectedCB)(String localIP)=NULL);
+void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP)=NULL);
 uint8_t connectWifi(char* ssid, char*pass);
 uint8_t waitWifi(void);
 char* statusWifi(void);

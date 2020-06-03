@@ -28,7 +28,7 @@ uint32_t connection_start = 0;
 const char* mVersion = NULL;
 void(*_connectedCB)(String localIP) = NULL;
 
-void initWifi(const char* ver, void(*connectedCB)(String localIP))
+void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP))
 {
 	_connectedCB = connectedCB;
 	mVersion = ver;
@@ -42,9 +42,16 @@ void initWifi(const char* ver, void(*connectedCB)(String localIP))
 		WiFi.begin(g_ssid, g_pass);
 		connection_status = CONNECTION_CONNECTING;
 		connection_start = millis();
-		#ifndef PCMODE
-		  waitWifi();
-		#endif
+		if(_waitWifi) {
+			if(waitWifi() == WL_CONNECTED) {
+				if(_connectedCB) _connectedCB(WiFi.localIP().toString());
+				DPRINT(WiFi.localIP());
+				connection_status = CONNECTION_WIFI;
+			} else {
+				WiFi.disconnect();
+				connection_status = CONNECTION_NONE;
+			}
+		}
 	}
 }
 
