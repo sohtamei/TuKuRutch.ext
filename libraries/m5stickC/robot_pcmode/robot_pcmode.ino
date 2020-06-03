@@ -79,7 +79,7 @@ void setRoverC_XYR(int16_t x, int16_t y, int16_t role)
 }
 
 struct { int8_t x; int8_t y; int8_t r; } const dir_table[] = {
-//    X  Y  R
+//  X  Y  R
   { 0, 0, 0},  // STOP
   { 1, 1, 0},  // UP_R
   { 0, 1, 0},  // UP
@@ -232,6 +232,7 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','B',},
   {'B',},
+  {},
   {'s',},
   {'s',},
   {'s',},
@@ -336,7 +337,6 @@ switch(buffer[3]){
     case 15: M5.IMU.Init();; callOK(); break;
     case 16: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
     case 17: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-    case 18: sendString((getWeather(getString(0)))); break;
     case 19: sendString((getWeather(getString(0)))); break;
     case 20: sendString((getWeather(getString(0)))); break;
     case 21: sendString((getWeather(getString(0)))); break;
@@ -346,14 +346,15 @@ switch(buffer[3]){
     case 25: sendString((getWeather(getString(0)))); break;
     case 26: sendString((getWeather(getString(0)))); break;
     case 27: sendString((getWeather(getString(0)))); break;
-    case 28: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
-    case 29: sendString((getHttp(getString(0),true))); break;
-    case 35: setRoverC(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-    case 36: setRoverC_XYR(getShort(0),getShort(1),getShort(2));; callOK(); break;
-    case 37: moveRoverC(getByte(0),getByte(1));; callOK(); break;
-    case 40: sendString((statusWifi())); break;
-    case 41: sendString((scanWifi())); break;
-    case 42: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 28: sendString((getWeather(getString(0)))); break;
+    case 29: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
+    case 30: sendString((getHttp(getString(0),true))); break;
+    case 36: setRoverC(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
+    case 37: setRoverC_XYR(getShort(0),getShort(1),getShort(2));; callOK(); break;
+    case 38: moveRoverC(getByte(0),getByte(1));; callOK(); break;
+    case 41: sendString((statusWifi())); break;
+    case 42: sendString((scanWifi())); break;
+    case 43: sendByte((connectWifi(getString(0),getString(1)))); break;
     case 0xFE:  // firmware name
     _println("PC mode: " mVersion);
     break;
