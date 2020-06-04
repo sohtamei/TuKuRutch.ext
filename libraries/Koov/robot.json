@@ -5,8 +5,8 @@
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html",
+	"helpURL"		: "https://github.com/sohtamei/docs/blob/master/Koov.md",
+	"productInfoURL": "https://github.com/sohtamei/docs/blob/master/Koov.md",
 	"sampleDir"		: "sample/Koov",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex

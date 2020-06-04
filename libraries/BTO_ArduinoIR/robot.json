@@ -5,7 +5,7 @@
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "https://bit-trade-one.co.jp/product/module/adaudir/",
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#BTO_ArduinoIR",
 	"productInfoURL": "https://bit-trade-one.co.jp/product/module/adaudir/",
 	"sampleDir"		: "",										// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",

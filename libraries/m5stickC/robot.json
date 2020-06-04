@@ -5,8 +5,8 @@
 
 	"sort"			: 11,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#m5stack",
+	"helpURL"		: "https://github.com/sohtamei/docs/blob/master/M5.md",
+	"productInfoURL": "https://github.com/sohtamei/docs/blob/master/M5.md",
 	"sampleDir"		: "sample/m5stickC",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex

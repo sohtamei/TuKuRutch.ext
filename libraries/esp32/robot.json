@@ -5,8 +5,8 @@
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#LiquidCrystal",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#LiquidCrystal",
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#esp32",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_shield.html#esp32",
 	"sampleDir"		: "",										// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex

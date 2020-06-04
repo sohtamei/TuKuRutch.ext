@@ -5,8 +5,8 @@
 
 	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "Thousandiy",							// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html",
-	"productInfoURL": "https://thousandiy.wordpress.com/",
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#Duke32AIO",
+	"productInfoURL": "https://thousandiy.wordpress.com/2018/04/11/duke32_aio/",
 	"sampleDir"		: "sample/Duke32AIO",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
