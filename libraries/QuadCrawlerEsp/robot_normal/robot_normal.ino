@@ -1,20 +1,24 @@
-#define mVersion "QuadCrawler1.2"
+#define mVersion "QuadCrawlerEsp1.2"
 
-#include "quadCrawlerEsp.h"
-//#include <analogRemote.h>
+#include <quadCrawlerEsp.h>
+#include <analogRemote.h>
+#include "TukurutchEsp.h"
 
-static void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
-//static analogRemote remote(MODE_XYKEYS, /*port*/2, funcLed);
+WifiRemote remote1;
+
+void funcLed(uint8_t onoff) { digitalWrite(PORT_LED1, onoff); }
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
 void setup()
 {
   // 初期化処理
-  pinMode(13, OUTPUT);
-  digitalWrite(13, LOW);
+  pinMode(PORT_LED1, OUTPUT);
+  digitalWrite(PORT_LED1, LOW);
   quadCrawler_init();
-//  quadCrawler_colorWipe(COLOR_PURPLE);
+  quadCrawler_colorWipe(COLOR_PURPLE);
   quadCrawler_beep(100);
   Serial.begin(115200);
+  initWifi(mVersion, true);
   Serial.println("Normal: " mVersion);
 }
 
@@ -22,11 +26,9 @@ static uint8_t lastkey = 0;
 static uint8_t originAdj = 0;
 static uint8_t lastSw4 = 1;
 static uint32_t sonner_time = 0;
-extern volatile unsigned long timer0_millis;
 
 void loop()
 {
-/*
   // リモコン処理：標準リモコン、アナログリモコンを受信し、キーコードに従ってロボットを動かす。
   #define A_DOWN_OFFSET  0x10
   remote.checkUpdated();            // リモコンコード受信
@@ -170,9 +172,9 @@ void loop()
   }
   quadCrawler_servoLoop();
 
-  uint16_t elapsed = (timer0_millis - sonner_time);
+  uint16_t elapsed = (millis() - sonner_time);
   if(elapsed >= 100) {
-    sonner_time = timer0_millis;
+    sonner_time = millis();
     // 超音波センサで障害物を検出したときブザーを鳴らす (100ms周期)
     double sonner_val = quadCrawler_getSonner();
     if (sonner_val < 8){
@@ -184,5 +186,4 @@ void loop()
       }
     }
   }
-*/
 }
