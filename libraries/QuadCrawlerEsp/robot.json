@@ -53,6 +53,10 @@ initWifi(mVersion, false);
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
+#ifndef PCMODE
+  sendNotifyArduinoMode();
+#endif
+remote1.updateRemote();
 quadCrawler_servoLoop();
 ",
 
@@ -96,9 +100,7 @@ quadCrawler_servoLoop();
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,{0});"}],
 
 		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
 		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
 		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),analogRead(A0+{0})"}],
 
 		["-"],

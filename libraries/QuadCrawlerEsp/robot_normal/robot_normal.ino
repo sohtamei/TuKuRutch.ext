@@ -170,6 +170,7 @@ void loop()
     // アナログリモコンのJOYSTICK操作のとき速度設定
     quadCrawler_setSpeed(25000 / remote.xyLevel);
   }
+  sendNotifyArduinoMode();
   quadCrawler_servoLoop();
 
   uint16_t elapsed = (millis() - sonner_time);
