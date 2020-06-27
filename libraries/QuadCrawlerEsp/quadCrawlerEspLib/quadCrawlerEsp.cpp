@@ -1,5 +1,5 @@
 #include <stdint.h>
-//#include <Wire.h> is necessary in .ino
+#include <Wire.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
 #include "quadCrawlerEsp.h"
@@ -9,14 +9,15 @@
 /*
 IO2/LED1
 IO4/MEN
-IO12/LED2
 IO13/IRRX
-IO14/NEOPIX		x
+IO14/NEOPIX
+IO26/SDA
+IO27/SCL
+IO33/BZ
+
+IO12
 IO18/ECHO
 IO19/TRIG
-IO21/SDA
-IO22/SCL
-IO25/BZ
 IO34/SW1
 IO35/SW2
 IO36/SW3
@@ -27,9 +28,12 @@ IO39/SW4
 #define Neopix	14
 #define Echo	18	// Echo Pin
 #define Trig	19	// Trigger Pin
-#define Bz		25	// Bzzer Pin
+#define Bz		33	// Bzzer Pin
+#define SCL		27
+#define SDA		26
 
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define servo_min 200  // Min pulse length out of 4096
 #define servo_max 400 // Max pulse length out of 4096
 #define deg_max   130  // Max deg
@@ -235,7 +239,7 @@ void quadCrawler_servoLoop(void)
 
   default:
     if(elapsed < servoDelay + accel_duration/2) {	// 動作時間=servoDelay + accel_duration/2
-	  uint32_t k256;	// 距離の係数*256
+	  int32_t k256;		// 距離の係数*256
 	  if(elapsed < accel_duration) {
 		// 等加速度運動 v=elapsed/inv_accel, x=elapsed^2/inv_accel/2
 	    k256 = (elapsed * elapsed * (256/2))/inv_accel;
@@ -490,6 +494,7 @@ void quadCrawler_theaterChaseRainbow(uint8_t wait) {
     }
   }
 }
+/*
 double quadCrawler_getSonner() {
   if(digitalRead(Echo) == HIGH)
     return 100.0;
@@ -510,6 +515,7 @@ double quadCrawler_getSonner() {
     return 0;
   }
 }
+*/
 void quadCrawler_beep(int time) {
   for (int i = 0; i < time; i++) {
     digitalWrite(Bz, HIGH);
@@ -525,6 +531,8 @@ void quadCrawler_init(void)
   pinMode( PORT_LED1, OUTPUT );
   pinMode( MEN, OUTPUT );
   digitalWrite( MEN, HIGH);
+  pinMode( Bz, OUTPUT );
+/*
   pinMode( Echo, INPUT_PULLUP );
   pinMode( Trig, OUTPUT );
   pinMode( Bz, OUTPUT );
@@ -532,9 +540,10 @@ void quadCrawler_init(void)
   pinMode( Sw2, INPUT_PULLUP );
   pinMode( Sw3, INPUT_PULLUP );
   pinMode( Sw4, INPUT_PULLUP );
-
+*/
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
+  Wire.begin(SDA,SCL);
   pwm.begin();
   pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
   yield();

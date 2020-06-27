@@ -148,6 +148,7 @@ void loop()
   }
 
   // SW4を押したとき初期姿勢にする (組み立て用)
+/*
   uint8_t sw4 = digitalRead(Sw4);
   if(lastSw4!=sw4 && sw4==0) {
     if(!originAdj) {
@@ -164,15 +165,15 @@ void loop()
     originAdj = 0;
   }
   lastSw4 = sw4;
-
+*/
   // 歩行などのモーション処理、経過時間に応じてサーボモーターを制御する。
   if(remote.xyLevel >= 10) {
     // アナログリモコンのJOYSTICK操作のとき速度設定
-    quadCrawler_setSpeed(25000 / remote.xyLevel);
+//    quadCrawler_setSpeed(25000 / remote.xyLevel);
   }
   sendNotifyArduinoMode();
   quadCrawler_servoLoop();
-
+/*
   uint16_t elapsed = (millis() - sonner_time);
   if(elapsed >= 100) {
     sonner_time = millis();
@@ -187,4 +188,5 @@ void loop()
       }
     }
   }
+*/
 }

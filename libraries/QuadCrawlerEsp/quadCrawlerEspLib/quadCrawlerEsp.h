@@ -13,7 +13,6 @@ enum {
 
 #define PORT_IRRX	13
 #define PORT_LED1	2
-#define PORT_LED2	12
 
 //動作速度定義
 enum {

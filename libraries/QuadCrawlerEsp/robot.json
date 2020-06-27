@@ -83,8 +83,8 @@ quadCrawler_servoLoop();
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
 		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
 		["w", "beep %d",								"setBeep",			50,			{"remote":["S"],		"func":"quadCrawler_beep({0});"}],
-		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
-		["B", "SW %d.sw is pressed",					"getSW",			1,			{"remote":["B",		"B"],"func":"(({0}>=1&&{0}<=4)?digitalRead(sw_table[{0}-1]):0)==0"}],
+//		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
+//		["B", "SW %d.sw is pressed",					"getSW",			1,			{"remote":["B",		"B"],"func":"(({0}>=1&&{0}<=4)?digitalRead(sw_table[{0}-1]):0)==0"}],
 
 		["-"],	// ブロック区切り
 

@@ -213,7 +213,7 @@ void quadCrawler_servoLoop(void)
 
   default:
     if(elapsed < servoDelay + accel_duration/2) {	// 動作時間=servoDelay + accel_duration/2
-	  uint32_t k256;	// 距離の係数*256
+	  int32_t k256;		// 距離の係数*256
 	  if(elapsed < accel_duration) {
 		// 等加速度運動 v=elapsed/inv_accel, x=elapsed^2/inv_accel/2
 	    k256 = (elapsed * elapsed * (256/2))/inv_accel;

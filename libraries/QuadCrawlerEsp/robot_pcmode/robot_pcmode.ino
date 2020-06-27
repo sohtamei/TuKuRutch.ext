@@ -2,7 +2,7 @@
 
 #define PCMODE
 
-#define mVersion "QuadCrawler1.2"
+#define mVersion "QuadCrawlerEsp1.2"
 
 #include <quadCrawlerEsp.h>
 #include <analogRemote.h>
@@ -76,8 +76,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'S',},
   {},
-  {'B',},
-  {},
   {},
   {},
   {},
@@ -86,8 +84,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B',},
   {'B','B',},
-  {'B','B',},
-  {'B',},
   {'B',},
   {'B',},
   {},
@@ -173,17 +169,13 @@ static void parseData()
         case 7: quadCrawler_colorWipe(getByte(0));; callOK(); break;
         case 8: quadCrawler_rainbow(getByte(0));; callOK(); break;
         case 9: quadCrawler_beep(getShort(0));; callOK(); break;
-        case 10: sendFloat((quadCrawler_getSonner())); break;
-        case 11: sendByte((((getByte(0)>=1&&getByte(0)<=4)?digitalRead(sw_table[getByte(0)-1]):0)==0)); break;
-        case 19: pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,getByte(0));; callOK(); break;
-        case 20: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 21: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
-        case 22: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 23: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 24: sendShort((pinMode(A0+getByte(0),INPUT),analogRead(A0+getByte(0)))); break;
-        case 32: sendString((statusWifi())); break;
-        case 33: sendString((scanWifi())); break;
-        case 34: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 17: pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,getByte(0));; callOK(); break;
+        case 18: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 19: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 20: sendShort((pinMode(A0+getByte(0),INPUT),analogRead(A0+getByte(0)))); break;
+        case 28: sendString((statusWifi())); break;
+        case 29: sendString((scanWifi())); break;
+        case 30: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -238,6 +230,10 @@ void loop()
         }
     }
     
+    #ifndef PCMODE
+      sendNotifyArduinoMode();
+    #endif
+    remote1.updateRemote();
     quadCrawler_servoLoop();
     
 }
