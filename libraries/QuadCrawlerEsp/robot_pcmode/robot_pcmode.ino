@@ -55,6 +55,8 @@ void setup()
     initWifi(mVersion, false);
     #endif
     
+    startCameraServer();
+    
     _Serial.println("PC mode: " mVersion);
 }
 

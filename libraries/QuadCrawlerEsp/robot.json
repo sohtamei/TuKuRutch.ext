@@ -18,7 +18,7 @@
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
 						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=esp32_default",
+						"custom_PartitionScheme=esp32_huge_app",
 						"custom_UploadSpeed=esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -50,6 +50,8 @@ initWifi(mVersion, true);
 #else
 initWifi(mVersion, false);
 #endif
+
+startCameraServer();
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"

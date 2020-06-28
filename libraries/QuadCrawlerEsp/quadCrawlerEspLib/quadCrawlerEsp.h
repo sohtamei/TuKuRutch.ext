@@ -106,4 +106,5 @@ enum {
 void quadCrawler_rainbow(uint8_t wait);         // LEDを７色に光らせる。
 uint8_t quadCrawler_checkServoON(void);
 
+void startCameraServer();
 #endif  // quadCrawler_h

@@ -1,6 +1,6 @@
 #define mVersion "QuadCrawlerEsp1.2"
 
-#include <quadCrawlerEsp.h>
+#include "quadCrawlerEsp.h"
 #include <analogRemote.h>
 #include "TukurutchEsp.h"
 
@@ -12,14 +12,15 @@ analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 void setup()
 {
   // 初期化処理
-  pinMode(PORT_LED1, OUTPUT);
-  digitalWrite(PORT_LED1, LOW);
   quadCrawler_init();
   quadCrawler_colorWipe(COLOR_PURPLE);
   quadCrawler_beep(100);
   Serial.begin(115200);
+
   initWifi(mVersion, true);
   Serial.println("Normal: " mVersion);
+
+  startCameraServer();
 }
 
 static uint8_t lastkey = 0;
@@ -169,7 +170,7 @@ void loop()
   // 歩行などのモーション処理、経過時間に応じてサーボモーターを制御する。
   if(remote.xyLevel >= 10) {
     // アナログリモコンのJOYSTICK操作のとき速度設定
-//    quadCrawler_setSpeed(25000 / remote.xyLevel);
+    quadCrawler_setSpeed(25000 / remote.xyLevel);
   }
   sendNotifyArduinoMode();
   quadCrawler_servoLoop();

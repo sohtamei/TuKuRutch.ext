@@ -159,7 +159,11 @@ static const uint8_t angle_table[5][8] = {
 	{RFK_UD,RFC_N, RRK_UD,RRC_N, LFK_UD,LFC_N, LRK_UD,LRC_N},		// downMax
 };
 
-void quadCrawler_setPose4(uint8_t rfk, uint8_t rfc, uint8_t rrk, uint8_t rrc, uint8_t lfk, uint8_t lfc, uint8_t lrk, uint8_t lrc)
+void quadCrawler_setPose4(
+	uint8_t rfk, uint8_t rfc,
+	uint8_t rrk, uint8_t rrc,
+	uint8_t lfk, uint8_t lfc,
+	uint8_t lrk, uint8_t lrc)
 {
 	uint8_t motion[8];
 	motion[0] = angle_table[rfk][0];
