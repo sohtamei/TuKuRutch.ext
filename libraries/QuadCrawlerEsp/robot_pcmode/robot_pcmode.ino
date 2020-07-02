@@ -16,6 +16,11 @@ analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
 const uint8_t sw_table[4] = {Sw1,Sw2,Sw3,Sw4};
 
+void connectedCB(String localIP)
+{
+    startCameraServer();
+}
+
 
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
@@ -50,12 +55,10 @@ void setup()
     quadCrawler_beep(100);
     Serial.begin(115200);
     #ifndef PCMODE
-    initWifi(mVersion, true);
+    initWifi(mVersion, true, connectedCB);
     #else
-    initWifi(mVersion, false);
+    initWifi(mVersion, false, connectedCB);
     #endif
-    
-    startCameraServer();
     
     _Serial.println("PC mode: " mVersion);
 }

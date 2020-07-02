@@ -9,6 +9,11 @@ WifiRemote remote1;
 void funcLed(uint8_t onoff) { digitalWrite(PORT_LED1, onoff); }
 analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
+void connectedCB(String localIP)
+{
+  startCameraServer();
+}
+
 void setup()
 {
   // 初期化処理
@@ -17,10 +22,8 @@ void setup()
   quadCrawler_beep(100);
   Serial.begin(115200);
 
-  initWifi(mVersion, true);
+  initWifi(mVersion, true, connectedCB);
   Serial.println("Normal: " mVersion);
-
-  startCameraServer();
 }
 
 static uint8_t lastkey = 0;

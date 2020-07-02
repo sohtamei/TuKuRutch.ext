@@ -38,6 +38,11 @@ void funcLed(uint8_t onoff) { digitalWrite(PORT_LED1, onoff); }
 analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
 const uint8_t sw_table[4] = {Sw1,Sw2,Sw3,Sw4};
+
+void connectedCB(String localIP)
+{
+startCameraServer();
+}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -46,12 +51,10 @@ quadCrawler_colorWipe(COLOR_PURPLE);
 quadCrawler_beep(100);
 Serial.begin(115200);
 #ifndef PCMODE
-initWifi(mVersion, true);
+initWifi(mVersion, true, connectedCB);
 #else
-initWifi(mVersion, false);
+initWifi(mVersion, false, connectedCB);
 #endif
-
-startCameraServer();
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
