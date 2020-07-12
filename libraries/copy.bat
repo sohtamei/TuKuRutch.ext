@@ -8,6 +8,10 @@ set DIRNAME=Buzzer
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
 
+set DIRNAME=Duke32AIO
+copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
+copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
+
 set DIRNAME=esp32
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
@@ -36,11 +40,16 @@ set DIRNAME=QuadCrawler
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
 
-set DIRNAME=Spresense
+set DIRNAME=QuadCrawlerEsp
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
 
-set DIRNAME=Duke32AIO
+#set DIRNAME=Spresense
+#copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
+#copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
+
+set DIRNAME=TukuBoard1.0
 copy %DIRNAME_S%\robot.js %DIRNAME%\robot.js /Y
 copy %DIRNAME_S%\robot_pcmode\robot_pcmode.ino.template %DIRNAME%\robot_pcmode\robot_pcmode.ino.template /Y
+
 pause

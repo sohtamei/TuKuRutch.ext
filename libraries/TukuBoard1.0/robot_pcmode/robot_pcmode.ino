@@ -2,16 +2,78 @@
 
 #define PCMODE
 
-#define mVersion "ESP32 1.0"
+#define mVersion "TukuBoard1.0"
 #include "TukurutchEsp.h"
+#include "driver/adc.h"
+#include "esp_adc_cal.h"
 WifiRemote remote;
 
-#include <WebServer.h>
+#define P_LED		2
+#define P_GND		4
+#define P_BUZZER	19
 
-#include <libb64/cdecode.h>
-#include <libb64/cencode.h>
+esp_adc_cal_characteristics_t adc_chars;
 
-WebServer webServer(80);
+#define LEDC_CHANNEL_0     0
+#define LEDC_TIMER_13_BIT  13
+#define LEDC_BASE_FREQ     5000
+
+enum {
+      TONE_C4 = 262,
+      TONE_D4 = 294,
+      TONE_E4 = 330,
+      TONE_F4 = 349,
+      TONE_G4 = 392,
+      TONE_A4 = 440,
+      TONE_B4 = 494,
+      TONE_C5 = 523,
+};
+
+void _tone(int sound, int ms) {
+      ledcWriteTone(LEDC_CHANNEL_0, sound);
+      delay(ms);
+      ledcWriteTone(LEDC_CHANNEL_0, 0);
+}
+
+uint16_t _getAnalog(uint8_t port, uint16_t count)
+{
+      if(port < 32 || port > 37) return 0;
+    
+      if(count == 0) count = 1;
+      uint32_t sum = 0;
+      for(int i = 0; i < count; i++)
+        sum += adc1_get_raw((adc1_channel_t)(ADC1_CHANNEL_4+(port-32)));
+      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+}
+
+void _setLed(uint16_t leds, uint8_t onoff)
+{
+      int ledH = leds>>8;
+      int ledL = leds&0xFF;
+      digitalWrite(ledH, onoff);
+      pinMode(ledH, OUTPUT);
+      digitalWrite(ledL, LOW);
+      pinMode(ledL, OUTPUT);
+}
+
+uint8_t _getSw(uint16_t sw)
+{
+      int swi = sw>>8;
+      int swo = sw&0xFF;
+      pinMode(swi, INPUT_PULLUP);
+      digitalWrite(swo, LOW);
+      pinMode(swo, OUTPUT);
+      return digitalRead(swi) ? 0: 1;
+}
+
+void onConnect(String ip)
+{
+      digitalWrite(P_LED, HIGH);
+      _tone(TONE_C4, 250);
+      _tone(TONE_D4, 250);
+      _tone(TONE_E4, 250);
+}
+
 
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
@@ -33,7 +95,6 @@ enum {
 };
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
-static void httpCmd(void);
 
 void setup()
 {
@@ -42,30 +103,29 @@ void setup()
     wdt_disable();
     #endif
     
+    pinMode(P_LED, OUTPUT);
+    digitalWrite(P_LED, LOW);
+    pinMode(P_GND, OUTPUT);
+    digitalWrite(P_GND, LOW);
+    ledcSetup(LEDC_CHANNEL_0, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
+    ledcAttachPin(P_BUZZER, LEDC_CHANNEL_0);
+    
+    #define DEFAULT_VREF    1100
+    adc1_config_width(ADC_WIDTH_BIT_12);
+    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
+    for(int i = ADC1_CHANNEL_4; i <= ADC1_CHANNEL_7; i++)
+      adc1_config_channel_atten((adc1_channel_t)i, ADC_ATTEN_DB_11);
+    
+    _tone(TONE_C5, 100);
     Serial.begin(115200);
+    
     #ifndef PCMODE
-    initWifi(mVersion, true, connectedCB);
+    initWifi(mVersion, true, onConnect);
     #else
-    initWifi(mVersion, false, connectedCB);
+    initWifi(mVersion, false, onConnect);
     #endif
-
+    
     _Serial.println("PC mode: " mVersion);
-}
-
-void connectedCB(String localIP)
-{
-	webServer.onNotFound([]() {
-		webServer.send(404, "text/plain", "File Not Found");
-	});
-
-	webServer.on("/", []() {
-		webServer.send(200, "text/plain", "hello, world!");
-	});
-
-	webServer.on("/cmd", httpCmd);
-
-	webServer.enableCORS(true);
-	webServer.begin();
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
@@ -76,10 +136,12 @@ static uint8_t _packetLen = 4;
 static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
-  {},
   {'B',},
-  {'B','B',},
+  {'S','B',},
+  {'S','S',},
+  {'S',},
   {'B',},
+  {'B','S',},
   {},
   {},
   {},
@@ -91,16 +153,10 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart == 1) {
-        writeWifi(dp, count);
-	  } else if(wifi_uart == 2) {
-		char* base64 = (char*)malloc(base64_encode_expected_len(count) + 1);
-		if(base64) {
-			base64_encode_chars((char*)dp, count, base64);
-			webServer.send(200, "text/plain", base64);
-			free(base64);
-		}
-	  } else
+      if(wifi_uart) {
+            writeWifi(dp, count);
+            _Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+      } else
     #endif
         _Serial.write(dp, count);
 }
@@ -155,12 +211,15 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: pinMode(2,OUTPUT);digitalWrite(2,getByte(0));; callOK(); break;
-        case 3: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 4: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 6: sendString((statusWifi())); break;
-        case 7: sendString((scanWifi())); break;
-        case 8: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 1: digitalWrite(P_LED,getByte(0));; callOK(); break;
+        case 2: _setLed(getShort(0),getByte(1));; callOK(); break;
+        case 3: _tone(getShort(0),getShort(1));; callOK(); break;
+        case 4: sendByte((_getSw(getShort(0)))); break;
+        case 5: sendShort((_getAnalog(getByte(0),1))); break;
+        case 6: sendShort((_getAnalog(getByte(0),getShort(1)))); break;
+        case 8: sendString((statusWifi())); break;
+        case 9: sendString((scanWifi())); break;
+        case 10: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -189,7 +248,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        //_Serial.write(a)  // for debug
+        _Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -214,31 +273,11 @@ void loop()
             _index = 0;
         }
     }
-    webServer.handleClient();
-}
-
-static void httpCmd(void)
-{
-	int i;
-	String cmdEnc = webServer.arg("d");
-	if(cmdEnc.length() >= 4) {
-		cmdEnc.replace("-", "+");
-		cmdEnc.replace("_", "/");
-		int len = (cmdEnc.length()+3) & ~3;
-		for(i = cmdEnc.length(); i < len; i++) cmdEnc.concat("=");
-		Serial.println(cmdEnc);
-		if(sizeof(buffer) >= base64_decode_expected_len(cmdEnc.length()) + 1) {
-			_packetLen = base64_decode_chars((const char*)cmdEnc.c_str(), cmdEnc.length(), (char*)buffer);
-			for(int i=0;i<_packetLen;i++) Serial.printf("%02x", buffer[i]);
-			Serial.println();
-
-			wifi_uart = 2;
-			parseData();
-		    return;
-		}
-	}
-	webServer.send(400, "text/plain", "error");
-	return;
+    
+    #ifndef PCMODE
+      sendNotifyArduinoMode();
+    #endif
+    
 }
 
 union floatConv { 
@@ -322,6 +361,7 @@ static void sendShort(uint16_t data)
     *dp++ = RSP_SHORT;
     *dp++ = data&0xff;
     *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
@@ -403,6 +443,3 @@ static void sendRemote(void)
     _write(buffer, dp-buffer);
 }
 #endif
-
-
-

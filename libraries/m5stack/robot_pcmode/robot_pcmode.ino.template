@@ -49,9 +49,10 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
-  if(wifi_uart)
+  if(wifi_uart) {
     writeWifi(dp, count);
-  else
+    //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+  } else
 #endif
     _Serial.write(dp, count);
 }
@@ -135,7 +136,7 @@ void loop()
 {
 int16_t c;
 while((c=_read()) >= 0) {
-//_Serial.write(a)  // for debug
+//_Serial.printf("%02x",c);  // for debug
 buffer[_index++] = c;
 
 switch(_index) {
@@ -244,6 +245,7 @@ uint8_t* dp = buffer;
 *dp++ = RSP_SHORT;
 *dp++ = data&0xff;
 *dp++ = data>>8;
+_write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
