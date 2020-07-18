@@ -8,27 +8,14 @@
 // ポート定義
 
 /*
-IO2/LED1
-IO4/MEN
-IO13/IRRX
-IO14/NEOPIX
-IO26/SDA
-IO27/SCL
-IO33/BZ
-
-IO12
-IO18/ECHO
-IO19/TRIG
-IO34/SW1
-IO35/SW2
-IO36/SW3
-IO39/SW4
+#define PORT_IRRX	13
+#define PORT_LED1	2
 */
 
 #define MEN		4	// Surbo Moter Drive Enable Pin
 #define Neopix	14
-#define Echo	18	// Echo Pin
-#define Trig	19	// Trigger Pin
+#define Echo	12	// Echo Pin
+#define Trig	15	// Trigger Pin
 #define Bz		33	// Bzzer Pin
 #define SCL		27
 #define SDA		26
@@ -512,7 +499,7 @@ void quadCrawler_theaterChaseRainbow(uint8_t wait) {
     }
   }
 }
-/*
+
 double quadCrawler_getSonner() {
   if(digitalRead(Echo) == HIGH)
     return 100.0;
@@ -533,32 +520,26 @@ double quadCrawler_getSonner() {
     return 0;
   }
 }
-*/
-void quadCrawler_beep(int time) {
-  for (int i = 0; i < time; i++) {
-    digitalWrite(Bz, HIGH);
-    delayMicroseconds(400);
-    digitalWrite(Bz, LOW );
-    delayMicroseconds(400);
-  }
-}
 
+#define LEDC_CHANNEL_15 15
+#define LEDC_TIMER_13_BIT  13
+#define LEDC_BASE_FREQ     5000
+void quadCrawler_tone(int sound, int ms) {
+  ledcWriteTone(LEDC_CHANNEL_15, sound);
+  delay(ms);
+  ledcWriteTone(LEDC_CHANNEL_15, 0);
+}
 
 void quadCrawler_init(void)
 {
   pinMode( PORT_LED1, OUTPUT );
   pinMode( MEN, OUTPUT );
   digitalWrite( MEN, HIGH);
-  pinMode( Bz, OUTPUT );
-/*
   pinMode( Echo, INPUT_PULLUP );
   pinMode( Trig, OUTPUT );
-  pinMode( Bz, OUTPUT );
-  pinMode( Sw1, INPUT_PULLUP );
-  pinMode( Sw2, INPUT_PULLUP );
-  pinMode( Sw3, INPUT_PULLUP );
-  pinMode( Sw4, INPUT_PULLUP );
-*/
+  ledcSetup(LEDC_CHANNEL_15, LEDC_BASE_FREQ, LEDC_TIMER_13_BIT);
+  ledcAttachPin(Bz, LEDC_CHANNEL_15);
+
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   Wire.begin(SDA,SCL);

@@ -2,7 +2,7 @@
 
 #define PCMODE
 
-#define mVersion "QuadCrawlerEsp1.2"
+#define mVersion "QuadCrawlerEsp1.0"
 
 #include <quadCrawlerEsp.h>
 #include <analogRemote.h>
@@ -13,8 +13,6 @@ WifiRemote remote1;
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
 void funcLed(uint8_t onoff) { digitalWrite(PORT_LED1, onoff); }
 analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
-
-const uint8_t sw_table[4] = {Sw1,Sw2,Sw3,Sw4};
 
 void connectedCB(String localIP)
 {
@@ -52,7 +50,7 @@ void setup()
     
     quadCrawler_init();
     quadCrawler_colorWipe(COLOR_PURPLE);
-    quadCrawler_beep(100);
+    quadCrawler_tone(T_C5, 100);
     Serial.begin(115200);
     #ifndef PCMODE
     initWifi(mVersion, true, connectedCB);
@@ -79,18 +77,15 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B',},
   {'B',},
-  {'S',},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
   {'B',},
-  {'B','B',},
-  {'B',},
-  {'B',},
+  {'S','S',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
   {},
   {},
   {},
@@ -108,9 +103,10 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart)
-        writeWifi(dp, count);
-      else
+      if(wifi_uart) {
+            writeWifi(dp, count);
+            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+      } else
     #endif
         _Serial.write(dp, count);
 }
@@ -171,16 +167,14 @@ static void parseData()
         case 4: quadCrawler_setPose1(2,getByte(0),getByte(1));; callOK(); break;
         case 5: quadCrawler_setPose1(3,getByte(0),getByte(1));; callOK(); break;
         case 6: quadCrawler_Walk(200,0);; callOK(); break;
-        case 7: quadCrawler_colorWipe(getByte(0));; callOK(); break;
-        case 8: quadCrawler_rainbow(getByte(0));; callOK(); break;
-        case 9: quadCrawler_beep(getShort(0));; callOK(); break;
-        case 17: pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,getByte(0));; callOK(); break;
-        case 18: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 19: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 20: sendShort((pinMode(A0+getByte(0),INPUT),analogRead(A0+getByte(0)))); break;
-        case 28: sendString((statusWifi())); break;
-        case 29: sendString((scanWifi())); break;
-        case 30: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 7: pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,getByte(0));; callOK(); break;
+        case 8: quadCrawler_colorWipe(getByte(0));; callOK(); break;
+        case 9: quadCrawler_rainbow(getByte(0));; callOK(); break;
+        case 10: quadCrawler_tone(getShort(0),getShort(1));; callOK(); break;
+        case 11: sendFloat((quadCrawler_getSonner())); break;
+        case 25: sendString((statusWifi())); break;
+        case 26: sendString((scanWifi())); break;
+        case 27: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -209,7 +203,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        //_Serial.write(a)  // for debug
+        //_Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -324,6 +318,7 @@ static void sendShort(uint16_t data)
     *dp++ = RSP_SHORT;
     *dp++ = data&0xff;
     *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)

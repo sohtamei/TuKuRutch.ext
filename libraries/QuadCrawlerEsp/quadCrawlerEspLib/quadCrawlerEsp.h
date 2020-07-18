@@ -4,13 +4,7 @@
 #include <stdint.h>
 
 // ポート定義
-enum {
-  Sw1 = 34,
-  Sw2 = 35,
-  Sw3 = 36,	// VP
-  Sw4 = 39,	// VN
-};
-
+#define PORT_SW		0
 #define PORT_IRRX	13
 #define PORT_LED1	2
 
@@ -90,7 +84,12 @@ void quadCrawler_servoLoop(void);               // ロボット動作を経過�
 void quadCrawler_init(void);                    // 初期化処理、setup()で実行。
 
 double quadCrawler_getSonner();                 // 超音波センサの値を取得する。
-void quadCrawler_beep(int time);                // ブザーを鳴らす。
+
+void quadCrawler_tone(int sound, int ms);       // ブザーを鳴らす。
+enum {
+  T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
+  T_C5=523, T_D5=587, T_E5=659, T_F5=698,
+};
 
 void quadCrawler_colorWipe(uint8_t color);      // LEDを指定した色にする。COLOR_xx
 enum {

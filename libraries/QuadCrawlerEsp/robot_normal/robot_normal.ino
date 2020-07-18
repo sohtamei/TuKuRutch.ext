@@ -1,6 +1,6 @@
-#define mVersion "QuadCrawlerEsp1.2"
+#define mVersion "QuadCrawlerEsp1.0"
 
-#include "quadCrawlerEsp.h"
+#include <quadCrawlerEsp.h>
 #include <analogRemote.h>
 #include "TukurutchEsp.h"
 
@@ -11,6 +11,7 @@ analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
 void connectedCB(String localIP)
 {
+  Serial.println("connected, ip="+localIP);
   startCameraServer();
 }
 
@@ -19,7 +20,9 @@ void setup()
   // 初期化処理
   quadCrawler_init();
   quadCrawler_colorWipe(COLOR_PURPLE);
-  quadCrawler_beep(100);
+  quadCrawler_tone(T_C4, 300);
+  quadCrawler_tone(T_D4, 300);
+  quadCrawler_tone(T_E4, 300);
   Serial.begin(115200);
 
   initWifi(mVersion, true, connectedCB);
@@ -56,10 +59,10 @@ void loop()
       case BUTTON_CENTER:
         break;
       case BUTTON_MENU:             // MENUボタン : ブザー3秒
-        quadCrawler_beep(3000);
+        quadCrawler_tone(T_C5, 3000);
         break;
       case BUTTON_0:                // 0ボタン : LEDレインボー
-        quadCrawler_beep(50);
+        quadCrawler_tone(T_C5, 100);
         for (int n = 0; n < 5; n++) {
           quadCrawler_rainbow(5);
         }
@@ -152,8 +155,7 @@ void loop()
   }
 
   // SW4を押したとき初期姿勢にする (組み立て用)
-/*
-  uint8_t sw4 = digitalRead(Sw4);
+  uint8_t sw4 = digitalRead(PORT_SW);
   if(lastSw4!=sw4 && sw4==0) {
     if(!originAdj) {
       quadCrawler_colorWipe(COLOR_RED);
@@ -165,11 +167,11 @@ void loop()
     originAdj = !originAdj;
   } else if(originAdj && !quadCrawler_checkServoON()) {
     quadCrawler_colorWipe(COLOR_PURPLE);
-    quadCrawler_beep(50);
+    quadCrawler_tone(T_C5, 100);
     originAdj = 0;
   }
   lastSw4 = sw4;
-*/
+
   // 歩行などのモーション処理、経過時間に応じてサーボモーターを制御する。
   if(remote.xyLevel >= 10) {
     // アナログリモコンのJOYSTICK操作のとき速度設定
@@ -177,14 +179,14 @@ void loop()
   }
   sendNotifyArduinoMode();
   quadCrawler_servoLoop();
-/*
+
   uint16_t elapsed = (millis() - sonner_time);
   if(elapsed >= 100) {
     sonner_time = millis();
     // 超音波センサで障害物を検出したときブザーを鳴らす (100ms周期)
     double sonner_val = quadCrawler_getSonner();
     if (sonner_val < 8){
-      quadCrawler_beep(sonner_val * 10);
+      quadCrawler_tone(T_C5, sonner_val * 10);
 
       if(lastkey == XY_UP || lastkey == BUTTON_UP) {
         quadCrawler_colorWipe(COLOR_PURPLE);
@@ -192,5 +194,4 @@ void loop()
       }
     }
   }
-*/
 }

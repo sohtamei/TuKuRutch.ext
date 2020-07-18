@@ -25,7 +25,7 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"QuadCrawlerEsp1.2\"
+#define mVersion \"QuadCrawlerEsp1.0\"
 
 #include <quadCrawlerEsp.h>
 #include <analogRemote.h>
@@ -37,8 +37,6 @@ WifiRemote remote1;
 void funcLed(uint8_t onoff) { digitalWrite(PORT_LED1, onoff); }
 analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, funcLed);
 
-const uint8_t sw_table[4] = {Sw1,Sw2,Sw3,Sw4};
-
 void connectedCB(String localIP)
 {
 startCameraServer();
@@ -48,7 +46,7 @@ startCameraServer();
 	"setup":"
 quadCrawler_init();
 quadCrawler_colorWipe(COLOR_PURPLE);
-quadCrawler_beep(100);
+quadCrawler_tone(T_C5, 100);
 Serial.begin(115200);
 #ifndef PCMODE
 initWifi(mVersion, true, connectedCB);
@@ -85,11 +83,12 @@ quadCrawler_servoLoop();
 		["w", "RearL  %d.knee %d.crotch",				"setPoseLR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(3,{0},{1});"}],
 		["w", "stop",									"setStop",						{"remote":[],			"func":"quadCrawler_Walk(200,0);"}],
 
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,{0});"}],
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
 		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
-		["w", "beep %d",								"setBeep",			50,			{"remote":["S"],		"func":"quadCrawler_beep({0});"}],
-//		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
-//		["B", "SW %d.sw is pressed",					"getSW",			1,			{"remote":["B",		"B"],"func":"(({0}>=1&&{0}<=4)?digitalRead(sw_table[{0}-1]):0)==0"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "ド4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
+		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
+//		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"digitalRead(PORT_SW)==0"}],
 
 		["-"],	// ブロック区切り
 
@@ -99,14 +98,6 @@ quadCrawler_servoLoop();
 		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
 		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remote.x"}],
 		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remote.y"}],
-
-		["-"],
-
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,{0});"}],
-
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),analogRead(A0+{0})"}],
 
 		["-"],
 
@@ -124,7 +115,6 @@ quadCrawler_servoLoop();
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
-		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
 		"ircode":["POWER","MENU","TEST","RETURN","R0","C","↑","↓","←","→","CENTER","R1","R2","R3","R4","R5","R6","R7","R8","R9","B"],
 		"ircodeA":["A CENTER","A U","A R","A L","A D","A↑→","A↑","A←↑","A→","A←","A↓→","A↓","A←↓"],
@@ -135,9 +125,11 @@ quadCrawler_servoLoop();
 		"knee":["Neutral","up","down","max"],
 		"crotch":["Neutral","rear","front"],
 		"sw":["1","2","3","4"],
+
+		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
+		"beats":["Half","Quarter","Eighth","Whole","Double"],
 	},
 	"values":{
-		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 		"POWER":0x45,"B":0x46,"MENU":0x47,"TEST":0x44,"RETURN":0x43,"R0":0x16,"C":0x0D,"↑":0x40,"↓":0x19,"←":0x07,"→":0x09,"CENTER":0x15,
 		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
@@ -146,32 +138,35 @@ quadCrawler_servoLoop();
 		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_down":8,"t_down":9,"h_down":10,"l_down":11,"r_down":12,"t_up_down":13,"l_r_up":14,"all_up_down":15,
 		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
 		"keep":0,"Neutral":1,"up":2,"down":3,"max":4, "rear":2,"front":3,
+
+		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
+		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
+		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
+		"ド5":523,"レ5":587,"ミ5":659,"ファ5":698,"ソ5":784,"ラ5":880,"シ5":988,
+		"ド6":1047,"レ6":1175,"ミ6":1319,"ファ6":1397,"ソ6":1568,"ラ6":1760,"シ6":1976,
+		"ド7":2093,"レ7":2349,"ミ7":2637,"ファ7":2794,"ソ7":3136,"ラ7":3520,"シ7":3951,
+		"ド8":4186,"レ8":4699,
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
 	},
 	"translators":{
 		"ja":{
-			"set LED %d.onoff"								:"LEDを %d.onoff",
-			"remote pressed"								:"リモコンボタンが押された",
-			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
-			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
-			"get remote X"									:"アナログXの値",
-			"get remote Y"									:"アナログYの値",
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read digital pin A%n"							:"デジタルピン A%n",
-			"read analog pin A%n"							:"アナログピン A%n",
-			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
-
-			"walk %d.walkcmd %d.speed":"動く %d.walkcmd %d.speed",
+			"walk %d.walkcmd %d.speed"	:"動く %d.walkcmd %d.speed",
 			"FrontR %d.knee %d.crotch"	: "右前足 %d.knee %d.crotch",
 			"RearR  %d.knee %d.crotch"	: "右後足 %d.knee %d.crotch",
 			"FrontL %d.knee %d.crotch"	: "左前足 %d.knee %d.crotch",
 			"RearL  %d.knee %d.crotch"	: "左後足 %d.knee %d.crotch",
 
-			"LED rainbow %d sec"		: "LEDレインボー %d 秒",
-			"beep %d"					: "ビープ %d",
-			"read Sonner"				: "距離取得",
-			"SW %d.sw is pressed"		: "スイッチ %d.sw が押された",
+			"set LED %d.onoff"								:"LEDを %d.onoff",
+			"LED rainbow %d sec"							: "LEDレインボー %d 秒",
+			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
+			"read Sonner"									: "距離取得",
+			"SW is pressed"									: "スイッチが押された",
+
+			"remote pressed"								:"リモコンボタンが押された",
+			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
+			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
+			"get remote X"									:"アナログXの値",
+			"get remote Y"									:"アナログYの値",
 
 			"sslow":"超低速","slow":"低速","typical":"普通","fast":"高速","high":"超高速",
 			"stop":"停止","fw":"前進","cw":"右旋回","ccw":"左旋回","rw":"後進","right":"右移動","left":"左移動",
