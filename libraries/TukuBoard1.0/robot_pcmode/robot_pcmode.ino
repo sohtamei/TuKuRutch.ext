@@ -132,6 +132,17 @@ void setup()
     
     _tone(T_C5, 100);
     Serial.begin(115200);
+    if(_getSw(1)) {
+          delay(100);
+          _tone(T_C5, 100);
+          WiFi.beginSmartConfig();
+          Serial.println("Waiting for SmartConfig.");
+          while (!WiFi.smartConfigDone()) {
+                delay(2000);
+            	_tone(T_C5, 100);
+          }
+          Serial.println("SmartConfig received.");
+    }
     #ifndef PCMODE
     initWifi(mVersion, true, onConnect);
     #else
