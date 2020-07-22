@@ -8,8 +8,9 @@
 #define REMOTE_PORT 54322
 #define DPRINT(a) // _Serial.println(a) // for debug
 
-char g_ssid[32] = {0};
-char g_pass[32] = {0};
+char g_ssid[4+32+1] = {0};		// length(4)+SSID
+//char g_pass[66] = {0};
+
 WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
@@ -32,14 +33,14 @@ void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP)
 {
 	_connectedCB = connectedCB;
 	mVersion = ver;
-	preferences.begin("tukurutch", false);
-	preferences.getString("ssid", g_ssid, sizeof(g_ssid));
-	preferences.getString("password", g_pass, sizeof(g_pass));
-	Serial.print("Connecting to ");    Serial.println(g_ssid);
+	preferences.begin("nvs.net80211", true);
+	preferences.getBytes("sta.ssid", g_ssid, sizeof(g_ssid));
+//	preferences.getBytes("sta.pswd", g_pass, sizeof(g_pass));
+	Serial.print("Connecting to ");  Serial.println(g_ssid+4);
 
 	//WiFi.mode(WIFI_STA);
-	if(g_ssid[0]) {
-		WiFi.begin(g_ssid, g_pass);
+	if(g_ssid[4]) {
+		WiFi.begin();
 		connection_status = CONNECTION_CONNECTING;
 		connection_start = millis();
 		if(_waitWifi) {
@@ -57,11 +58,7 @@ void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP)
 
 uint8_t connectWifi(char* ssid, char*pass)
 {
-	strncpy(g_ssid, ssid, sizeof(g_ssid)-1);
-	strncpy(g_pass, pass, sizeof(g_pass)-1);
-	preferences.putString("ssid",g_ssid);
-	preferences.putString("password",g_pass);
-	WiFi.begin(g_ssid, g_pass);
+	WiFi.begin(ssid, pass);
 	connection_status = CONNECTION_CONNECTING;
 	connection_start = millis();
 	return waitWifi();
@@ -83,9 +80,9 @@ char* statusWifi(void)
     
 	if(WiFi.status() == WL_CONNECTED) {
 		IPAddress ip = WiFi.localIP();
-		snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid, ip[0],ip[1],ip[2],ip[3]);
+		snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid+4, ip[0],ip[1],ip[2],ip[3]);
 	} else {
-		snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid);
+		snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid+4);
 	}
 	return buf;
 }
