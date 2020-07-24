@@ -58,6 +58,7 @@ void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP)
 
 uint8_t connectWifi(char* ssid, char*pass)
 {
+	WiFi.mode(WIFI_STA);
 	WiFi.begin(ssid, pass);
 	connection_status = CONNECTION_CONNECTING;
 	connection_start = millis();
@@ -103,9 +104,9 @@ char* scanWifi(void)
 	return buf;
 }
 
-// connect	  : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED
+// connect		  : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED
 // disconnect     : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED->DISCONNECTED
-// no SSID	  : DISCONNECTED->NO_SSID_AVAIL (timeout)
+// no SSID		  : DISCONNECTED->NO_SSID_AVAIL (timeout)
 // password error : DISCONNECTED (timeout)
 uint32_t last_udp;
 int readWifi(void)

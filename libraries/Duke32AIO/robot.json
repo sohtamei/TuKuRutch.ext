@@ -375,7 +375,7 @@ remote.updateRemote();
 
 		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"],	"func":"setRobot({0},{1});"}],
 		["w", "stop",									"stopRobot",					{"remote":[],			"func":"setRobot(0,0);"}],
-		["w", "set motor%d.servoch speed %d.motorvalue","setMotor",			"ch-L",255,	{"remote":["B","S"],	"func":"setMotorSpeed({0},{1});"}],
+		["w", "set motor %d.servoch speed %d.motorvalue","setMotor",			"ch-L",255,	{"remote":["B","S"],	"func":"setMotorSpeed({0},{1});"}],
 
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 
@@ -405,7 +405,6 @@ remote.updateRemote();
 	],
 	"menus": {
 		"neopixel":["off","red","green","blue","white"],
-		"motordir":["stop","forward","back"],
 		"direction":["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
 		"din":[0,1,2,3],
 		"analog":[0,1],
@@ -431,8 +430,7 @@ remote.updateRemote();
 		"ja":{
 			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
 			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
-			"set motor%d.servoch speed %d.motorvalue"		:"モーター %d.servoch の速さを %d.motorvalue にする",
-			"set motor%d.servoch direction%d.motordir"		:"モーター %d.servoch を %d.motordir へ動かす",
+			"set motor %d.servoch speed %d.motorvalue"		:"モーター %d.servoch の速さを %d.motorvalue にする",
 			"set servo %m.servoch %n"						:"サーボ %d.servoch の角度を %n にする",
 			"read digital pin %d.din"						:"デジタルピン %d.din",
 			"read analog pin %d.analog"						:"アナログピン %d.analog",
