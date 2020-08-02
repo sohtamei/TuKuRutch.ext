@@ -1,20 +1,16 @@
 #include <WiFi.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
-#include <WiFiUdp.h>
 #include "TukurutchEsp.h"
 
 #define PORT  54321
-#define REMOTE_PORT 54322
 #define DPRINT(a) // _Serial.println(a) // for debug
 
 char g_ssid[4+32+1] = {0};		// length(4)+SSID
-//char g_pass[66] = {0};
 
 WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
-WiFiUDP remoteUdp;
 Preferences preferences;
 char buf[256];
 
@@ -190,26 +186,3 @@ void printlnWifi(char* mes)
 {
 	client.println(mes);
 }
-
-int WifiRemote::checkRemoteKey(void) {
-	if(!initialized) {
-		remoteUdp.begin(REMOTE_PORT);
-		initialized = true;
-	}
-	return keys;
-}
-
-void WifiRemote::updateRemote(void) {
-	if(!initialized) return;
-	int rlen = remoteUdp.parsePacket();
-	if(rlen>=5) {
-		uint8_t buf[16];
-		if(rlen >= sizeof(buf)) rlen = sizeof(buf);
-		remoteUdp.read(buf, rlen);
-		keys = buf[0];
-		x = buf[1]|(buf[2]<<8);
-		y = buf[3]|(buf[4]<<8);
-	//	snprintf((char*)buf,sizeof(buf),\"%d,%d,%d\",keys,x,y);
-	//	Serial.println((char*)buf);
-	}
-};

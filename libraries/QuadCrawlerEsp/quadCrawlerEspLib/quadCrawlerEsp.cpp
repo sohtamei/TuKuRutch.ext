@@ -596,5 +596,5 @@ void quadCrawler_init(void)
     s->set_saturation(s, -2);//lower the saturation
   }
   //drop down frame size for higher initial frame rate
-  s->set_framesize(s, FRAMESIZE_QVGA);
+  s->set_framesize(s, FRAMESIZE_HVGA);
 }

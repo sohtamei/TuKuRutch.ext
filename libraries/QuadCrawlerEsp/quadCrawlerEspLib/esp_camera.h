@@ -191,5 +191,5 @@ esp_err_t esp_camera_load_from_nvs(const char *key);
 }
 #endif
 
-#include "img_converters.h"
+//#include "img_converters.h"
 

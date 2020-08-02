@@ -3,17 +3,16 @@
 #define PCMODE
 
 #define mVersion "TukuBoard1.0"
+#include "WiFi.h"
 #include "TukurutchEsp.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
-WifiRemote remote;
 
 
-#include <libb64/cdecode.h>
-#include <libb64/cencode.h>
-#include <WebServer.h>
-WebServer webServer(80);
-#define ENABLE_WEBSERVER
+#include <ArduinoWebsockets.h>
+using namespace websockets;
+WebsocketsServer wsServer;
+#define ENABLE_WEBSOCKET
 
 #define P_GND		4
 
@@ -132,8 +131,7 @@ void onConnect(String ip)
   _tone(T_D4, 250);
   _tone(T_E4, 250);
 
-  void startWebServer(void);
-  startWebServer();
+  wsServer.listen(PORT_WEBSOCKET);
 }
 
 
@@ -238,14 +236,9 @@ void _write(uint8_t* dp, int count)
   if(wifi_uart == 1) {
         writeWifi(dp, count);
         //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
-    #ifdef ENABLE_WEBSERVER
+    #ifdef ENABLE_WEBSOCKET
   } else if(wifi_uart == 2) {
-        char* base64 = (char*)malloc(base64_encode_expected_len(count) + 1);
-        if(base64) {
-              base64_encode_chars((char*)dp, count, base64);
-              webServer.send(200, "text/plain", base64);
-              free(base64);
-        }
+        _packetLen = count;
     #endif
   } else
 #endif
@@ -368,49 +361,51 @@ while((c=_read()) >= 0) {
     }
 }
 
-webServer.handleClient();
+  loopWebSocket();
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif
 
 }
 
-#ifdef ENABLE_WEBSERVER
-static void httpCmd(void)
-{
-  int i;
-  String cmdEnc = webServer.arg("d");
-  if(cmdEnc.length() >= 4) {
-        cmdEnc.replace("-", "+");
-        cmdEnc.replace("_", "/");
-        int len = (cmdEnc.length()+3) & ~3;
-        for(i = cmdEnc.length(); i < len; i++) cmdEnc.concat("=");
-        //Serial.println(cmdEnc);  // for debug
-        if(sizeof(buffer) >= base64_decode_expected_len(cmdEnc.length()) + 1) {
-              _packetLen = base64_decode_chars((const char*)cmdEnc.c_str(), cmdEnc.length(), (char*)buffer);
-              //for(int i=0;i<_packetLen;i++) Serial.printf("%02x", buffer[i]);  // for debug
-              //Serial.println();
-        
-              wifi_uart = 2;
-              parseData();
-                return;
-        }
+#ifdef ENABLE_WEBSOCKET
+uint8_t connected = 0;
+static WebsocketsClient _client;
+
+void onEventsCallback(WebsocketsEvent event, String data) {
+  if(event == WebsocketsEvent::ConnectionOpened) {
+        Serial.println("Connnection Opened");
+  } else if(event == WebsocketsEvent::ConnectionClosed) {
+        Serial.println("Connnection Closed");
+        connected = 0;
+  } else if(event == WebsocketsEvent::GotPing) {
+        Serial.println("Got a Ping!");
+  } else if(event == WebsocketsEvent::GotPong) {
+        Serial.println("Got a Pong!");
   }
-  webServer.send(400, "text/plain", "error");
-  return;
 }
 
-void startWebServer(void)
+void onMessageCallback(WebsocketsMessage msg) {
+  _packetLen = msg.length();
+  memcpy(buffer, msg.c_str(), _packetLen);
+  wifi_uart = 2;
+  parseData();
+  _client.sendBinary((char*)buffer, _packetLen);
+}
+
+static void loopWebSocket(void)
 {
-  webServer.onNotFound([]() {
-        webServer.send(404, "text/plain", "File Not Found");
-  });
-  webServer.on("/", []() {
-        webServer.send(200, "text/plain", "hello, world!");
-  });
-  webServer.on("/cmd", httpCmd);
-  webServer.enableCORS(true);
-  webServer.begin();
+  if(!wsServer.available()) return;
+  if(wsServer.poll()) {
+        connected = 1;
+        Serial.println("connected");
+        _client = wsServer.accept();
+        _client.onMessage(onMessageCallback);
+        _client.onEvent(onEventsCallback);
+  }
+  if(!connected || !_client.available()) return;
+  _client.poll();
+  return;
 }
 #endif
 

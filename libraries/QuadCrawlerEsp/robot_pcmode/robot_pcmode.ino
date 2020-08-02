@@ -103,9 +103,18 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart) {
+      if(wifi_uart == 1) {
             writeWifi(dp, count);
             //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+        #ifdef ENABLE_WEBSERVER
+      } else if(wifi_uart == 2) {
+            char* base64 = (char*)malloc(base64_encode_expected_len(count) + 1);
+            if(base64) {
+                  base64_encode_chars((char*)dp, count, base64);
+                  webServer.send(200, "text/plain", base64);
+                  free(base64);
+            }
+        #endif
       } else
     #endif
         _Serial.write(dp, count);
@@ -236,6 +245,45 @@ void loop()
     quadCrawler_servoLoop();
     
 }
+
+#ifdef ENABLE_WEBSERVER
+static void httpCmd(void)
+{
+      int i;
+      String cmdEnc = webServer.arg("d");
+      if(cmdEnc.length() >= 4) {
+            cmdEnc.replace("-", "+");
+            cmdEnc.replace("_", "/");
+            int len = (cmdEnc.length()+3) & ~3;
+            for(i = cmdEnc.length(); i < len; i++) cmdEnc.concat("=");
+            //Serial.println(cmdEnc);  // for debug
+            if(sizeof(buffer) >= base64_decode_expected_len(cmdEnc.length()) + 1) {
+                  _packetLen = base64_decode_chars((const char*)cmdEnc.c_str(), cmdEnc.length(), (char*)buffer);
+                  //for(int i=0;i<_packetLen;i++) Serial.printf("%02x", buffer[i]);  // for debug
+                  //Serial.println();
+            
+                  wifi_uart = 2;
+                  parseData();
+                    return;
+            }
+      }
+      webServer.send(400, "text/plain", "error");
+      return;
+}
+
+void startWebServer(void)
+{
+      webServer.onNotFound([]() {
+            webServer.send(404, "text/plain", "File Not Found");
+      });
+      webServer.on("/", []() {
+            webServer.send(200, "text/plain", "hello, world!");
+      });
+      webServer.on("/cmd", httpCmd);
+      webServer.enableCORS(true);
+      webServer.begin();
+}
+#endif
 
 union floatConv { 
     float _float;

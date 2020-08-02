@@ -6,7 +6,7 @@
  * SCCB (I2C like) driver.
  *
  */
-#if 1
+#if 1		// 0 for M5camera
 #include <Wire.h>
 #include "sccb.h"
 

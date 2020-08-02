@@ -132,10 +132,12 @@ static void IRAM_ATTR i2s_isr(void* arg);
 static esp_err_t dma_desc_init();
 static void dma_desc_deinit();
 static void dma_filter_task(void *pvParameters);
+/*
 static void dma_filter_grayscale(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
 static void dma_filter_grayscale_highspeed(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
 static void dma_filter_yuyv(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
 static void dma_filter_yuyv_highspeed(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
+*/
 static void dma_filter_jpeg(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
 static void i2s_stop(bool* need_yield);
 
@@ -775,7 +777,7 @@ static void IRAM_ATTR dma_filter_jpeg(const dma_elem_t* src, lldesc_t* dma_desc,
         dst += 4;
     }
 }
-
+/*
 static void IRAM_ATTR dma_filter_grayscale(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst)
 {
     size_t end = dma_desc->length / sizeof(dma_elem_t) / 4;
@@ -930,7 +932,7 @@ static void IRAM_ATTR dma_filter_rgb888_highspeed(const dma_elem_t* src, lldesc_
         dst[5] = hb & 0xF8;
     }
 }
-
+*/
 /*
  * Public Methods
  * */
@@ -1062,7 +1064,7 @@ esp_err_t camera_init(const camera_config_t* config)
 
     s_state->width = resolution[frame_size].width;
     s_state->height = resolution[frame_size].height;
-
+/*
     if (pix_format == PIXFORMAT_GRAYSCALE) {
         s_state->fb_size = s_state->width * s_state->height;
         if (s_state->sensor.id.PID == OV3660_PID || s_state->sensor.id.PID == OV5640_PID) {
@@ -1107,7 +1109,7 @@ esp_err_t camera_init(const camera_config_t* config)
         }
         s_state->in_bytes_per_pixel = 2;       // camera sends RGB565
         s_state->fb_bytes_per_pixel = 3;       // frame buffer stores RGB888
-    } else if (pix_format == PIXFORMAT_JPEG) {
+    } else*/ if (pix_format == PIXFORMAT_JPEG) {
         if (s_state->sensor.id.PID != OV2640_PID && s_state->sensor.id.PID != OV3660_PID && s_state->sensor.id.PID != OV5640_PID) {
             ESP_LOGE(TAG, "JPEG format is only supported for ov2640, ov3660 and ov5640");
             err = ESP_ERR_NOT_SUPPORTED;
@@ -1361,7 +1363,7 @@ sensor_t * esp_camera_sensor_get()
     }
     return &s_state->sensor;
 }
-
+/*
 esp_err_t esp_camera_save_to_nvs(const char *key) 
 {
 #if ESP_IDF_VERSION_MAJOR > 3
@@ -1449,3 +1451,4 @@ esp_err_t esp_camera_load_from_nvs(const char *key)
       return ret;
   }
 }
+*/

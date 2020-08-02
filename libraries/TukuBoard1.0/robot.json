@@ -25,17 +25,16 @@
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
 #define mVersion \"TukuBoard1.0\"
+#include \"WiFi.h\"
 #include \"TukurutchEsp.h\"
 #include \"driver/adc.h\"
 #include \"esp_adc_cal.h\"
-WifiRemote remote;
 
 
-#include <libb64/cdecode.h>
-#include <libb64/cencode.h>
-#include <WebServer.h>
-WebServer webServer(80);
-#define ENABLE_WEBSERVER
+#include <ArduinoWebsockets.h>
+using namespace websockets;
+WebsocketsServer wsServer;
+#define ENABLE_WEBSOCKET
 
 #define P_GND		4
 
@@ -154,8 +153,7 @@ void onConnect(String ip)
   _tone(T_D4, 250);
   _tone(T_E4, 250);
 
-  void startWebServer(void);
-  startWebServer();
+  wsServer.listen(PORT_WEBSOCKET);
 }
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
@@ -199,7 +197,7 @@ initWifi(mVersion, false, onConnect);
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
-webServer.handleClient();
+  loopWebSocket();
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif

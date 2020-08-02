@@ -1,5 +1,6 @@
 // copyright to SohtaMei 2019.
 
+#define PCMODE
 
 #define mVersion "RemoconRobo1.1"
 
@@ -94,6 +95,54 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
 };
 
+uint8_t wifi_uart = 0;
+
+void _write(uint8_t* dp, int count)
+{
+    #if defined(ESP32)
+      if(wifi_uart == 1) {
+            writeWifi(dp, count);
+            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+        #ifdef ENABLE_WEBSERVER
+      } else if(wifi_uart == 2) {
+            char* base64 = (char*)malloc(base64_encode_expected_len(count) + 1);
+            if(base64) {
+                  base64_encode_chars((char*)dp, count, base64);
+                  webServer.send(200, "text/plain", base64);
+                  free(base64);
+            }
+        #endif
+      } else
+    #endif
+        _Serial.write(dp, count);
+}
+
+void _println(char* mes)
+{
+    #if defined(ESP32)
+      if(wifi_uart)
+        printlnWifi(mes);
+      else
+    #endif
+        _Serial.println(mes);
+}
+
+int16_t _read(void)
+{
+      if(_Serial.available()>0) {
+            wifi_uart = 0;
+            return _Serial.read();
+      }
+    #if defined(ESP32)
+      int ret = readWifi();
+      if(ret != -1) {
+            wifi_uart = 1;
+            return ret;
+      }
+    #endif
+      return -1;
+}
+
 static void parseData()
 {
     uint8_t i;
@@ -139,7 +188,7 @@ static void parseData()
         case 27: if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3(getByte(0),getByte(1));; callOK(); break;
         case 28: remoconRobo_stopMP3();; callOK(); break;
         case 0xFE:  // firmware name
-        _Serial.println("PC mode: " mVersion);
+        _println("PC mode: " mVersion);
         break;
         case 0xFF:  // software reset
         #if defined(__AVR_ATmega328P__)
@@ -164,8 +213,9 @@ static void parseData()
 static uint8_t _index = 0;
 void loop()
 {
-    if(_Serial.available()>0){
-        uint8_t c = _Serial.read();
+    int16_t c;
+    while((c=_read()) >= 0) {
+        //_Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -192,6 +242,45 @@ void loop()
     }
     
 }
+
+#ifdef ENABLE_WEBSERVER
+static void httpCmd(void)
+{
+      int i;
+      String cmdEnc = webServer.arg("d");
+      if(cmdEnc.length() >= 4) {
+            cmdEnc.replace("-", "+");
+            cmdEnc.replace("_", "/");
+            int len = (cmdEnc.length()+3) & ~3;
+            for(i = cmdEnc.length(); i < len; i++) cmdEnc.concat("=");
+            //Serial.println(cmdEnc);  // for debug
+            if(sizeof(buffer) >= base64_decode_expected_len(cmdEnc.length()) + 1) {
+                  _packetLen = base64_decode_chars((const char*)cmdEnc.c_str(), cmdEnc.length(), (char*)buffer);
+                  //for(int i=0;i<_packetLen;i++) Serial.printf("%02x", buffer[i]);  // for debug
+                  //Serial.println();
+            
+                  wifi_uart = 2;
+                  parseData();
+                    return;
+            }
+      }
+      webServer.send(400, "text/plain", "error");
+      return;
+}
+
+void startWebServer(void)
+{
+      webServer.onNotFound([]() {
+            webServer.send(404, "text/plain", "File Not Found");
+      });
+      webServer.on("/", []() {
+            webServer.send(200, "text/plain", "hello, world!");
+      });
+      webServer.on("/cmd", httpCmd);
+      webServer.enableCORS(true);
+      webServer.begin();
+}
+#endif
 
 union floatConv { 
     float _float;
@@ -247,40 +336,48 @@ char* getString(uint8_t n)
 
 static void callOK()
 {
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write((uint8_t)0);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = (uint8_t)0;
+    _write(buffer, dp-buffer);
 }
 
 static void sendByte(uint8_t data)
 {
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+sizeof(uint8_t));
-    _Serial.write(RSP_BYTE);
-    _Serial.write(data);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint8_t);
+    *dp++ = RSP_BYTE;
+    *dp++ = data;
+    _write(buffer, dp-buffer);
 }
 
 static void sendShort(uint16_t data)
 {
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+sizeof(uint16_t));
-    _Serial.write(RSP_SHORT);
-    _Serial.write(data&0xff);
-    _Serial.write(data>>8);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint16_t);
+    *dp++ = RSP_SHORT;
+    *dp++ = data&0xff;
+    *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
 {
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+sizeof(uint32_t));
-    _Serial.write(RSP_LONG);
-    _Serial.write(data&0xff);
-    _Serial.write(data>>8);
-    _Serial.write(data>>16);
-    _Serial.write(data>>24);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(uint32_t);
+    *dp++ = RSP_LONG;
+    *dp++ = data&0xff;
+    *dp++ = data>>8;
+    *dp++ = data>>16;
+    *dp++ = data>>24;
+    _write(buffer, dp-buffer);
 }
 
 static void sendFloat(float data)
@@ -288,14 +385,16 @@ static void sendFloat(float data)
     union floatConv conv;
     conv._float = data;
     
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+sizeof(float));
-    _Serial.write(RSP_FLOAT);
-    _Serial.write(conv._byte[0]);
-    _Serial.write(conv._byte[1]);
-    _Serial.write(conv._byte[2]);
-    _Serial.write(conv._byte[3]);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(float);
+    *dp++ = RSP_FLOAT;
+    *dp++ = conv._byte[0];
+    *dp++ = conv._byte[1];
+    *dp++ = conv._byte[2];
+    *dp++ = conv._byte[3];
+    _write(buffer, dp-buffer);
 }
 
 static void sendDouble(double data)
@@ -303,26 +402,30 @@ static void sendDouble(double data)
     union doubleConv conv;
     conv._double = data;
     
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+sizeof(double));
-    _Serial.write(RSP_DOUBLE);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+sizeof(double);
+    *dp++ = RSP_DOUBLE;
     for(uint8_t i=0; i<8; i++) {
-        _Serial.write(conv._byte[i]);
+        *dp++ = conv._byte[i];
     }
+    _write(buffer, dp-buffer);
 }
 
 static void sendString(String s)
 {
     uint8_t l = s.length();
     
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+l);
-    _Serial.write(RSP_STRING);
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+l;
+    *dp++ = RSP_STRING;
     for(uint8_t i=0; i<l; i++) {
-        _Serial.write(s.charAt(i));
+        *dp++ = s.charAt(i);
     }
+    _write(buffer, dp-buffer);
 }
 
 //### CUSTOMIZED ###
@@ -330,16 +433,15 @@ static void sendString(String s)
 static void sendRemote(void)
 {
     uint16_t data;
-    _Serial.write(0xff);
-    _Serial.write(0x55);
-    _Serial.write(1+1+2+2);
-    _Serial.write(CMD_CHECKREMOTEKEY);
-    _Serial.write(remote.checkRemoteKey());
-    data = remote.x;
-    _Serial.write(data&0xff);
-    _Serial.write(data>>8);
-    data = remote.y;
-    _Serial.write(data&0xff);
-    _Serial.write(data>>8);
+    
+    uint8_t* dp = buffer;
+    *dp++ = 0xff;
+    *dp++ = 0x55;
+    *dp++ = 1+1+2+2;
+    *dp++ = CMD_CHECKREMOTEKEY;
+    *dp++ = remote.checkRemoteKey();
+    data = remote.x; *dp++ = data&0xff; *dp++ = data>>8;
+    data = remote.y; *dp++ = data&0xff; *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 #endif
