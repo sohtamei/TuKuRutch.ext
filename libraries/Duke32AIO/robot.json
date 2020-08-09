@@ -7,7 +7,7 @@
 	"extensionAuthor": "Thousandiy",							// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#Duke32AIO",
 	"productInfoURL": "https://thousandiy.wordpress.com/2018/04/11/duke32_aio/",
-	"sampleDir"		: "sample/Duke32AIO",						// サンプルディレクトリ
+	"sampleDir"		: "sample/WifiCar",							// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
@@ -29,7 +29,7 @@
 #include <Wire.h>
 #include \"TukurutchEsp.h\"
 
-WifiRemote remote;
+//WifiRemote remote;
 
 // duke32.h
 /********************************
@@ -355,7 +355,7 @@ initWifi(mVersion, false);
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif
-remote.updateRemote();
+//remote.updateRemote();
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -371,11 +371,9 @@ remote.updateRemote();
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
-		["-"],	// ブロック区切り
-
 		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"],	"func":"setRobot({0},{1});"}],
 		["w", "stop",									"stopRobot",					{"remote":[],			"func":"setRobot(0,0);"}],
-		["w", "set motor %d.servoch speed %d.motorvalue","setMotor",			"ch-L",255,	{"remote":["B","S"],	"func":"setMotorSpeed({0},{1});"}],
+		["w", "set motor %d.servoch speed %d.motorvalue","setMotor",		"ch-L",255,	{"remote":["B","S"],	"func":"setMotorSpeed({0},{1});"}],
 
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 
@@ -386,15 +384,6 @@ remote.updateRemote();
 		["w", "set servo %m.servoch %n",				"setServo",			"ch-L",90,	{"remote":["B","B"],	"func":"setServo({0},{1});"}],
 		["B", "read digital pin %d.din",				"getDigital",		0,			{"remote":["B",		"B"],"func":"getDigital({0})"}],
 		["R", "read analog pin %d.analog",				"getAnalog",		0,			{"remote":["B",		"S"],"func":"getAdc({0})"}],
-
-		["-"],
-
-		// robot.js呼び出し
-//		["B", "[WifiRemote] remote pressed",			"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
-//		["B", "[WifiRemote] ir remote %d.ircode pressed","isRemoteKey",		"UP",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
-		["w", "[WifiRemote] update remote",				"checkRemoteKey2",				{"custom":"", 			"func":"remote.checkRemoteKey();"}],
-		["R", "[WifiRemote] get remote X",				"getRemoteX",					{"custom":"",			"func":"remote.x"}],
-		["R", "[WifiRemote] get remote Y",				"getRemoteY",					{"custom":"",			"func":"remote.y"}],
 
 		["-"],
 
@@ -411,7 +400,6 @@ remote.updateRemote();
 		"servoch":["ch-L","ch-R"],
 		"motorvalue":[255,100,50,0,-50,-100,-255],
 		"speedvalue":[255,100,50,0],
-		"ircode":["UP","DOWN","RIGHT","LEFT","Y","A","B","X","L1","L2","R1","R2","START","SELECT",],
 
 		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
@@ -421,25 +409,18 @@ remote.updateRemote();
 		"stop":0,"forward":1,"back":2,
 		"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
-		"UP":1,"DOWN":2,"RIGHT":3,"LEFT":4,"Y":5,"A":6,"B":7,"X":8,"L1":9,"L2":10,"R1":11,"R2":12,"START":13,"SELECT":14,
 
 		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 	},
 	"translators":{
 		"ja":{
-			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
+			"stop":"ストップ", "run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
 			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
 			"set motor %d.servoch speed %d.motorvalue"		:"モーター %d.servoch の速さを %d.motorvalue にする",
 			"set servo %m.servoch %n"						:"サーボ %d.servoch の角度を %n にする",
 			"read digital pin %d.din"						:"デジタルピン %d.din",
 			"read analog pin %d.analog"						:"アナログピン %d.analog",
-
-			"[WifiRemote] remote pressed"					:"[WifiRemote] リモコンボタンが押された",
-			"[WifiRemote] ir remote %d.ircode pressed"		:"[WifiRemote] 押されたのが %d.ircode のボタン",
-			"[WifiRemote] update remote"					:"[WifiRemote] リモコン情報更新",
-			"[WifiRemote] get remote X"						:"[WifiRemote] アナログXの値",
-			"[WifiRemote] get remote Y"						:"[WifiRemote] アナログYの値",
 		}
 	}
 }
