@@ -72,8 +72,10 @@ uint8_t _getSw(uint8_t idx)
     
       pinMode(swTable[idx].sig, INPUT_PULLUP);
       digitalWrite(swTable[idx].gnd, LOW);
-      pinMode(swTable[idx].gnd, OUTPUT);
-      return digitalRead(swTable[idx].sig) ? 0: 1;
+      if(swTable[idx].gnd) {
+            pinMode(swTable[idx].gnd, OUTPUT);
+            return digitalRead(swTable[idx].sig) ? 0: 1;
+      }
 }
 
 void _tone(int sound, int ms) {
