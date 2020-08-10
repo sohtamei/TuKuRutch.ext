@@ -93,12 +93,13 @@ class Scratch3DummyNameBlocks {
         log.log(this._locale);
 
 	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
+		this._blocks = this.get_blocks();
         return {
             id: 'DummyName',
             name: 'DummyName',
             blockIconURI: blockIconURI,
             menuIconURI: menuIconURI,
-            blocks: this.get_blocks(),
+            blocks: this._blocks,
             menus: this.get_menus(),
         };
     }
@@ -144,10 +145,10 @@ class Scratch3DummyNameBlocks {
 	}
 
 	getTest(opcode,args) {
-		for(index = 0; index < blocks.length; index++) {
-			if(blocks[index].opcode == opcode) break;
+		for(index = 0; index < this._blocks.length; index++) {
+			if(this._blocks[index].opcode == opcode) break;
 		}
-		if(index === blocks.length) return 0;
+		if(index === this._blocks.length) return 0;
 
 		var cmdUint8 = new Uint8Array(256);
 		var cmd = new DataView(cmdUint8.buffer);
@@ -158,7 +159,7 @@ class Scratch3DummyNameBlocks {
 		var param = [args.ARG1, args.ARG2, args.ARG3, args.ARG4];
 		for(i = 1; ; i++) {
 			eval("var param = args.ARG"+i);
-			eval("var def = blocks[index].arguments.ARG"+i);
+			eval("var def = this._blocks[index].arguments.ARG"+i);
 		//	log.log(i,param, def);
 			if(typeof param === "undefined") break;
 			switch(def.type2) {
