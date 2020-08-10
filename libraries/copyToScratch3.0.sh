@@ -10,8 +10,3 @@ cat $DIRNAME/robot_pcmode/robot_pcmode.js | sed -e "s/DummyName/$EXTNAME/g" > $S
 DIRNAME=Duke32AIO
 EXTNAME=Duke32AIO
 cat $DIRNAME/robot_pcmode/robot_pcmode.js | sed -e "s/DummyName/$EXTNAME/g" > $SC3_PATH/scratch-vm/src/extensions/scratch3_tukurutch/$EXTNAME.js
-
-DIRNAME=Duke32AIO
-EXTNAME=Duke32AIO
-cp $DIRNAME/robot_pcmode/robot_pcmode.js $SC3_PATH/scratch-vm/src/extensions/scratch3_tukurutch/$EXTNAME.js
-
