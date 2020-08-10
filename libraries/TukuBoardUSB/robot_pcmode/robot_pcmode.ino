@@ -2,24 +2,12 @@
 
 #define PCMODE
 
-#define mVersion "TukuBoard1.0"
-#include "WiFi.h"
-#include "TukurutchEsp.h"
-#include "driver/adc.h"
-#include "esp_adc_cal.h"
+#define mVersion "TukuBoardUSB1.0"
 
+#include <Arduino.h>
 
-#include <ArduinoWebsockets.h>
-using namespace websockets;
-WebsocketsServer wsServer;
-#define ENABLE_WEBSOCKET
-
-#define P_GND		4
-
-esp_adc_cal_characteristics_t adc_chars;
-
-#define P_BUZZER		19
-#define LEDC_BUZZER		8
+#define P_GND		A1
+#define P_BUZZER	12
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -30,20 +18,22 @@ enum {
 
 struct port {uint8_t sig; uint8_t gnd;};
 
-const uint8_t sensorTable[4] = {7, 6, 0, 3};
+const uint8_t sensorTable[4] = {A2, A3, A4, A5};
 uint16_t _getAnalog(uint8_t idx, uint16_t count)
 {
       if(!idx || idx > numof(sensorTable)) return 0;
       idx--;
     
       if(count == 0) count = 1;
+      count *= 100;
       uint32_t sum = 0;
       for(int i = 0; i < count; i++)
-        sum += adc1_get_raw((adc1_channel_t)sensorTable[idx]);
-      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+        sum += analogRead(sensorTable[idx]);
+      sum = ((sum / count) * 625UL) / 128;  // 1024->5000
+      return sum;
 }
 
-const struct port ledTable[6] = {{2,0}, {26,25}, {17,16}, {27,14}, {12,13}, {5,23}};
+const struct port ledTable[6] = {{13,0}, {2,3}, {4,5}, {6,7}, {8,9}, {10,11}};
 void _setLED(uint8_t idx, uint8_t onoff)
 {
       if(!idx || idx > numof(ledTable)) return;
@@ -57,7 +47,7 @@ void _setLED(uint8_t idx, uint8_t onoff)
       }
 }
 
-const struct port swTable[3] = {{26,17},{16,14},{12,5}};
+const struct port swTable[3] = {{2,4},{5,7},{8,10}};
 uint8_t _getSw(uint8_t idx)
 {
       if(!idx || idx > numof(swTable)) return 0;
@@ -72,19 +62,8 @@ uint8_t _getSw(uint8_t idx)
 }
 
 void _tone(int sound, int ms) {
-      ledcWriteTone(LEDC_BUZZER, sound);
+      tone(P_BUZZER, sound, ms);
       delay(ms);
-      ledcWriteTone(LEDC_BUZZER, 0);
-}
-
-void onConnect(String ip)
-{
-      _setLED(1,1);
-      _tone(T_C4, 250);
-      _tone(T_D4, 250);
-      _tone(T_E4, 250);
-    
-      wsServer.listen(PORT_WEBSOCKET);
 }
 
 
@@ -116,40 +95,13 @@ void setup()
     wdt_disable();
     #endif
     
-    int i;
     _setLED(1,0);
     pinMode(P_GND, OUTPUT);
     digitalWrite(P_GND, LOW);
-    ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
-    ledcAttachPin(P_BUZZER, LEDC_BUZZER);
-    
-    #define DEFAULT_VREF    1100
-    adc1_config_width(ADC_WIDTH_BIT_12);
-    esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
-    for(i=0; i<numof(sensorTable); i++)
-      adc1_config_channel_atten((adc1_channel_t)sensorTable[i], ADC_ATTEN_DB_11);
+    pinMode(P_BUZZER, OUTPUT);
     
     _tone(T_C5, 100);
     Serial.begin(115200);
-    if(_getSw(1)) {
-          delay(100);
-          _tone(T_C5, 100);
-          WiFi.mode(WIFI_STA);
-          WiFi.beginSmartConfig();
-          Serial.println("Waiting for SmartConfig.");
-          while (!WiFi.smartConfigDone()) {
-                delay(2000);
-                _setLED(1,1);
-                _tone(T_C5, 100);
-                _setLED(1,0);
-          }
-          Serial.println("SmartConfig received.");
-    }
-    #ifndef PCMODE
-    initWifi(mVersion, true, onConnect);
-    #else
-    initWifi(mVersion, false, onConnect);
-    #endif
     
     _Serial.println("PC mode: " mVersion);
 }
@@ -166,10 +118,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'S','S',},
   {'B','S',},
   {'B',},
-  {},
-  {},
-  {},
-  {'s','s',},
 };
 
 uint8_t wifi_uart = 0;
@@ -243,9 +191,6 @@ static void parseData()
         case 2: _tone(getShort(0),getShort(1));; callOK(); break;
         case 3: sendShort((_getAnalog(getByte(0),getShort(1)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        case 6: sendString((statusWifi())); break;
-        case 7: sendString((scanWifi())); break;
-        case 8: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -299,11 +244,6 @@ void loop()
             _index = 0;
         }
     }
-    
-      loopWebSocket();
-    #ifndef PCMODE
-      sendNotifyArduinoMode();
-    #endif
     
 }
 

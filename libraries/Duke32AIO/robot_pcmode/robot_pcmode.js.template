@@ -2,10 +2,10 @@ const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const Cast = require('../../util/cast');
 const log = require('../../util/log');
-//const nets = require('nets');
+const nets = require('nets');
 const formatMessage = require('format-message');
-//const base64url = require('base64url');
-//const base64 = require('base64-js')
+const base64url = require('base64url');
+const base64 = require('base64-js')
 
 
 /**
@@ -26,7 +26,7 @@ const blockIconURI = menuIconURI;
  * How long to wait in ms before timing out requests to server.
  * @type {int}
  */
-//const serverTimeoutMs = 10000; // 10 seconds (chosen arbitrarily).
+const serverTimeoutMs = 10000; // 10 seconds (chosen arbitrarily).
 
 let _resolve = null;
 let _error = null;
@@ -34,10 +34,10 @@ let _sendBuf = null;
 let _alertFlag = false;
 
 /**
- * Class for the DummyName block in Scratch 3.0.
+ * Class for the ESP32 block in Scratch 3.0.
  * @constructor
  */
-class Scratch3DummyNameBlocks {
+class Scratch3ESP32Blocks {
     constructor (runtime) {
         /**
          * The runtime instantiating this block package.
@@ -94,8 +94,8 @@ class Scratch3DummyNameBlocks {
 
 	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
         return {
-            id: 'DummyName',
-            name: 'DummyName',
+            id: 'esp32',
+            name: 'ESP32',
             blockIconURI: blockIconURI,
             menuIconURI: menuIconURI,
             blocks: this.get_blocks(),
@@ -245,4 +245,4 @@ class Scratch3DummyNameBlocks {
 	}
 
 }
-module.exports = Scratch3DummyNameBlocks;
+module.exports = Scratch3ESP32Blocks;

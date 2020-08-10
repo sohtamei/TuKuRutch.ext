@@ -3,7 +3,7 @@
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
-	"sort"			: 10,										// メニュー上の表示順序
+	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_orgel.html",
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_orgel.html",
@@ -21,7 +21,6 @@
 #include <Arduino.h>
 
 #define P_GND		A1
-#define P_LED		13
 #define P_BUZZER	12
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
@@ -40,9 +39,10 @@ uint16_t _getAnalog(uint8_t idx, uint16_t count)
   idx--;
 
   if(count == 0) count = 1;
+  count *= 100;
   uint32_t sum = 0;
   for(int i = 0; i < count; i++)
-    sum += analogRead(ch);
+    sum += analogRead(sensorTable[idx]);
   sum = ((sum / count) * 625UL) / 128;  // 1024->5000
   return sum;
 }
@@ -82,10 +82,11 @@ void _tone(int sound, int ms) {
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
-pinMode(P_LED, OUTPUT);
+_setLED(1,0);
+pinMode(P_GND, OUTPUT);
+digitalWrite(P_GND, LOW);
 pinMode(P_BUZZER, OUTPUT);
 
-digitalWrite(P_LED, LOW);
 _tone(T_C5, 100);
 Serial.begin(115200);
 ",

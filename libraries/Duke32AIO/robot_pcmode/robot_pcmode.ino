@@ -7,7 +7,7 @@
 #include <Wire.h>
 #include "TukurutchEsp.h"
 
-WifiRemote remote;
+//WifiRemote remote;
 
 // duke32.h
 /********************************
@@ -366,7 +366,6 @@ static uint8_t _packetLen = 4;
 static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
-  {},
   {'B','B',},
   {},
   {'B','S',},
@@ -380,10 +379,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {},
-  {},
-  {},
-  {},
-  {},
   {'s','s',},
 };
 
@@ -392,9 +387,14 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart)
-        writeWifi(dp, count);
-      else
+      if(wifi_uart == 1) {
+            writeWifi(dp, count);
+            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+        #ifdef ENABLE_WEBSOCKET
+      } else if(wifi_uart == 2) {
+            _packetLen = count;
+        #endif
+      } else
     #endif
         _Serial.write(dp, count);
 }
@@ -449,17 +449,17 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: setRobot(getByte(0),getByte(1));; callOK(); break;
-        case 3: setRobot(0,0);; callOK(); break;
-        case 4: setMotorSpeed(getByte(0),getShort(1));; callOK(); break;
-        case 7: SetNeoPixel(getByte(0));; callOK(); break;
-        case 8: SetNeoPixelRGB(getByte(0),getByte(1),getByte(2));; callOK(); break;
-        case 9: setServo(getByte(0),getByte(1));; callOK(); break;
-        case 10: sendByte((getDigital(getByte(0)))); break;
-        case 11: sendShort((getAdc(getByte(0)))); break;
-        case 17: sendString((statusWifi())); break;
-        case 18: sendString((scanWifi())); break;
-        case 19: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 1: setRobot(getByte(0),getByte(1));; callOK(); break;
+        case 2: setRobot(0,0);; callOK(); break;
+        case 3: setMotorSpeed(getByte(0),getShort(1));; callOK(); break;
+        case 6: SetNeoPixel(getByte(0));; callOK(); break;
+        case 7: SetNeoPixelRGB(getByte(0),getByte(1),getByte(2));; callOK(); break;
+        case 8: setServo(getByte(0),getByte(1));; callOK(); break;
+        case 9: sendByte((getDigital(getByte(0)))); break;
+        case 10: sendShort((getAdc(getByte(0)))); break;
+        case 12: sendString((statusWifi())); break;
+        case 13: sendString((scanWifi())); break;
+        case 14: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -488,7 +488,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        //_Serial.write(a)  // for debug
+        //_Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -517,9 +517,50 @@ void loop()
     #ifndef PCMODE
       sendNotifyArduinoMode();
     #endif
-    remote.updateRemote();
+    //remote.updateRemote();
     
 }
+
+#ifdef ENABLE_WEBSOCKET
+uint8_t connected = 0;
+static WebsocketsClient _client;
+
+void onEventsCallback(WebsocketsEvent event, String data) {
+      if(event == WebsocketsEvent::ConnectionOpened) {
+            Serial.println("Connnection Opened");
+      } else if(event == WebsocketsEvent::ConnectionClosed) {
+            Serial.println("Connnection Closed");
+            connected = 0;
+      } else if(event == WebsocketsEvent::GotPing) {
+            Serial.println("Got a Ping!");
+      } else if(event == WebsocketsEvent::GotPong) {
+            Serial.println("Got a Pong!");
+      }
+}
+
+void onMessageCallback(WebsocketsMessage msg) {
+      _packetLen = msg.length();
+      memcpy(buffer, msg.c_str(), _packetLen);
+      wifi_uart = 2;
+      parseData();
+      _client.sendBinary((char*)buffer, _packetLen);
+}
+
+static void loopWebSocket(void)
+{
+      if(!wsServer.available()) return;
+      if(wsServer.poll()) {
+            connected = 1;
+            Serial.println("connected");
+            _client = wsServer.accept();
+            _client.onMessage(onMessageCallback);
+            _client.onEvent(onEventsCallback);
+      }
+      if(!connected || !_client.available()) return;
+      _client.poll();
+      return;
+}
+#endif
 
 union floatConv { 
     float _float;
@@ -602,6 +643,7 @@ static void sendShort(uint16_t data)
     *dp++ = RSP_SHORT;
     *dp++ = data&0xff;
     *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
