@@ -2,10 +2,7 @@ const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const Cast = require('../../util/cast');
 const log = require('../../util/log');
-//const nets = require('nets');
 const formatMessage = require('format-message');
-//const base64url = require('base64url');
-//const base64 = require('base64-js')
 
 
 /**
@@ -21,6 +18,8 @@ const menuIconURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAA
  */
 // eslint-disable-next-line max-len
 const blockIconURI = menuIconURI;
+
+const SupportCamera = false;
 
 /**
  * How long to wait in ms before timing out requests to server.
@@ -58,13 +57,14 @@ class Scratch3DummyNameBlocks {
     }
 
 	get_blocks() {
-		return [
-			{blockType: BlockType.COMMAND, opcode: 'setIotIp', text: {
-				'en': 'setup IP address [ARG1]',
-				'ja': 'IPアドレス設定 [ARG1]',
-			}[this._locale], arguments: {
-				ARG1: {	type: ArgumentType.STRING,					defaultValue: this._ipadrs},
-		    }},
+		this._blocks = [
+{blockType: BlockType.COMMAND, opcode: 'setIotIp', text: {
+	'en': 'setup IP address [ARG1]',
+	'ja': 'IPアドレス設定 [ARG1]',
+}[this._locale], arguments: {
+	ARG1: { type: ArgumentType.STRING, defaultValue: this._ipadrs},
+}},
+
 {blockType: BlockType.COMMAND, opcode: 'setCar', text: {
     'en': '[ARG1] at speed [ARG2]',
     'ja': '[ARG1] 向きに [ARG2] の速さで動かす',
@@ -116,6 +116,7 @@ class Scratch3DummyNameBlocks {
 
 
 		];
+		return this._blocks;
 	}
 
 	get_menus() {
@@ -193,13 +194,12 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
         log.log(this._locale);
 
 	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
-		this._blocks = this.get_blocks();
         return {
             id: 'DummyName',
             name: 'DummyName',
             blockIconURI: blockIconURI,
             menuIconURI: menuIconURI,
-            blocks: this._blocks,
+            blocks: this.get_blocks(),
             menus: this.get_menus(),
         };
     }
@@ -207,8 +207,19 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
     setIotIp (args) {
         this._ipadrs = Cast.toString(args.ARG1);
         document.cookie = 'DummyName_ip=' + this._ipadrs + '; samesite=lax;';
+        if(SupportCamera) {
+          document.cookie = 'Camera_ip=' + this._ipadrs + '; samesite=lax;';
+          alert(this._ipadrs + {
+            'en': ' has been saved (for Robot & Camera).',
+            'ja': 'を保存しました(ロボット & カメラ)',
+          }[this._locale]);
+        } else {
+          alert(this._ipadrs + {
+            'en': ' has been saved.',
+            'ja': 'を保存しました',
+          }[this._locale]);
+        }
         log.log(this._ipadrs);
-        alert(this._ipadrs + 'を保存しました');
     }
 
 /*

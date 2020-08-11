@@ -85,6 +85,7 @@ void onConnect(String ip)
       _tone(T_E4, 250);
     
       wsServer.listen(PORT_WEBSOCKET);
+      Serial.println(ip);
 }
 
 
