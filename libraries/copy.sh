@@ -1,10 +1,10 @@
 #!/bin/bash
 
 SRC_DIR=RemoconRobo
-DIS_DIR="BTO_ArduinoIR esp32 Koov LiquidCrystal M5CameraCar m5stack m5stickC mbot QuadCrawler QuadCrawlerESP RemoconRobo TukuBoard1.0 TukuBoardUSB"
+DIS_DIR="BTO_ArduinoIR Duke32AIO esp32 Koov LiquidCrystal M5CameraCar m5stack m5stickC mbot QuadCrawler QuadCrawlerESP RemoconRobo TukuBoard1.0 TukuBoardUSB"
 
 SRC_DIR2=TukuBoard1.0
-DIS_DIR2="esp32 M5CameraCar m5stack m5stickC QuadCrawlerESP TukuBoard1.0"
+DIS_DIR2="Duke32AIO esp32 M5CameraCar m5stack m5stickC QuadCrawlerESP TukuBoard1.0"
 
 for dis in $DIS_DIR; do
   if [ "$dis" != "$SRC_DIR" ]; then

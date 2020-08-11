@@ -3,7 +3,7 @@
 #define PCMODE
 
 #define mVersion "M5CameraCar"
-#include "WiFi.h"
+
 #include "TukurutchEsp.h"
 #include "M5CameraCar.h"
 
@@ -29,10 +29,9 @@ uint8_t _getSw(uint8_t idx)
 }
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,13},{9,4}};
-void _setServo(uint8_t idx/*5~7*/, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
+void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
 {
-      if(idx < 5 || idx >= 5+numof(servoTable)) return;
-      idx -= 5;
+      if(idx >= numof(servoTable)) return;
     
       uint16_t pwmWidth;
       if(continuous) {
@@ -40,6 +39,7 @@ void _setServo(uint8_t idx/*5~7*/, int16_t data/*normal:0~180, continuous:-100~+
             #define srvCoef 163		// (2.3ms-1.5ms)/20ms*4096 = 163.8
             if(data < -100) data = -100;
             else if(data > 100) data = 100;
+            if(idx == 1) data = -data;
             pwmWidth = (data * srvCoef) / 100 + srvZero;
             if(data==0) pwmWidth=0;
       } else {
@@ -56,18 +56,18 @@ void _setServo(uint8_t idx/*5~7*/, int16_t data/*normal:0~180, continuous:-100~+
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
 //  L   R
   { 0,  0},  // STOP
-  { 1, -1},  // FORWARD
-  { 0, -1},  // LEFT
+  { 1,  1},  // FORWARD
+  { 0,  1},  // LEFT
   { 1,  0},  // RIGHT
-  {-1,  1},  // BACK
-  {-1, -1},  // ROLL_LEFT
-  { 1,  1},  // ROLL_RIGHT
+  {-1, -1},  // BACK
+  {-1,  1},  // ROLL_LEFT
+  { 1, -1},  // ROLL_RIGHT
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
 {
-  _setServo(5, speed * dir_table[direction].L, 1);
-  _setServo(6, speed * dir_table[direction].R, 1);
+  _setServo(0, speed * dir_table[direction].L, 1);
+  _setServo(1, speed * dir_table[direction].R, 1);
 }
 
 void onConnect(String ip)
@@ -76,10 +76,8 @@ void onConnect(String ip)
 
   wsServer.listen(PORT_WEBSOCKET);
   startCameraServer();
+  Serial.println(ip);
 }
-
-int _dummy1(int a) {return 0;}
-int _dummy2(int a, int b) {return 0;}
 
 
 #ifdef __AVR_ATmega328P__
@@ -149,16 +147,12 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','B',},
-  {'S','S',},
-  {'B','S',},
-  {'B',},
-  {},
-  {'B','B',},
   {'B','S',},
   {},
   {},
   {'B','B',},
   {'B',},
+  {'B','B',},
   {},
   {},
   {},
@@ -232,18 +226,15 @@ if(buffer[3] < ITEM_NUM) {
 }
 
 switch(buffer[3]){
-    case 1: _setLED(getByte(0),getByte(1));; callOK(); break;
-    case 2: _dummy2(getShort(0),getShort(1));; callOK(); break;
-    case 3: sendShort((_dummy2(getByte(0),getShort(1)))); break;
-    case 4: sendByte((_dummy1(getByte(0)))); break;
-    case 6: _setCar(getByte(0),getByte(1));; callOK(); break;
-    case 7: _setServo(getByte(0),getShort(1),1);; callOK(); break;
-    case 8: _setCar(0,0);; callOK(); break;
-    case 10: _setServo(getByte(0),getByte(1),0);; callOK(); break;
-    case 11: _setServo(getByte(0),0,1);; callOK(); break;
-    case 13: sendString((statusWifi())); break;
-    case 14: sendString((scanWifi())); break;
-    case 15: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 1: _setCar(getByte(0),getByte(1));; callOK(); break;
+    case 2: _setServo(getByte(0),getShort(1),1);; callOK(); break;
+    case 3: _setCar(0,0);; callOK(); break;
+    case 5: _setServo(getByte(0),getByte(1),0);; callOK(); break;
+    case 6: _setServo(getByte(0),0,1);; callOK(); break;
+    case 7: _setLED(getByte(0),getByte(1));; callOK(); break;
+    case 9: sendString((statusWifi())); break;
+    case 10: sendString((scanWifi())); break;
+    case 11: sendByte((connectWifi(getString(0),getString(1)))); break;
     case 0xFE:  // firmware name
     _println("PC mode: " mVersion);
     break;
