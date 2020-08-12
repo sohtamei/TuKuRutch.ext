@@ -13,3 +13,5 @@ copy_sb3 () {
 copy_sb3 TukuBoard1.0 TukuBoard
 copy_sb3 Duke32AIO    Duke32AIO
 copy_sb3 M5CameraCar  WifiCar    SupportCamera
+copy_sb3 m5stack      M5Stack
+copy_sb3 m5stickc     M5StickC

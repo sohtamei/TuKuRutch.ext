@@ -31,16 +31,13 @@
 #include \"M5CameraCar.h\"
 
 
-#include <ArduinoWebsockets.h>
-using namespace websockets;
 WebsocketsServer wsServer;
-#define ENABLE_WEBSOCKET
 
 #define P_LED	14
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-void _setLED(uint8_t idx, uint8_t onoff)
+void _setLED(uint8_t onoff)
 {
   digitalWrite(P_LED, !onoff);
   pinMode(P_LED, OUTPUT);
@@ -95,7 +92,7 @@ void _setCar(uint8_t direction, uint8_t speed)
 
 void onConnect(String ip)
 {
-  _setLED(1,1);
+  _setLED(1);
 
   wsServer.listen(PORT_WEBSOCKET);
   startCameraServer();
@@ -105,7 +102,7 @@ void onConnect(String ip)
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
 int i;
-_setLED(1,0);
+_setLED(0);
 
 for(i=0; i<numof(servoTable); i++)
   ledcSetup(servoTable[i].ledc, 50/*Hz*/, 12/*bit*/);
@@ -119,9 +116,9 @@ if(_getSw(1)) {
   Serial.println(\"Waiting for SmartConfig.\");
   while (!WiFi.smartConfigDone()) {
     delay(2000);
-    _setLED(1,1);
+    _setLED(1);
     delay(100);
-    _setLED(1,0);
+    _setLED(0);
   }
   Serial.println(\"SmartConfig received.\");
 }
@@ -157,9 +154,9 @@ initWifi(mVersion, false, onConnect);
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
-		["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
+	//	["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
 
-		["w", "set LED %d.led %d.onoff",				"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 
 		["-"],
 
@@ -174,7 +171,6 @@ initWifi(mVersion, false, onConnect);
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
 		"onoff"		:["On","Off"],
-		"led"		:[1],
 	},
 	"values":{
 		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
@@ -188,7 +184,7 @@ initWifi(mVersion, false, onConnect);
 			"set servo %d.servoch %d.angle"					:"サーボ %d.servoch の角度を %d.angle にする",
 			"stop servo %d.servoch"							:"サーボ %d.servoch を止める",
 
-			"set LED %d.led %d.onoff"						:"LED %d.led を %d.onoff",
+			"set LED %d.onoff"								:"LED %d.onoff",
 			"SW %d.sw"										:"スイッチ %d.sw",
 		}
 	}

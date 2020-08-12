@@ -7,7 +7,7 @@
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "https://github.com/sohtamei/docs/blob/master/M5.md",
 	"productInfoURL": "https://github.com/sohtamei/docs/blob/master/M5.md",
-	"sampleDir"		: "sample/m5stickC",						// サンプルディレクトリ
+	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
@@ -24,16 +24,49 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5StickC 1.0\"
+//#define _M5StickC
+#define _M5StickCPlus
 
-#include <M5StickC.h>
-#include <HTTPClient.h>
+#ifdef _M5StickC
+  #define mVersion \"M5StickC 1.0\"
+  #include <M5StickC.h>
+#else 
+  #define mVersion \"M5StickCP 1.0\"
+  #include <M5StickCPlus.h>
+#endif
+
 #include \"TukurutchEsp.h\"
 
-WifiRemote remote;
-#define ROVER_ADDRESS	0X38
 
-uint8_t checkButton(uint8_t button)
+WebsocketsServer wsServer;
+
+#define ROVER_ADDRESS	0X38
+#define P_LED			10
+
+#define numof(a) (sizeof(a)/sizeof((a)[0]))
+
+esp_adc_cal_characteristics_t adc_chars;
+uint16_t _getAdc1(uint8_t idx, uint16_t count)
+{
+  if(count == 0) count = 1;
+
+  adc1_config_width(ADC_WIDTH_BIT_12);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
+  adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
+  uint32_t sum = 0;
+  for(int i = 0; i < count; i++)
+    sum += adc1_get_raw((adc1_channel_t)idx);
+
+  return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+}
+
+void _setLED(uint8_t onoff)
+{
+  digitalWrite(P_LED, !onoff);
+  pinMode(P_LED, OUTPUT);
+}
+
+uint8_t _getSw(uint8_t button)
 {
   switch(button) {
   case 0: return M5.BtnA.isPressed();
@@ -45,7 +78,7 @@ uint8_t checkButton(uint8_t button)
 
 float getIMU(uint8_t index)
 {
-  float data[3];
+  float data[3]={0};
   if(index < 3) {
     M5.IMU.getGyroData(data+0,data+1,data+2);
     return data[index-0];
@@ -53,7 +86,7 @@ float getIMU(uint8_t index)
     M5.IMU.getAccelData(data+0,data+1,data+2);
     return data[index-3];
   } else if(index < 9) {
-    M5.IMU.getAhrsData(data+0,data+1,data+2);
+    //M5.IMU.getAhrsData(data+0,data+1,data+2);
     return data[index-6];
   } else {
     M5.IMU.getTempData(data+0);
@@ -61,9 +94,75 @@ float getIMU(uint8_t index)
   }
 }
 
-void RoverC_Init(void)    //sda  0     scl  26
+void _tone(int sound, int ms)
 {
-  Wire.begin(0,26,100);
+#ifdef _M5StickCPlus
+  M5.Beep.tone(sound, ms);
+  delay(ms);
+  M5.Beep.mute();
+#else
+  delay(ms);
+#endif
+}
+
+void _beep(void)
+{
+#ifdef _M5StickCPlus
+  M5.Beep.beep();
+  delay(100);
+  M5.Beep.mute();
+#endif
+}
+
+// ServoCar
+
+const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,33},{9,32}};
+void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
+{
+  if(idx >= numof(servoTable)) return;
+
+  uint16_t pwmWidth;
+  if(continuous) {
+    #define srvZero 307		// 1.5ms/20ms*4096 = 307.2
+    #define srvCoef 163		// (2.3ms-1.5ms)/20ms*4096 = 163.8
+    if(data < -100) data = -100;
+    else if(data > 100) data = 100;
+    if(idx == 1) data = -data;
+    pwmWidth = (data * srvCoef) / 100 + srvZero;
+    if(data==0) pwmWidth=0;
+  } else {
+    #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
+    #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
+    if(data < 0) data = 0;
+    else if(data > 180) data = 180;
+    pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
+  }
+  ledcAttachPin(servoTable[idx].port, servoTable[idx].ledc);
+  ledcWrite(servoTable[idx].ledc, pwmWidth);
+}
+
+struct { int16_t L; int16_t R;} static const dir_table[7] = {
+//  L   R
+  { 0,  0},  // STOP
+  { 1,  1},  // FORWARD
+  { 0,  1},  // LEFT
+  { 1,  0},  // RIGHT
+  {-1, -1},  // BACK
+  {-1,  1},  // ROLL_LEFT
+  { 1, -1},  // ROLL_RIGHT
+};
+
+void _setCar(uint8_t direction, uint8_t speed)
+{
+  _setServo(0, speed * dir_table[direction].L, 1);
+  _setServo(1, speed * dir_table[direction].R, 1);
+}
+
+// Rover C
+
+void RoverC_Init(void)    
+{
+  Wire.begin(0,26,100);		//sda 0, scl 26
 }
 
 void Send_iic(uint8_t Register, int16_t Speed)
@@ -100,7 +199,7 @@ void setRoverC_XYR(int16_t x, int16_t y, int16_t role)
   setRoverC(left+role, right-role, right+role, left-role);
 }
 
-struct { int8_t x; int8_t y; int8_t r; } const dir_table[] = {
+struct { int8_t x; int8_t y; int8_t r; } const rdir_table[] = {
 //  X  Y  R
   { 0, 0, 0},  // STOP
   { 1, 1, 0},  // UP_R
@@ -117,62 +216,16 @@ struct { int8_t x; int8_t y; int8_t r; } const dir_table[] = {
 
 void moveRoverC(uint8_t dir, uint8_t speed)
 {
-  if(dir >= sizeof(dir_table)/sizeof(dir_table[0])) return;
-  setRoverC_XYR(speed*dir_table[dir].x, speed*dir_table[dir].y, speed*dir_table[dir].r);
+  if(dir >= sizeof(rdir_table)/sizeof(rdir_table[0])) return;
+  setRoverC_XYR(speed*rdir_table[dir].x, speed*rdir_table[dir].y, speed*rdir_table[dir].r);
 }
 
-String getHttp(char* url, uint8_t withErrorMsg)
-{
-  HTTPClient client;
-  client.begin(url);
-  int ret = client.GET();
-
-  String result;
-  if(ret == 200) {
-    result = client.getString();
-  } else {
-    result = withErrorMsg ? client.errorToString(ret): \"\";
-  }
-  client.end();
-  return result;
-//	stringOne.toCharArray(charBuf, 50)
-}
-
-int8_t weather[4];
-char wbuf[64];
-char* getWeather(char* index)
-{
-  // 24:11/ 0. 0/5:10 17:00 東京都東京地方
-  snprintf(wbuf,sizeof(wbuf),\"http://sohta02.web.fc2.com/w/%s.txt\",index);
-  String str = getHttp(wbuf, false);
-  int i;
-  memset(wbuf,0,sizeof(wbuf));
-  for(i = 0; i < 4; i++) weather[i] = -128; // INVALID
-  if(str.length() > 12) {
-    char tmp[5];
-    const char separator[4] = {':','/','.','/'};
-    char* dp2;
-    const char* dp1 = str.c_str();
-    for(int i = 0; i < 4; i++) {
-      dp2 = strchr(dp1, separator[i]);
-      if(dp2 == NULL) break;
-      if(dp2-dp1<sizeof(tmp)-1 && memcmp(dp1,\"--\",2)) {
-        memcpy(tmp, dp1, dp2-dp1);
-        tmp[dp2-dp1] = 0;
-        weather[i] = strtol(tmp, NULL, 10);
-      }
-      dp1 = dp2+1;
-    }
-    memcpy(wbuf, str.c_str(), dp1-str.c_str());
-  }
-  return wbuf;
-}
-
-void connectedCB(String localIP)
+void onConnect(String ip)
 {
   M5.Lcd.fillScreen(BLACK);
   M5.Lcd.setCursor(0,0);
-  M5.Lcd.println(localIP);
+  M5.Lcd.println(ip);
+  wsServer.listen(PORT_WEBSOCKET);
 }
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
@@ -185,28 +238,44 @@ M5.Lcd.fillScreen(BLACK);
 M5.Lcd.setTextSize(2);
 
 M5.Lcd.setCursor(0, 0);
-#ifdef PCMODE
-  M5.Lcd.println(\"PC mode: \" mVersion);
-#else
-  M5.Lcd.println(\"Arduino mode: \" mVersion);
-#endif
+if(M5.BtnA.isPressed()) {
+  M5.Lcd.println(\"ESP SmartConfig\");
+  WiFi.mode(WIFI_STA);
+  WiFi.beginSmartConfig();
+  while (!WiFi.smartConfigDone()) {
+    delay(2000);
+    _setLED(1);
+    _tone(T_C5, 100);
+    _setLED(0);
+  }
+} else {
+  #ifdef PCMODE
+    M5.Lcd.println(\"PC mode: \" mVersion);
+  #else
+    M5.Lcd.println(\"Arduino mode: \" mVersion);
+  #endif
+}
+
+// ServoCar
+ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
+ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
 RoverC_Init();
 Serial.begin(115200);
 #ifndef PCMODE
-initWifi(mVersion, true, connectedCB);
+initWifi(mVersion, true, onConnect);
 #else
-initWifi(mVersion, false, connectedCB);
+initWifi(mVersion, false, onConnect);
 #endif
 ",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
-M5.update();  // update button and speaker
-delay(50);
+  loopWebSocket();
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif
-remote.updateRemote();
+  M5.update();  // update button and speaker
+  delay(50);
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -224,63 +293,42 @@ remote.updateRemote();
 
 		["-"],	// ブロック区切り
 
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
+	//	["w", "reset IMU",								"resetIMU",						{"remote":[],			"func":"M5.IMU.Init();"}],
+		["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
+		["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
+		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read adc1 ch %n average %n times",		"getAdc1",			0,4,		{"remote":["B","S",	"S"], "func":"_getAdc1({0},{1})"}],
+
+		["-"],
+
 		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
 		["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"M5.Lcd.setCursor({0},{1});"}],
 		["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"M5.Lcd.print({0});"}],
 		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"M5.Lcd.println({0});"}],
 		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"M5.Lcd.drawString({0},{1},{2},{3});"}],
-
 		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0});"}],
-		["w", "circle at (%n ,%n ) r=%n with %d.color %d.fill",
-											"drawCircle",	50,50,30,"WHITE","fill",	{"remote":["S","S","S","S","B"],			"func":"if({4}) M5.Lcd.fillCircle({0},{1},{2},{3}); else M5.Lcd.drawCircle({0},{1},{2},{3});"}],
-		["w", "rect (%n ,%n ) w=%n h=%n with %d.color %d.fill",				
-											"drawRect",		0,0,50,50,"WHITE","fill",	{"remote":["S","S","S","S","S","B"],		"func":"if({5}) M5.Lcd.fillRect({0},{1},{2},{3},{4}); else M5.Lcd.drawRect({0},{1},{2},{3},{4});"}],
-		["w", "triangle (%n ,%n )-(%n ,%n )-(%n ,%n ) with %d.color %d.fill",
-										"drawTriangle",0,0,50,0,0,50,"WHITE","fill",	{"remote":["S","S","S","S","S","S","S","B"],"func":"if({7}) M5.Lcd.fillTriangle({0},{1},{2},{3},{4},{5},{6}); else M5.Lcd.drawTriangle({0},{1},{2},{3},{4},{5},{6});"}],
-
-		["w", "qrcode %s",							"qrcode",	"http://www.m5stack.com",{"remote":["s"],	"func":"M5.Lcd.qrcode({0});"}],
 
 		["-"],
 
-		["B", "%d.button is pressed",					"checkButton",		"buttonA",	{"remote":["B","B"],	"func":"checkButton({0})"}],
-
-		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
-		["w", "reset IMU",								"resetIMU",						{"remote":[],			"func":"M5.IMU.Init();"}],
-
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-
-		["-"],
-
-		["R", "天気(北海道) %m.hokkaido",				"getWHokkaido",	"石狩",			{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(東北) %m.tohoku",					"getWTohoku",	"岩手県 内陸",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(関東甲信越) %m.kantoKoshin",		"getWKantoKoshin","東京都 東京",{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(北陸) %m.hokuriku",					"getWHokuriku",	"新潟県 上越",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(東海) %m.tokai",					"getWTokai",	"愛知県 西部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(近畿) %m.kinki",					"getWKinki",	"大阪府",		{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(中部) %m.chubu",					"getWChubu",	"広島県 南部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(四国) %m.shikoku",					"getWShikoku",	"徳島県 北部",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(九州) %m.kyusyu",					"getWKyusyu",	"福岡県 福岡",	{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気(沖縄) %m.okinawa",					"getWOkinawa","沖縄本島 中南部",{"remote":["s",		"s"], "func":"getWeather({0})"}],
-		["R", "天気 %d.weather",						"getWeather",	"最高気温",		{"remote":["B",		"s"], "func":"(weather[{0}]==-128?\"\":String(weather[{0}]))"}],
-		["R", "get http %s",							"getHttp","http://sohta02.web.fc2.com/w/319.3.txt",
-																						{"remote":["s",		"s"], "func":"getHttp({0},true)"}],
-		["-"],
-
-		// robot.js呼び出し
-//		["B", "[WifiRemote] remote pressed",			"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
-//		["B", "[WifiRemote] ir remote %d.ircode pressed","isRemoteKey",		"UP",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
-		["w", "[WifiRemote] update remote",				"checkRemoteKey2",				{"custom":"", 			"func":"remote.checkRemoteKey();"}],
-		["R", "[WifiRemote] get remote X",				"getRemoteX",					{"custom":"",			"func":"remote.x"}],
-		["R", "[WifiRemote] get remote Y",				"getRemoteY",					{"custom":"",			"func":"remote.y"}],
+		["w", "--- ServoCar ---",						"tagRover",						{"enum":"",					"func":"0"}],
+		["w", "%d.direction at speed %n",				"setCar",  "run forward",100,	{"remote":["B","B"],	"func":"_setCar({0},{1});"}],
+		["w", "set motor %d.servoch speed %d.speed",	"setMotor",			0,100,		{"remote":["B","S"],	"func":"_setServo({0},{1},1);"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
+		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
+		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
+	//	["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
 
 		["-"],
 
-		// RoverC
-		["w", "[RoverC] FL %n FR %n RL %n RR %n",		"setRoverC",	0,0,0,0,		{"remote":["S","S","S","S"],	"func":"setRoverC({0},{1},{2},{3});"}],
-		["w", "[RoverC] x %n y %n role %n",				"setRoverC_XYR",0,0,0,			{"remote":["S","S","S"],		"func":"setRoverC_XYR({0},{1},{2});"}],
-		["w", "[RoverC] dir %d.direction speed %n",		"moveRoverC",	"UP",100,		{"remote":["B","B"],			"func":"moveRoverC({0},{1});"}],
-		["R", "[RoverC] %d.direction .",				"enumDirection","UP",			{"enum":"",						"func":"{0}"}],
+		["w", "--- RoverC ---",							"tagRover",						{"enum":"",					"func":"0"}],
+		["w", "FL %n FR %n RL %n RR %n",				"setRoverC",	0,0,0,0,		{"remote":["S","S","S","S"],"func":"setRoverC({0},{1},{2},{3});"}],
+		["w", "x %n y %n role %n",						"setRoverC_XYR",0,0,0,			{"remote":["S","S","S"],	"func":"setRoverC_XYR({0},{1},{2});"}],
+		["w", "dir %d.roverDir speed %n",				"moveRoverC",	"UP",100,		{"remote":["B","B"],		"func":"moveRoverC({0},{1});"}],
+		["R", "%d.roverDir .",							"enumRoverDir","UP",			{"enum":"",					"func":"{0}"}],
 
 		["-"],
 
@@ -301,25 +349,13 @@ remote.updateRemote();
 		"note":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",
 				"C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",
 				"C6","D6","E6","F6","G6","A6","B6","C7","D7","E7","F7","G7","A7","B7","C8","D8"],
-		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
-		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
-		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
 		"beats":["Half","Quarter","Eighth","Whole","Double"],
-		"fill":["fill","draw"],
 
-"hokkaido":["宗谷", "上川", "留萌", "網走", "北見", "紋別", "根室", "釧路", "十勝", "胆振", "日高", "石狩", "空知", "後志", "渡島", "檜山",],
-"tohoku":["青森県 津軽", "青森県 下北", "青森県 三八上北", "秋田県 沿岸", "秋田県 内陸", "岩手県 内陸", "岩手県 沿岸北部", "岩手県 沿岸南部", "山形県 村山", "山形県 置賜", "山形県 庄内", "山形県 最上", "宮城県 東部", "宮城県 西部", "福島県 中通り", "福島県 浜通り", "福島県 会津",],
-"kantoKoshin":["茨城県 北部", "茨城県 南部", "群馬県 南部", "群馬県 北部", "栃木県 南部", "栃木県 北部", "埼玉県 南部", "埼玉県 北部", "埼玉県 秩父", "千葉県 北西部", "千葉県 北東部", "千葉県 南部", "東京都 東京", "東京都 伊豆諸島北部", "東京都 伊豆諸島南部", "東京都 小笠原諸島", "神奈川県 東部", "神奈川県 西部", "山梨県 中･西部", "山梨県 東部･富士五湖", "長野県 北部", "長野県 中部", "長野県 南部",],
-"hokuriku":["新潟県 下越", "新潟県 中越", "新潟県 上越", "新潟県 佐渡", "富山県 東部", "富山県 西部", "石川県 加賀", "石川県 能登", "福井県 嶺北", "福井県 嶺南",],
-"tokai":["静岡県 中部", "静岡県 伊豆", "静岡県 東部", "静岡県 西部", "岐阜県 美濃", "岐阜県 飛騨", "愛知県 西部", "愛知県 東部", "三重県 北中部", "三重県 南部",],
-"kinki":["大阪府", "兵庫県 南部", "兵庫県 北部", "京都府 南部", "京都府 北部", "滋賀県 南部", "滋賀県 北部", "奈良県 北部", "奈良県 南部", "和歌山県 北部", "和歌山県 南部",],
-"chubu":["島根県 東部", "島根県 西部", "島根県 隠岐", "広島県 南部", "広島県 北部", "鳥取県 東部", "鳥取県 中･西部", "岡山県 南部", "岡山県 北部", "山口県 西部", "山口県 中部", "山口県 東部", "山口県 北部",],
-"shikoku":["香川県", "愛媛県 中予", "愛媛県 東予", "愛媛県 南予", "徳島県 北部", "徳島県 南部", "高知県 中部", "高知県 東部", "高知県 西部",],
-"kyusyu":["福岡県 福岡", "福岡県 北九州", "福岡県 筑豊", "福岡県 筑後", "佐賀県 南部", "佐賀県 北部", "長崎県 南部", "長崎県 北部", "長崎県 壱岐･対馬", "長崎県 五島", "熊本県 熊本", "熊本県 阿蘇", "熊本県 天草･芦北", "熊本県 球磨", "大分県 中部", "大分県 北部", "大分県 西部", "大分県 南部", "宮崎県 南部平野部", "宮崎県 北部平野部", "宮崎県 南部山沿い", "宮崎県 北部山沿い", "鹿児島県 薩摩", "鹿児島県 大隅", "鹿児島県 種子島･屋久島", "鹿児島県 奄美",],
-"okinawa":["沖縄本島 中南部", "沖縄本島 北部", "久米島", "大東島", "宮古島", "石垣島", "与那国島",],
-"weather":["最高気温","最低気温","降水確率午前","降水確率午後",],
-
-		"direction":["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
+		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"servoch"	:[0,1],
+		"speed"		:[100,50,0,-50,-100],
+		"angle"		:[0,90,180],
+		"roverDir"	:["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
@@ -337,101 +373,17 @@ remote.updateRemote();
 		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
 		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
 		"C8":4186,"D8":4699,
-		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
-		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
-		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
-		"ド5":523,"レ5":587,"ミ5":659,"ファ5":698,"ソ5":784,"ラ5":880,"シ5":988,
-		"ド6":1047,"レ6":1175,"ミ6":1319,"ファ6":1397,"ソ6":1568,"ラ6":1760,"シ6":1976,
-		"ド7":2093,"レ7":2349,"ミ7":2637,"ファ7":2794,"ソ7":3136,"ラ7":3520,"シ7":3951,
-		"ド8":4186,"レ8":4699,
 
 		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
-		"fill":1,"draw":0,
 
-"宗谷":"301.0", "上川":"302.1", "留萌":"302.0", "網走":"303.2", "北見":"303.1", "紋別":"303.0", "根室":"304.2", "釧路":"304.1", "十勝":"304.0", "胆振":"305.1", "日高":"305.0", "石狩":"306.2", "空知":"306.1", "後志":"306.0", "渡島":"307.1", "檜山":"307.0",
-"青森県 津軽":"308.2", "青森県 下北":"308.1", "青森県 三八上北":"308.0", "秋田県 沿岸":"309.1", "秋田県 内陸":"309.0", "岩手県 内陸":"310.2", "岩手県 沿岸北部":"310.1", "岩手県 沿岸南部":"310.0", "山形県 村山":"311.3", "山形県 置賜":"311.2", "山形県 庄内":"311.1", "山形県 最上":"311.0", "宮城県 東部":"312.1", "宮城県 西部":"312.0", "福島県 中通り":"313.2", "福島県 浜通り":"313.1", "福島県 会津":"313.0",
-"茨城県 北部":"314.1", "茨城県 南部":"314.0", "群馬県 南部":"315.1", "群馬県 北部":"315.0", "栃木県 南部":"316.1", "栃木県 北部":"316.0", "埼玉県 南部":"317.2", "埼玉県 北部":"317.1", "埼玉県 秩父":"317.0", "千葉県 北西部":"318.2", "千葉県 北東部":"318.1", "千葉県 南部":"318.0", "東京都 東京":"319.3", "東京都 伊豆諸島北部":"319.2", "東京都 伊豆諸島南部":"319.1", "東京都 小笠原諸島":"319.0", "神奈川県 東部":"320.1", "神奈川県 西部":"320.0", "山梨県 中･西部":"321.1", "山梨県 東部･富士五湖":"321.0", "長野県 北部":"322.2", "長野県 中部":"322.1", "長野県 南部":"322.0",
-"新潟県 下越":"323.3", "新潟県 中越":"323.2", "新潟県 上越":"323.1", "新潟県 佐渡":"323.0", "富山県 東部":"324.1", "富山県 西部":"324.0", "石川県 加賀":"325.1", "石川県 能登":"325.0", "福井県 嶺北":"326.1", "福井県 嶺南":"326.0",
-"静岡県 中部":"327.3", "静岡県 伊豆":"327.2", "静岡県 東部":"327.1", "静岡県 西部":"327.0", "岐阜県 美濃":"328.1", "岐阜県 飛騨":"328.0", "愛知県 西部":"329.1", "愛知県 東部":"329.0", "三重県 北中部":"330.1", "三重県 南部":"330.0",
-"大阪府":"331.0", "兵庫県 南部":"332.1", "兵庫県 北部":"332.0", "京都府 南部":"333.1", "京都府 北部":"333.0", "滋賀県 南部":"334.1", "滋賀県 北部":"334.0", "奈良県 北部":"335.1", "奈良県 南部":"335.0", "和歌山県 北部":"336.1", "和歌山県 南部":"336.0",
-"島根県 東部":"337.2", "島根県 西部":"337.1", "島根県 隠岐":"337.0", "広島県 南部":"338.1", "広島県 北部":"338.0", "鳥取県 東部":"339.1", "鳥取県 中･西部":"339.0", "岡山県 南部":"340.1", "岡山県 北部":"340.0", "山口県 西部":"345.3", "山口県 中部":"345.2", "山口県 東部":"345.1", "山口県 北部":"345.0",
-"香川県":"341.0", "愛媛県 中予":"342.2", "愛媛県 東予":"342.1", "愛媛県 南予":"342.0", "徳島県 北部":"343.1", "徳島県 南部":"343.0", "高知県 中部":"344.2", "高知県 東部":"344.1", "高知県 西部":"344.0",
-"福岡県 福岡":"346.3", "福岡県 北九州":"346.2", "福岡県 筑豊":"346.1", "福岡県 筑後":"346.0", "佐賀県 南部":"347.1", "佐賀県 北部":"347.0", "長崎県 南部":"348.3", "長崎県 北部":"348.2", "長崎県 壱岐･対馬":"348.1", "長崎県 五島":"348.0", "熊本県 熊本":"349.3", "熊本県 阿蘇":"349.2", "熊本県 天草･芦北":"349.1", "熊本県 球磨":"349.0", "大分県 中部":"350.3", "大分県 北部":"350.2", "大分県 西部":"350.1", "大分県 南部":"350.0", "宮崎県 南部平野部":"351.3", "宮崎県 北部平野部":"351.2", "宮崎県 南部山沿い":"351.1", "宮崎県 北部山沿い":"351.0", "鹿児島県 薩摩":"352.3", "鹿児島県 大隅":"352.2", "鹿児島県 種子島･屋久島":"352.1", "鹿児島県 奄美":"352.0",
-"沖縄本島 中南部":"353.2", "沖縄本島 北部":"353.1", "久米島":"353.0", "大東島":"354.0", "宮古島":"355.0", "石垣島":"356.1", "与那国島":"356.0", 
-"最高気温":0,"最低気温":1,"降水確率午前":2,"降水確率午後":3,
-
+		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"STOP":0,"UP_R":1,"UP":2,"UP_L":3,"RIGHT":4,"LEFT":5,"DOWN_R":6,"DOWN":7,"DOWN_L":8,"ROLL_R":9,"ROLL_L":10,
 	},
 	"translators":{
 		"ja":{
-			"set LED %d.onoff"								:"LEDを %d.onoff",
 			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
 			"read digital pin %n"							:"デジタルピン %n",
-			"read digital pin A%n"							:"デジタルピン A%n",
-			"read analog pin A%n"							:"アナログピン A%n",
-
-			"[WifiRemote] remote pressed"					:"[WifiRemote] リモコンボタンが押された",
-			"[WifiRemote] ir remote %d.ircode pressed"		:"[WifiRemote] 押されたのが %d.ircode のボタン",
-			"[WifiRemote] update remote"					:"[WifiRemote] リモコン情報更新",
-			"[WifiRemote] get remote X"						:"[WifiRemote] アナログXの値",
-			"[WifiRemote] get remote Y"						:"[WifiRemote] アナログYの値",
+			"read analog pin %n"							:"アナログピン %n",
 		}
 	}
 }
-
-
-
-/*
- *  System:
-        M5.begin(LCDEnable, PowerEnable, SerialEnable);
-        M5.update();
-
-    LCD:
-        M5.Lcd.drawPixel(int16_t x, int16_t y, uint16_t color);
-        M5.Lcd.drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
-        M5.Lcd.fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
-        M5.Lcd.fillScreen(uint16_t color);
-        M5.Lcd.drawCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
-        M5.Lcd.drawCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,uint16_t color);
-        M5.Lcd.fillCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color);
-        M5.Lcd.fillCircleHelper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,int16_t delta, uint16_t color);
-        M5.Lcd.drawTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
-        M5.Lcd.fillTriangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint16_t color);
-        M5.Lcd.drawRoundRect(int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color);
-        M5.Lcd.fillRoundRect(int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color);
-        M5.Lcd.drawBitmap(int16_t x, int16_t y, const uint8_t bitmap[], int16_t w, int16_t h, uint16_t color);
-        M5.Lcd.drawRGBBitmap(int16_t x, int16_t y, const uint16_t bitmap[], int16_t w, int16_t h),
-        M5.Lcd.drawChar(uint16_t x, uint16_t y, char c, uint16_t color, uint16_t bg, uint8_t size);
-        M5.Lcd.setCursor(uint16_t x0, uint16_t y0);
-        M5.Lcd.setTextColor(uint16_t color);
-        M5.Lcd.setTextColor(uint16_t color, uint16_t backgroundcolor);
-        M5.Lcd.setTextSize(uint8_t size);
-        M5.Lcd.setTextWrap(boolean w);
-        M5.Lcd.printf();
-        M5.Lcd.print();
-        M5.Lcd.println();
-        M5.Lcd.drawCentreString(const char *string, int dX, int poY, int font);
-        M5.Lcd.drawRightString(const char *string, int dX, int poY, int font);
-        //M5.Lcd.drawJpg(const uint8_t *jpg_data, size_t jpg_len, uint16_t x, uint16_t y);
-        //M5.Lcd.drawJpgFile(fs::FS &fs, const char *path, uint16_t x, uint16_t y);
-        //M5.Lcd.drawBmpFile(fs::FS &fs, const char *path, uint16_t x, uint16_t y);
-
-        M5.Lcd.drawFastHLine
-        M5.Lcd.drawFastVLine
-        M5.Lcd.drawFloat
-        M5.Lcd.drawNumber
-        M5.Lcd.begin();
-        M5.Lcd.drawRect(15, 55, 50, 50, BLUE);
-        M5.Lcd.drawString("1024",0, 80, 4);
-        M5.Lcd.drawXBitmap(x, y, logo, logoWidth, logoHeight, TFT_BLACK);
-        M5.Lcd.highlight(false);
-        M5.Lcd.loadHzk16();
-        M5.Lcd.qrcode("http://www.m5stack.com");
-        M5.Lcd.setHighlightColor(RED);
-        M5.Lcd.setRotation(1);
-        M5.Lcd.setSwapBytes(false);
-        M5.Lcd.setTextDatum(datum);
-        M5.Lcd.setTextFont(2);
-        M5.Lcd.writeHzk(AscStr);
-*/

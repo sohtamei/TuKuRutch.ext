@@ -6,16 +6,33 @@
 
 #define M5STACK_MPU6886 
 // #define M5STACK_MPU9250 
-// #define M5STACK_MPU6050
-// #define M5STACK_200Q
 #include <M5Stack.h>
-#include <Adafruit_NeoPixel.h>
-#include <HTTPClient.h>
 #include "TukurutchEsp.h"
 
-WifiRemote remote;
 
-uint8_t checkButton(uint8_t button)
+WebsocketsServer wsServer;
+
+#define numof(a) (sizeof(a)/sizeof((a)[0]))
+
+esp_adc_cal_characteristics_t adc_chars;
+uint16_t _getAdc1(uint8_t idx, uint16_t count)
+{
+      if(count == 0) count = 1;
+    
+      adc1_config_width(ADC_WIDTH_BIT_12);
+      esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
+      adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
+      uint32_t sum = 0;
+      for(int i = 0; i < count; i++)
+        sum += adc1_get_raw((adc1_channel_t)idx);
+    
+      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+}
+
+void _setLED(uint8_t onoff)
+{;}
+
+uint8_t _getSw(uint8_t button)
 {
       switch(button) {
           case 0: return M5.BtnA.isPressed();
@@ -27,7 +44,7 @@ uint8_t checkButton(uint8_t button)
 
 float getIMU(uint8_t index)
 {
-      float data[3];
+  float data[3] = {0};
       if(index < 3) {
             M5.IMU.getGyroData(data+0,data+1,data+2);
             return data[index-0];
@@ -43,58 +60,26 @@ float getIMU(uint8_t index)
       }
 }
 
-String getHttp(char* url, uint8_t withErrorMsg)
+void _tone(int sound, int ms)
 {
-      HTTPClient client;
-      client.begin(url);
-      int ret = client.GET();
-    
-      String result;
-      if(ret == 200) {
-            result = client.getString();
-      } else {
-            result = withErrorMsg ? client.errorToString(ret): "";
-      }
-      client.end();
-      return result;
-    //	stringOne.toCharArray(charBuf, 50)
+      M5.Speaker.tone(sound, ms);
+      delay(ms);
+      M5.Speaker.mute();
 }
 
-int8_t weather[4];
-char wbuf[64];
-char* getWeather(char* index)
+void _beep(void)
 {
-      // 24:11/ 0. 0/5:10 17:00 東京都東京地方
-      snprintf(wbuf,sizeof(wbuf),"http://sohta02.web.fc2.com/w/%s.txt",index);
-      String str = getHttp(wbuf, false);
-      int i;
-      memset(wbuf,0,sizeof(wbuf));
-      for(i = 0; i < 4; i++) weather[i] = -128; // INVALID
-      if(str.length() > 12) {
-            char tmp[5];
-        const char separator[4] = {':','/','.','/'};
-            char* dp2;
-            const char* dp1 = str.c_str();
-            for(int i = 0; i < 4; i++) {
-                  dp2 = strchr(dp1, separator[i]);
-                  if(dp2 == NULL) break;
-                  if(dp2-dp1<sizeof(tmp)-1 && memcmp(dp1,"--",2)) {
-                        memcpy(tmp, dp1, dp2-dp1);
-                        tmp[dp2-dp1] = 0;
-                        weather[i] = strtol(tmp, NULL, 10);
-                  }
-                  dp1 = dp2+1;
-            }
-            memcpy(wbuf, str.c_str(), dp1-str.c_str());
-      }
-      return wbuf;
+      M5.Speaker.beep();
+      delay(100);
+      M5.Speaker.mute();
 }
 
-void connectedCB(String localIP)
+void onConnect(String ip)
 {
       M5.Lcd.fillScreen(BLACK);
       M5.Lcd.setCursor(0,0);
-      M5.Lcd.println(localIP);
+      M5.Lcd.println(ip);
+      wsServer.listen(PORT_WEBSOCKET);
 }
 
 
@@ -134,17 +119,29 @@ void setup()
     M5.Lcd.setTextSize(2);
     
     M5.Lcd.setCursor(0, 0);
-    #ifdef PCMODE
-      M5.Lcd.println("PC mode: " mVersion);
-    #else
-      M5.Lcd.println("Arduino mode: " mVersion);
-    #endif
+    if(M5.BtnA.isPressed()) {
+          M5.Lcd.println("ESP SmartConfig");
+          WiFi.mode(WIFI_STA);
+          WiFi.beginSmartConfig();
+          while (!WiFi.smartConfigDone()) {
+                delay(2000);
+                _setLED(1);
+                _tone(T_C5, 100);
+                _setLED(0);
+          }
+    } else {
+          #ifdef PCMODE
+            M5.Lcd.println("PC mode: " mVersion);
+          #else
+            M5.Lcd.println("Arduino mode: " mVersion);
+          #endif
+    }
     
     Serial.begin(115200);
     #ifndef PCMODE
-    initWifi(mVersion, true, connectedCB);
+    initWifi(mVersion, true, onConnect);
     #else
-    initWifi(mVersion, false, connectedCB);
+    initWifi(mVersion, false, onConnect);
     #endif
     
     _Serial.println("PC mode: " mVersion);
@@ -159,10 +156,14 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {'S','S',},
-  {'S','S',},
+  {'B',},
+  {'B',},
   {'S','S',},
   {},
+  {'B',},
+  {'B','B',},
+  {'B',},
+  {'B','S',},
   {},
   {'S','B',},
   {'S','S',},
@@ -170,30 +171,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'s',},
   {'s','S','S','B',},
   {'S',},
-  {'S','S','S','S','B',},
-  {'S','S','S','S','S','B',},
-  {'S','S','S','S','S','S','S','B',},
-  {'s',},
-  {'S','S','s',},
-  {'S','S','s',},
-  {},
-  {'B',},
-  {'B',},
-  {'B','B',},
-  {'B',},
-  {},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'s',},
-  {'B',},
-  {'s',},
   {},
   {},
   {},
@@ -205,9 +182,14 @@ uint8_t wifi_uart = 0;
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart)
-        writeWifi(dp, count);
-      else
+      if(wifi_uart == 1) {
+            writeWifi(dp, count);
+            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+        #ifdef ENABLE_WEBSOCKET
+      } else if(wifi_uart == 2) {
+            _packetLen = count;
+        #endif
+      } else
     #endif
         _Serial.write(dp, count);
 }
@@ -262,41 +244,23 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 2: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 3: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 4: M5.Speaker.tone(getShort(0),getShort(1));delay(getShort(1));; callOK(); break;
-        case 5: M5.Speaker.beep();; callOK(); break;
-        case 7: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
-        case 8: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
-        case 9: M5.Lcd.print(getString(0));; callOK(); break;
-        case 10: M5.Lcd.println(getString(0));; callOK(); break;
-        case 11: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-        case 12: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
-        case 13: if(getByte(4)) M5.Lcd.fillCircle(getShort(0),getShort(1),getShort(2),getShort(3)); else M5.Lcd.drawCircle(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-        case 14: if(getByte(5)) M5.Lcd.fillRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4)); else M5.Lcd.drawRect(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4));; callOK(); break;
-        case 15: if(getByte(7)) M5.Lcd.fillTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6)); else M5.Lcd.drawTriangle(getShort(0),getShort(1),getShort(2),getShort(3),getShort(4),getShort(5),getShort(6));; callOK(); break;
-        case 16: M5.Lcd.qrcode(getString(0));; callOK(); break;
-        case 17: M5.Lcd.drawJpgFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
-        case 18: M5.Lcd.drawBmpFile(SD,getString(2),getShort(0),getShort(1));; callOK(); break;
-        case 20: sendByte((checkButton(getByte(0)))); break;
-        case 21: sendFloat((getIMU(getByte(0)))); break;
-        case 22: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 23: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 25: sendString((getWeather(getString(0)))); break;
-        case 26: sendString((getWeather(getString(0)))); break;
-        case 27: sendString((getWeather(getString(0)))); break;
-        case 28: sendString((getWeather(getString(0)))); break;
-        case 29: sendString((getWeather(getString(0)))); break;
-        case 30: sendString((getWeather(getString(0)))); break;
-        case 31: sendString((getWeather(getString(0)))); break;
-        case 32: sendString((getWeather(getString(0)))); break;
-        case 33: sendString((getWeather(getString(0)))); break;
-        case 34: sendString((getWeather(getString(0)))); break;
-        case 35: sendString(((weather[getByte(0)]==-128?"":String(weather[getByte(0)])))); break;
-        case 36: sendString((getHttp(getString(0),true))); break;
-        case 38: sendString((statusWifi())); break;
-        case 39: sendString((scanWifi())); break;
-        case 40: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 2: _setLED(getByte(0));; callOK(); break;
+        case 3: sendFloat((getIMU(getByte(0)))); break;
+        case 4: _tone(getShort(0),getShort(1));; callOK(); break;
+        case 5: _beep();; callOK(); break;
+        case 6: sendByte((_getSw(getByte(0)))); break;
+        case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+        case 11: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
+        case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
+        case 13: M5.Lcd.print(getString(0));; callOK(); break;
+        case 14: M5.Lcd.println(getString(0));; callOK(); break;
+        case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
+        case 16: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
+        case 18: sendString((statusWifi())); break;
+        case 19: sendString((scanWifi())); break;
+        case 20: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -325,7 +289,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        //_Serial.write(a)  // for debug
+        //_Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -351,10 +315,55 @@ void loop()
         }
     }
     
-    M5.update();  // update button and speaker
-    delay(50);
+      loopWebSocket();
+    #ifndef PCMODE
+      sendNotifyArduinoMode();
+    #endif
+      M5.update();  // update button and speaker
+      delay(50);
     
 }
+
+#ifdef ENABLE_WEBSOCKET
+uint8_t connected = 0;
+static WebsocketsClient _client;
+
+void onEventsCallback(WebsocketsEvent event, String data) {
+      if(event == WebsocketsEvent::ConnectionOpened) {
+            Serial.println("Connnection Opened");
+      } else if(event == WebsocketsEvent::ConnectionClosed) {
+            Serial.println("Connnection Closed");
+            connected = 0;
+      } else if(event == WebsocketsEvent::GotPing) {
+            Serial.println("Got a Ping!");
+      } else if(event == WebsocketsEvent::GotPong) {
+            Serial.println("Got a Pong!");
+      }
+}
+
+void onMessageCallback(WebsocketsMessage msg) {
+      _packetLen = msg.length();
+      memcpy(buffer, msg.c_str(), _packetLen);
+      wifi_uart = 2;
+      parseData();
+      _client.sendBinary((char*)buffer, _packetLen);
+}
+
+static void loopWebSocket(void)
+{
+      if(!wsServer.available()) return;
+      if(wsServer.poll()) {
+            connected = 1;
+            Serial.println("connected");
+            _client = wsServer.accept();
+            _client.onMessage(onMessageCallback);
+            _client.onEvent(onEventsCallback);
+      }
+      if(!connected || !_client.available()) return;
+      _client.poll();
+      return;
+}
+#endif
 
 union floatConv { 
     float _float;
@@ -437,6 +446,7 @@ static void sendShort(uint16_t data)
     *dp++ = RSP_SHORT;
     *dp++ = data&0xff;
     *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
