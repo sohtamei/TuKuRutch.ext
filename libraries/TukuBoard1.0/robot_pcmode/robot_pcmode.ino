@@ -3,35 +3,24 @@
 #define PCMODE
 
 #define mVersion "TukuBoard1.0"
-#include "WiFi.h"
+
 #include "TukurutchEsp.h"
-#include "driver/adc.h"
-#include "esp_adc_cal.h"
 
 
-#include <ArduinoWebsockets.h>
-using namespace websockets;
 WebsocketsServer wsServer;
-#define ENABLE_WEBSOCKET
 
 #define P_GND		4
-
-esp_adc_cal_characteristics_t adc_chars;
 
 #define P_BUZZER		19
 #define LEDC_BUZZER		8
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-enum {
-      T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
-      T_C5=523, T_D5=587, T_E5=659, T_F5=698,
-};
-
 struct port {uint8_t sig; uint8_t gnd;};
 
+esp_adc_cal_characteristics_t adc_chars;
 const uint8_t sensorTable[4] = {7, 6, 0, 3};
-uint16_t _getAnalog(uint8_t idx, uint16_t count)
+uint16_t _getAdc1(uint8_t idx, uint16_t count)
 {
       if(!idx || idx > numof(sensorTable)) return 0;
       idx--;
@@ -64,11 +53,11 @@ uint8_t _getSw(uint8_t idx)
       idx--;
     
       pinMode(swTable[idx].sig, INPUT_PULLUP);
-      digitalWrite(swTable[idx].gnd, LOW);
       if(swTable[idx].gnd) {
+            digitalWrite(swTable[idx].gnd, LOW);
             pinMode(swTable[idx].gnd, OUTPUT);
-            return digitalRead(swTable[idx].sig) ? 0: 1;
       }
+      return digitalRead(swTable[idx].sig) ? 0: 1;
 }
 
 void _tone(int sound, int ms) {
@@ -242,7 +231,7 @@ static void parseData()
     switch(buffer[3]){
         case 1: _setLED(getByte(0),getByte(1));; callOK(); break;
         case 2: _tone(getShort(0),getShort(1));; callOK(); break;
-        case 3: sendShort((_getAnalog(getByte(0),getShort(1)))); break;
+        case 3: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
         case 6: sendString((statusWifi())); break;
         case 7: sendString((scanWifi())); break;

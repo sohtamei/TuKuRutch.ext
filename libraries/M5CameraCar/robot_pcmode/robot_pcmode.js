@@ -50,7 +50,7 @@ class Scratch3DummyNameBlocks {
 			let tmp = cookies_get[i].trim().split('=');
 			if(tmp[0]=='DummyName_ip') {
 				this._ipadrs=tmp[1];
-				log.log('DummyName_ip='+this._ipadrs);
+				console.log('DummyName_ip='+this._ipadrs);
 				break;
 			}
 		}
@@ -184,7 +184,6 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
             this._locale = 'en';
             break;
         }
-        log.log(this._locale);
 
 	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
         return {
@@ -212,21 +211,12 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
             'ja': 'を保存しました',
           }[this._locale]);
         }
-        log.log(this._ipadrs);
+        console.log(this._ipadrs);
     }
 
-/*
-	onmessage(err, res, body) {
-		if (err) {
-			log.warn(`error fetching translate result! ${res}`);
-			_error('');
-			return '';
-		}
-		var respUint8 = base64.toByteArray(String.fromCharCode.apply(null,body));
-*/
 	onmessage(event) {
 		var respUint8 = new Uint8Array(event.data);
-		//for(i=0;i<respUint8.length;i++) log.log(respUint8[i].toString(16));	// debug
+		//for(i=0;i<respUint8.length;i++) console.log(respUint8[i].toString(16));	// debug
 		var tmp = 0;
 		if(respUint8[0] == 0xFF && respUint8[1] == 0x55 && respUint8[2] == respUint8.length-3 && respUint8.length >= 5) {
 			var tmp2 = new DataView(respUint8.buffer);
@@ -236,10 +226,10 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 			case 3: tmp = tmp2.getInt32(4, true); break;
 			case 4: tmp = tmp2.getFloat32(4, true); break;
 			case 5: tmp = tmp2.getFloat64(4, true); break;
-		//	case 6: break;		// string
+			case 6: tmp = String.fromCharCode.apply(null, respUint8.subarray(4)); break;
 		//	case 7: break;		// bytes
 			}
-			log.log(tmp);
+			console.log(tmp);
 		}
 		const resp = tmp;
 		_resolve(resp);
@@ -264,16 +254,23 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 		for(i = 1; ; i++) {
 			eval("var param = args.ARG"+i);
 			eval("var def = this._blocks[index].arguments.ARG"+i);
-		//	log.log(i,param, def);
+		//	console.log(i,param, def);
 			if(typeof param === "undefined") break;
 			switch(def.type2) {
 			case "B": cmd.setUint8(ofs,param);        ofs+=1; break;
 			case "S": cmd.setInt16(ofs,param, true);  ofs+=2; break;
 			case "L": cmd.setInt32(ofs,param, true);  ofs+=4; break;
-			case "F": cmd.setFloat(ofs,param, true);  ofs+=4; break;
-			case "D": cmd.setDouble(ofs,param,true); ofs+=8; break;
+			case "F": cmd.setFloat32(ofs,param, true);ofs+=4; break;
+			case "D": cmd.setFloat64(ofs,param,true); ofs+=8; break;
+
+			case "s":
+				var charList = param.split('');
+				for (var j = 0; j < charList.length; j++)
+					cmdUint8[ofs+j] = charList[j].charCodeAt(0);
+				cmdUint8[ofs+j] = 0;
+				ofs += charList.length+1;
+				break;
 /*
-			case "s": cmd.writeUTFBytes(param); cmd.writeByte(0); break;
 			case "b":
 				var n = param.length/2;
 				cmd.writeByte(n);
@@ -284,13 +281,13 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 			}
 		}
 		cmd.setUint8(2, ofs-3);
-	//	for(i=0;i<ofs;i++) log.log(cmd.getUint8(i).toString(16));
+	//	for(i=0;i<ofs;i++) console.log(cmd.getUint8(i).toString(16));
 
 		const tempThis = this;
 		const netsPromise = new Promise(function(resolve, error) {
 			_resolve = resolve;
 			_error = error;
-			//log.log('send: ' + cmdUint8.slice(0,ofs));	// debug
+			//console.log('send: ' + cmdUint8.slice(0,ofs));	// debug
 
 			if(tempThis._ws === null) {
 			/*
@@ -305,7 +302,7 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 				tempThis._ws.binaryType = 'arraybuffer';
 
 				tempThis._ws.onopen = function(e) {
-					log.log('open: ' + e);
+					console.log('open: ' + e);
 					tempThis._ws.send(_sendBuf);
 				}
 
@@ -313,16 +310,16 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 
 				tempThis._ws.onclose = function(event) {
 					if (event.wasClean) {
-						log.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+						console.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
 					} else {
-						log.log('close: Connection died');
+						console.log('close: Connection died');
 					}
 					tempThis._ws = null;
 					if(_error !== null) _error('');
 				};
 
 				tempThis._ws.onerror = function(error) {
-					log.log('[error] '+error.message);
+					console.log('[error] '+error.message);
 					tempThis._ws.close();
 					tempThis._ws = null;
 					if(_error !== null) _error('');
@@ -334,16 +331,7 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 				tempThis._ws.send(cmdUint8.slice(0,ofs));
 			}
 		});
-/*
-		var _base64 = base64url.encode(cmdUint8.slice(0,ofs));
-		const netsPromise = new Promise(function(resolve) {
-			_resolve = resolve;
-			nets({
-				url: `http://${tempThis._ipadrs}:80/cmd?d=${_base64}`,
-				timeout: serverTimeoutMs
-				}, tempThis.onmessage);
-		});
-*/
+
 		netsPromise.then(result => result);
 		netsPromise.catch(result => result);
 		return netsPromise;

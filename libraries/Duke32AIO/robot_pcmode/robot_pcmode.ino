@@ -9,10 +9,7 @@
 // https://github.com/Makuna/NeoPixelBus
 #include <NeoPixelBus.h>
 
-#include <ArduinoWebsockets.h>
-using namespace websockets;
 WebsocketsServer wsServer;
-#define ENABLE_WEBSOCKET
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
