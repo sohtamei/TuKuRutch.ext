@@ -25,6 +25,15 @@ uint32_t connection_start = 0;
 const char* mVersion = NULL;
 void(*_connectedCB)(String localIP) = NULL;
 
+static uint8_t waitWifi(void)
+{
+	for(int i=0;i<80;i++) {
+		delay(100);
+		if(WiFi.status()==WL_CONNECTED) break;
+	}
+	return WiFi.status();
+}
+
 void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP))
 {
 	_connectedCB = connectedCB;
@@ -59,15 +68,6 @@ uint8_t connectWifi(char* ssid, char*pass)
 	connection_status = CONNECTION_CONNECTING;
 	connection_start = millis();
 	return waitWifi();
-}
-
-uint8_t waitWifi(void)
-{
-	for(int i=0;i<80;i++) {
-		delay(100);
-		if(WiFi.status()==WL_CONNECTED) break;
-	}
-	return WiFi.status();
 }
 
 char* statusWifi(void)
