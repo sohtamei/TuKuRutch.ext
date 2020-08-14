@@ -405,7 +405,7 @@ case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
 case 13: M5.Lcd.print(getString(0));; callOK(); break;
 case 14: M5.Lcd.println(getString(0));; callOK(); break;
 case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-case 16: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
+case 16: M5.Lcd.fillScreen(getShort(0)); M5.Lcd.setCursor(0,0);; callOK(); break;
 case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
 case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
 case 21: _setCar(0,0);; callOK(); break;
@@ -475,7 +475,7 @@ if(_index >= sizeof(buffer)) {
   sendNotifyArduinoMode();
 #endif
   M5.update();  // update button and speaker
-  delay(50);
+//delay(50);
 
 }
 

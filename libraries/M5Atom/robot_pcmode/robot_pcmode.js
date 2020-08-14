@@ -190,6 +190,7 @@ direction: { acceptReporters: true, items: [
 { text: 'run backward', value: 4 },
 { text: 'rotate left', value: 5 },
 { text: 'rotate right', value: 6 },
+{ text: 'calibration', value: 7 },
 ]},
 
 imu: { acceptReporters: true, items: [
@@ -303,8 +304,8 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 			case 1: tmp = tmp2.getUint8(4); break;
 			case 2: tmp = tmp2.getInt16(4, true); break;
 			case 3: tmp = tmp2.getInt32(4, true); break;
-			case 4: tmp = tmp2.getFloat(4, true); break;
-			case 5: tmp = tmp2.getDouble(4, true); break;
+			case 4: tmp = tmp2.getFloat32(4, true); break;
+			case 5: tmp = tmp2.getFloat64(4, true); break;
 		//	case 6: break;		// string
 		//	case 7: break;		// bytes
 			}

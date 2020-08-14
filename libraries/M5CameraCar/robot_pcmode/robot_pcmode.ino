@@ -11,7 +11,6 @@
 WebsocketsServer wsServer;
 
 #define P_LED	14
-#define P_SW	4
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -23,9 +22,7 @@ void _setLED(uint8_t onoff)
 
 uint8_t _getSw(uint8_t idx)
 {
-      pinMode(P_SW, INPUT_PULLUP);
-      delay(50);
-      return digitalRead(P_SW) ? 0: 1;
+      return 0;
 }
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,13},{9,4}};

@@ -88,6 +88,7 @@ float getIMU(uint8_t index)
 
 void _tone(int sound, int ms)
 {
+  delay(ms);
 }
 
 void _beep(void)
@@ -189,7 +190,7 @@ initWifi(mVersion, false, onConnect);
   sendNotifyArduinoMode();
 #endif
   M5.update();  // update button and speaker
-  delay(50);
+//delay(50);
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -209,7 +210,6 @@ initWifi(mVersion, false, onConnect);
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
-	//	["w", "reset IMU",								"resetIMU",						{"remote":[],			"func":"M5.IMU.Init();"}],
 		["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
 		["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],

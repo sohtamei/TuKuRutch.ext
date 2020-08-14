@@ -74,11 +74,6 @@ float getIMU(uint8_t index)
     M5.IMU.getAccelData(data+0,data+1,data+2);
     return data[index-3];
   } else if(index < 9) {
-  bmm.read_mag_data();
-  magX = bmm.raw_mag_data.raw_datax;
-  magY = bmm.raw_mag_data.raw_datay;
-  magZ = bmm.raw_mag_data.raw_dataz;
-
     //M5.IMU.getAhrsData(data+0,data+1,data+2);
     return data[index-6];
   } else {
@@ -151,7 +146,7 @@ initWifi(mVersion, false, onConnect);
   sendNotifyArduinoMode();
 #endif
   M5.update();  // update button and speaker
-  delay(50);
+//delay(50);
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -185,7 +180,7 @@ initWifi(mVersion, false, onConnect);
 		["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"M5.Lcd.print({0});"}],
 		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"M5.Lcd.println({0});"}],
 		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"M5.Lcd.drawString({0},{1},{2},{3});"}],
-		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0});"}],
+		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0}); M5.Lcd.setCursor(0,0);"}],
 
 		["-"],
 

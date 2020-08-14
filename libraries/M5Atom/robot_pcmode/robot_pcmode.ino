@@ -33,6 +33,7 @@ void _setLED(uint8_t onoff)
         M5.dis.drawpix(0,0xf00000);
       else
         M5.dis.clear();
+      M5.update();
 }
 
 uint8_t _getSw(uint8_t button)
@@ -65,6 +66,7 @@ float getIMU(uint8_t index)
 
 void _tone(int sound, int ms)
 {
+      delay(ms);
 }
 
 void _beep(void)
@@ -86,7 +88,7 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
             else if(data > 100) data = 100;
             if(idx == 1) data = -data;
             pwmWidth = (data * srvCoef) / 100 + srvZero;
-            if(data==0) pwmWidth=0;
+            if(data==0 && continuous!=2) pwmWidth=0;
       } else {
             #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
             #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
@@ -100,19 +102,25 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
 
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
 //  L   R
-  { 0,  0},  // STOP
-  { 1,  1},  // FORWARD
-  { 0,  1},  // LEFT
-  { 1,  0},  // RIGHT
-  {-1, -1},  // BACK
-  {-1,  1},  // ROLL_LEFT
-  { 1, -1},  // ROLL_RIGHT
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+             // 7:CALIBRATION
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
 {
-  _setServo(0, speed * dir_table[direction].L, 1);
-  _setServo(1, speed * dir_table[direction].R, 1);
+  if(direction >= numof(dir_table)) {
+        _setServo(0, 0, 2);
+        _setServo(1, 0, 2);
+  } else {
+        _setServo(0, speed * dir_table[direction].L, 1);
+        _setServo(1, speed * dir_table[direction].R, 1);
+  }
 }
 
 void onConnect(String ip)
@@ -158,9 +166,9 @@ M5.begin(true, true, true); // init lcd, power, serial
 M5.IMU.Init();
 Serial.begin(115200);
 if(_getSw(0)) {
+      Serial.println("Waiting for SmartConfig.");
       WiFi.mode(WIFI_STA);
       WiFi.beginSmartConfig();
-      Serial.println("Waiting for SmartConfig.");
       while (!WiFi.smartConfigDone()) {
             delay(2000);
             _setLED(1);
@@ -367,7 +375,7 @@ while((c=_read()) >= 0) {
   sendNotifyArduinoMode();
 #endif
   M5.update();  // update button and speaker
-  delay(50);
+//delay(50);
 
 }
 
