@@ -137,7 +137,7 @@ class Scratch3DummyNameBlocks {
 }},
 
 '---',
-{blockType: BlockType.COMMAND, opcode: 'tagRover', text: '--- ServoCar ---', arguments: {
+{blockType: BlockType.COMMAND, opcode: 'tagServo', text: '--- ServoCar ---', arguments: {
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'setCar', text: '[ARG1] at speed [ARG2]', arguments: {
@@ -246,6 +246,7 @@ direction: { acceptReporters: true, items: [
 { text: 'run backward', value: 4 },
 { text: 'rotate left', value: 5 },
 { text: 'rotate right', value: 6 },
+{ text: 'calibration', value: 7 },
 ]},
 
 font: { acceptReporters: true, items: [
@@ -358,7 +359,7 @@ printText(args,util) { return this.getTest(arguments.callee.name, args); }
 printlnText(args,util) { return this.getTest(arguments.callee.name, args); }
 drawString(args,util) { return this.getTest(arguments.callee.name, args); }
 fillScreen(args,util) { return this.getTest(arguments.callee.name, args); }
-tagRover(args) { return args.ARG1; }
+tagServo(args) { return args.ARG1; }
 setCar(args,util) { return this.getTest(arguments.callee.name, args); }
 setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
 stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
@@ -434,8 +435,8 @@ enumRoverDir(args) { return args.ARG1; }
 			case 1: tmp = tmp2.getUint8(4); break;
 			case 2: tmp = tmp2.getInt16(4, true); break;
 			case 3: tmp = tmp2.getInt32(4, true); break;
-			case 4: tmp = tmp2.getFloat(4, true); break;
-			case 5: tmp = tmp2.getDouble(4, true); break;
+			case 4: tmp = tmp2.getFloat32(4, true); break;
+			case 5: tmp = tmp2.getFloat64(4, true); break;
 		//	case 6: break;		// string
 		//	case 7: break;		// bytes
 			}

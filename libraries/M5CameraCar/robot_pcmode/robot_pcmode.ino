@@ -8,16 +8,14 @@
 #include "M5CameraCar.h"
 
 
-#include <ArduinoWebsockets.h>
-using namespace websockets;
 WebsocketsServer wsServer;
-#define ENABLE_WEBSOCKET
 
 #define P_LED	14
+#define P_SW	4
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-void _setLED(uint8_t idx, uint8_t onoff)
+void _setLED(uint8_t onoff)
 {
       digitalWrite(P_LED, !onoff);
       pinMode(P_LED, OUTPUT);
@@ -25,7 +23,9 @@ void _setLED(uint8_t idx, uint8_t onoff)
 
 uint8_t _getSw(uint8_t idx)
 {
-      return 0;
+      pinMode(P_SW, INPUT_PULLUP);
+      delay(50);
+      return digitalRead(P_SW) ? 0: 1;
 }
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,13},{9,4}};
@@ -41,7 +41,7 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
             else if(data > 100) data = 100;
             if(idx == 1) data = -data;
             pwmWidth = (data * srvCoef) / 100 + srvZero;
-            if(data==0) pwmWidth=0;
+            if(data==0 && continuous!=2) pwmWidth=0;
       } else {
             #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
             #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
@@ -55,24 +55,30 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
 
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
 //  L   R
-  { 0,  0},  // STOP
-  { 1,  1},  // FORWARD
-  { 0,  1},  // LEFT
-  { 1,  0},  // RIGHT
-  {-1, -1},  // BACK
-  {-1,  1},  // ROLL_LEFT
-  { 1, -1},  // ROLL_RIGHT
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+             // 7:CALIBRATION
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
 {
-  _setServo(0, speed * dir_table[direction].L, 1);
-  _setServo(1, speed * dir_table[direction].R, 1);
+  if(direction >= numof(dir_table)) {
+        _setServo(0, 0, 2);
+        _setServo(1, 0, 2);
+  } else {
+        _setServo(0, speed * dir_table[direction].L, 1);
+        _setServo(1, speed * dir_table[direction].R, 1);
+  }
 }
 
 void onConnect(String ip)
 {
-  _setLED(1,1);
+  _setLED(1);
 
   wsServer.listen(PORT_WEBSOCKET);
   startCameraServer();
@@ -108,27 +114,28 @@ MCUSR = 0;
 wdt_disable();
 #endif
 
-int i;
-_setLED(1,0);
+_setLED(0);
 
-for(i=0; i<numof(servoTable); i++)
-  ledcSetup(servoTable[i].ledc, 50/*Hz*/, 12/*bit*/);
 M5CameraCar_init();
 
 Serial.begin(115200);
-if(_getSw(1)) {
-      delay(100);
+if(_getSw(0)) {
+      Serial.println("Waiting for SmartConfig.");
       WiFi.mode(WIFI_STA);
       WiFi.beginSmartConfig();
-      Serial.println("Waiting for SmartConfig.");
       while (!WiFi.smartConfigDone()) {
             delay(2000);
-            _setLED(1,1);
+            _setLED(1);
             delay(100);
-            _setLED(1,0);
+            _setLED(0);
       }
       Serial.println("SmartConfig received.");
 }
+
+// ServoCar
+ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
+ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
+
 #ifndef PCMODE
 initWifi(mVersion, true, onConnect);
 #else
@@ -152,7 +159,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','B',},
   {'B',},
-  {'B','B',},
   {},
   {},
   {},
@@ -230,11 +236,10 @@ switch(buffer[3]){
     case 2: _setServo(getByte(0),getShort(1),1);; callOK(); break;
     case 3: _setCar(0,0);; callOK(); break;
     case 5: _setServo(getByte(0),getByte(1),0);; callOK(); break;
-    case 6: _setServo(getByte(0),0,1);; callOK(); break;
-    case 7: _setLED(getByte(0),getByte(1));; callOK(); break;
-    case 9: sendString((statusWifi())); break;
-    case 10: sendString((scanWifi())); break;
-    case 11: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 6: _setLED(getByte(0));; callOK(); break;
+    case 8: sendString((statusWifi())); break;
+    case 9: sendString((scanWifi())); break;
+    case 10: sendByte((connectWifi(getString(0),getString(1)))); break;
     case 0xFE:  // firmware name
     _println("PC mode: " mVersion);
     break;

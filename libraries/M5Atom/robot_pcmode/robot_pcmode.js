@@ -65,18 +65,180 @@ class Scratch3DummyNameBlocks {
 	ARG1: { type: ArgumentType.STRING, defaultValue: this._ipadrs},
 }},
 
-// BLOCKS
+'---',
+{blockType: BlockType.COMMAND, opcode: 'setLED', text: 'set LED [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getIMU', text: 'get IMU [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:3, menu: 'imu' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'Buzzer', text: 'play tone on note [ARG1] beat [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'C4', menu: 'note' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'Half', menu: 'beats' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'Beep', text: 'Beep', arguments: {
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'getSw', text: '[ARG1] is pressed', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'button' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setDigital', text: {
+    'en': 'set digital pin [ARG1] output as [ARG2]',
+    'ja': 'デジタルピン [ARG1] の出力を [ARG2] にする',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'digital' },
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'getDigital', text: {
+    'en': 'read digital pin [ARG1]',
+    'ja': 'デジタルピン [ARG1]',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getAdc1', text: 'read adc1 ch [ARG1] average [ARG2] times', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4 },
+}},
+
+'---',
+{blockType: BlockType.COMMAND, opcode: 'setText', text: 'set text [ARG1] size=[ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'WHITE', menu: 'color' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCursor', text: 'set cursor at ([ARG1] ,[ARG2] )', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'printText', text: 'print text [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'printlnText', text: 'print text [ARG1] and return', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'drawString', text: 'draw text [ARG1] ([ARG2] ,[ARG3] ) font=[ARG4]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG4: { type: ArgumentType.NUMBER, type2:'B', defaultValue:'Ascii16', menu: 'font' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'fillScreen', text: 'fill screen with [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'BLACK', menu: 'color' },
+}},
+
+'---',
+{blockType: BlockType.COMMAND, opcode: 'tagServo', text: '--- ServoCar ---', arguments: {
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCar', text: '[ARG1] at speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:100 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setMotor', text: 'set motor [ARG1] speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:100, menu: 'speed' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'stopCar', text: 'stop', arguments: {
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'enumDirection', text: '[ARG1] .', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setServo', text: 'set servo [ARG1] [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
+}},
+
+
 		];
 		return this._blocks;
 	}
 
 	get_menus() {
 	  return {
-// MENUS
+angle: { acceptReporters: true, items: ['0','90','180',]},
+
+button: { acceptReporters: true, items: [
+{ text: 'buttonA', value: 0 },
+{ text: 'buttonB', value: 1 },
+{ text: 'buttonC', value: 2 },
+]},
+
+digital: { acceptReporters: true, items: [
+{ text: 'HIGH', value: 1 },
+{ text: 'LOW', value: 0 },
+]},
+
+direction: { acceptReporters: true, items: [
+{ text: 'stop', value: 0 },
+{ text: 'run forward', value: 1 },
+{ text: 'turn left', value: 2 },
+{ text: 'turn right', value: 3 },
+{ text: 'run backward', value: 4 },
+{ text: 'rotate left', value: 5 },
+{ text: 'rotate right', value: 6 },
+]},
+
+imu: { acceptReporters: true, items: [
+{ text: 'GyroX', value: 0 },
+{ text: 'GyroY', value: 1 },
+{ text: 'GyroZ', value: 2 },
+{ text: 'AccelX', value: 3 },
+{ text: 'AccelY', value: 4 },
+{ text: 'AccelZ', value: 5 },
+{ text: 'Pitch', value: 6 },
+{ text: 'Roll', value: 7 },
+{ text: 'Yaw', value: 8 },
+{ text: 'Temp', value: 9 },
+]},
+
+onoff: { acceptReporters: true, items: [
+{ text: 'On', value: 1 },
+{ text: 'Off', value: 0 },
+]},
+
+servoch: { acceptReporters: true, items: ['0','1',]},
+
+speed: { acceptReporters: true, items: ['100','50','0','-50','-100',]},
+
+
 	  };
 	}
 
-// FUNCS
+setLED(args,util) { return this.getTest(arguments.callee.name, args); }
+getIMU(args,util) { return this.getTest(arguments.callee.name, args); }
+Buzzer(args,util) { return this.getTest(arguments.callee.name, args); }
+Beep(args,util) { return this.getTest(arguments.callee.name, args); }
+getSw(args,util) { return this.getTest(arguments.callee.name, args); }
+setDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+getDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+getAdc1(args,util) { return this.getTest(arguments.callee.name, args); }
+setText(args,util) { return this.getTest(arguments.callee.name, args); }
+setCursor(args,util) { return this.getTest(arguments.callee.name, args); }
+printText(args,util) { return this.getTest(arguments.callee.name, args); }
+printlnText(args,util) { return this.getTest(arguments.callee.name, args); }
+drawString(args,util) { return this.getTest(arguments.callee.name, args); }
+fillScreen(args,util) { return this.getTest(arguments.callee.name, args); }
+tagServo(args) { return args.ARG1; }
+setCar(args,util) { return this.getTest(arguments.callee.name, args); }
+setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
+stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
+enumDirection(args) { return args.ARG1; }
+setServo(args,util) { return this.getTest(arguments.callee.name, args); }
+
 
     /**
      * @returns {object} metadata for this extension and its blocks.
@@ -141,8 +303,8 @@ class Scratch3DummyNameBlocks {
 			case 1: tmp = tmp2.getUint8(4); break;
 			case 2: tmp = tmp2.getInt16(4, true); break;
 			case 3: tmp = tmp2.getInt32(4, true); break;
-			case 4: tmp = tmp2.getFloat32(4, true); break;
-			case 5: tmp = tmp2.getFloat64(4, true); break;
+			case 4: tmp = tmp2.getFloat(4, true); break;
+			case 5: tmp = tmp2.getDouble(4, true); break;
 		//	case 6: break;		// string
 		//	case 7: break;		// bytes
 			}

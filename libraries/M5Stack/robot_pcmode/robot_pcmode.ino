@@ -52,7 +52,12 @@ float getIMU(uint8_t index)
             M5.IMU.getAccelData(data+0,data+1,data+2);
             return data[index-3];
       } else if(index < 9) {
-            M5.IMU.getAhrsData(data+0,data+1,data+2);
+          bmm.read_mag_data();
+          magX = bmm.raw_mag_data.raw_datax;
+          magY = bmm.raw_mag_data.raw_datay;
+          magZ = bmm.raw_mag_data.raw_dataz;
+        
+            //M5.IMU.getAhrsData(data+0,data+1,data+2);
             return data[index-6];
       } else {
             M5.IMU.getTempData(data+0);
@@ -119,7 +124,7 @@ void setup()
     M5.Lcd.setTextSize(2);
     
     M5.Lcd.setCursor(0, 0);
-    if(M5.BtnA.isPressed()) {
+    if(_getSw(0)) {
           M5.Lcd.println("ESP SmartConfig");
           WiFi.mode(WIFI_STA);
           WiFi.beginSmartConfig();

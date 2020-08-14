@@ -2,24 +2,13 @@
 
 #define PCMODE
 
-//#define _M5StickC
-#define _M5StickCPlus
+#define mVersion "M5Atom 1.0"
 
-#ifdef _M5StickC
-  #define mVersion "M5StickC 1.0"
-  #include <M5StickC.h>
-#else 
-  #define mVersion "M5StickCP 1.0"
-  #include <M5StickCPlus.h>
-#endif
-
+#include <M5Atom.h>
 #include "TukurutchEsp.h"
 
 
 WebsocketsServer wsServer;
-
-#define ROVER_ADDRESS	0X38
-#define P_LED			10
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -40,15 +29,17 @@ uint16_t _getAdc1(uint8_t idx, uint16_t count)
 
 void _setLED(uint8_t onoff)
 {
-      digitalWrite(P_LED, !onoff);
-      pinMode(P_LED, OUTPUT);
+      if(onoff)
+        M5.dis.drawpix(0,0xf00000);
+      else
+        M5.dis.clear();
 }
 
 uint8_t _getSw(uint8_t button)
 {
       switch(button) {
-          case 0: return M5.BtnA.isPressed();
-          case 1: return M5.BtnB.isPressed();
+          case 0: return M5.Btn.isPressed();
+        //case 1: return M5.BtnB.isPressed();
         //case 2: return M5.BtnC.isPressed();
       }
       return 0;
@@ -74,27 +65,15 @@ float getIMU(uint8_t index)
 
 void _tone(int sound, int ms)
 {
-    #ifdef _M5StickCPlus
-      M5.Beep.tone(sound, ms);
-      delay(ms);
-      M5.Beep.mute();
-    #else
-      delay(ms);
-    #endif
 }
 
 void _beep(void)
 {
-    #ifdef _M5StickCPlus
-      M5.Beep.beep();
-      delay(100);
-      M5.Beep.mute();
-    #endif
 }
 
 // ServoCar
 
-const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,33},{9,32}};
+const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,32},{9,26}};
 void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
 {
       if(idx >= numof(servoTable)) return;
@@ -107,7 +86,7 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
             else if(data > 100) data = 100;
             if(idx == 1) data = -data;
             pwmWidth = (data * srvCoef) / 100 + srvZero;
-            if(data==0 && continuous!=2) pwmWidth=0;
+            if(data==0) pwmWidth=0;
       } else {
             #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
             #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
@@ -121,96 +100,30 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
 
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
 //  L   R
-  { 0,  0},  // 0:STOP
-  { 1,  1},  // 1:FORWARD
-  { 0,  1},  // 2:LEFT
-  { 1,  0},  // 3:RIGHT
-  {-1, -1},  // 4:BACK
-  {-1,  1},  // 5:ROLL_LEFT
-  { 1, -1},  // 6:ROLL_RIGHT
-             // 7:CALIBRATION
+  { 0,  0},  // STOP
+  { 1,  1},  // FORWARD
+  { 0,  1},  // LEFT
+  { 1,  0},  // RIGHT
+  {-1, -1},  // BACK
+  {-1,  1},  // ROLL_LEFT
+  { 1, -1},  // ROLL_RIGHT
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
 {
-  if(direction >= numof(dir_table)) {
-        _setServo(0, 0, 2);
-        _setServo(1, 0, 2);
-  } else {
-        _setServo(0, speed * dir_table[direction].L, 1);
-        _setServo(1, speed * dir_table[direction].R, 1);
-  }
-}
-
-// Rover C
-
-void RoverC_Init(void)    
-{
-  Wire.begin(0,26,100);		//sda 0, scl 26
-}
-
-void Send_iic(uint8_t Register, int16_t Speed)
-{
-  if(Speed >  100) Speed =  100;
-  if(Speed < -100) Speed = -100;
-  Wire.beginTransmission(ROVER_ADDRESS);
-  Wire.write(Register);
-  Wire.write(Speed);
-  Wire.endTransmission();
-}
-
-void setRoverC(int16_t F_L, int16_t F_R, int16_t R_L, int16_t R_R)
-{
-  Send_iic(0x00, F_L);
-  Send_iic(0x01, F_R);
-  Send_iic(0x02, R_L);
-  Send_iic(0x03, R_R);
-}
-
-void setRoverC_XYR(int16_t x, int16_t y, int16_t role)
-{
-  int16_t left = y+x;
-  int16_t right = y-x;
-  int16_t invK = 100;
-
-  if(abs(left) > 100) invK = abs(left);
-  else if(abs(right) > 100) invK = abs(right);
-
-  if(invK != 100) {
-        left  = (left*100)/invK;
-        right = (right*100)/invK;
-  }
-  setRoverC(left+role, right-role, right+role, left-role);
-}
-
-struct { int8_t x; int8_t y; int8_t r; } const rdir_table[] = {
-//  X  Y  R
-  { 0, 0, 0},  // STOP
-  { 1, 1, 0},  // UP_R
-  { 0, 1, 0},  // UP
-  {-1, 1, 0},  // UP_L
-  { 1, 0, 0},  // RIGHT
-  {-1, 0, 0},  // LEFT
-  { 1,-1, 0},  // DOWN_R
-  { 0,-1, 0},  // DOWN
-  {-1,-1, 0},  // DOWN_L
-  { 0, 0, 1},  // ROLL_R
-  { 0, 0,-1},  // ROLL_L
-};
-
-void moveRoverC(uint8_t dir, uint8_t speed)
-{
-  if(dir >= sizeof(rdir_table)/sizeof(rdir_table[0])) return;
-  setRoverC_XYR(speed*rdir_table[dir].x, speed*rdir_table[dir].y, speed*rdir_table[dir].r);
+  _setServo(0, speed * dir_table[direction].L, 1);
+  _setServo(1, speed * dir_table[direction].R, 1);
 }
 
 void onConnect(String ip)
 {
-  M5.Lcd.fillScreen(BLACK);
-  M5.Lcd.setCursor(0,0);
-  M5.Lcd.println(ip);
+  _setLED(1);
+
   wsServer.listen(PORT_WEBSOCKET);
+  Serial.println(ip);
 }
+
+#define _dummyN(...)
 
 
 #ifdef __AVR_ATmega328P__
@@ -243,36 +156,24 @@ wdt_disable();
 
 M5.begin(true, true, true); // init lcd, power, serial
 M5.IMU.Init();
-M5.Lcd.setRotation(3);
-
-M5.Lcd.fillScreen(BLACK);
-M5.Lcd.setTextSize(2);
-
-M5.Lcd.setCursor(0, 0);
+Serial.begin(115200);
 if(_getSw(0)) {
-  M5.Lcd.println("ESP SmartConfig");
-  WiFi.mode(WIFI_STA);
-  WiFi.beginSmartConfig();
-  while (!WiFi.smartConfigDone()) {
-        delay(2000);
-        _setLED(1);
-        _tone(T_C5, 100);
-        _setLED(0);
-  }
-} else {
-  #ifdef PCMODE
-    M5.Lcd.println("PC mode: " mVersion);
-  #else
-    M5.Lcd.println("Arduino mode: " mVersion);
-  #endif
+      WiFi.mode(WIFI_STA);
+      WiFi.beginSmartConfig();
+      Serial.println("Waiting for SmartConfig.");
+      while (!WiFi.smartConfigDone()) {
+            delay(2000);
+            _setLED(1);
+            _tone(T_C5, 100);
+            _setLED(0);
+      }
+      Serial.println("SmartConfig received.");
 }
 
 // ServoCar
 ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
-RoverC_Init();
-Serial.begin(115200);
 #ifndef PCMODE
 initWifi(mVersion, true, onConnect);
 #else
@@ -315,12 +216,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B','B',},
   {},
   {},
-  {'S','S','S','S',},
-  {'S','S','S',},
-  {'B','B',},
-  {},
-  {},
-  {},
   {},
   {'s','s',},
 };
@@ -331,12 +226,12 @@ void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
   if(wifi_uart == 1) {
-    writeWifi(dp, count);
-    //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
-#ifdef ENABLE_WEBSOCKET
+        writeWifi(dp, count);
+        //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+    #ifdef ENABLE_WEBSOCKET
   } else if(wifi_uart == 2) {
-    _packetLen = count;
-#endif
+        _packetLen = count;
+    #endif
   } else
 #endif
     _Serial.write(dp, count);
@@ -355,14 +250,14 @@ void _println(char* mes)
 int16_t _read(void)
 {
   if(_Serial.available()>0) {
-    wifi_uart = 0;
-    return _Serial.read();
+        wifi_uart = 0;
+        return _Serial.read();
   }
 #if defined(ESP32)
   int ret = readWifi();
   if(ret != -1) {
-    wifi_uart = 1;
-    return ret;
+        wifi_uart = 1;
+        return ret;
   }
 #endif
   return -1;
@@ -373,69 +268,66 @@ static void parseData()
 uint8_t i;
 memset(offsetIdx, 0, sizeof(offsetIdx));
 if(buffer[3] < ITEM_NUM) {
-const char *ArgTypes = ArgTypesTbl[buffer[3]];
-uint16_t offset = 0;
-for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
-    offsetIdx[i] = offset;
-    switch(ArgTypes[i]) {
-        case 'B': offset += 1; break;
-        case 'S': offset += 2; break;
-        case 'L': offset += 4; break;
-        case 'F': offset += 4; break;
-        case 'D': offset += 8; break;
-        case 's': offset += strlen((char*)buffer+4+offset)+1; break;
-        case 'b': offset += buffer[4+offset]+1; break;
-        default: break;
+    const char *ArgTypes = ArgTypesTbl[buffer[3]];
+    uint16_t offset = 0;
+    for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+        offsetIdx[i] = offset;
+        switch(ArgTypes[i]) {
+            case 'B': offset += 1; break;
+            case 'S': offset += 2; break;
+            case 'L': offset += 4; break;
+            case 'F': offset += 4; break;
+            case 'D': offset += 8; break;
+            case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+            case 'b': offset += buffer[4+offset]+1; break;
+            default: break;
+        }
+        if(4+offset > _packetLen) return;
     }
-    if(4+offset > _packetLen) return;
-}
 }
 
 switch(buffer[3]){
-case 2: _setLED(getByte(0));; callOK(); break;
-case 3: sendFloat((getIMU(getByte(0)))); break;
-case 4: _tone(getShort(0),getShort(1));; callOK(); break;
-case 5: _beep();; callOK(); break;
-case 6: sendByte((_getSw(getByte(0)))); break;
-case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
-case 11: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
-case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
-case 13: M5.Lcd.print(getString(0));; callOK(); break;
-case 14: M5.Lcd.println(getString(0));; callOK(); break;
-case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-case 16: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
-case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
-case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
-case 21: _setCar(0,0);; callOK(); break;
-case 23: _setServo(getByte(0),getByte(1),0);; callOK(); break;
-case 26: setRoverC(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-case 27: setRoverC_XYR(getShort(0),getShort(1),getShort(2));; callOK(); break;
-case 28: moveRoverC(getByte(0),getByte(1));; callOK(); break;
-case 31: sendString((statusWifi())); break;
-case 32: sendString((scanWifi())); break;
-case 33: sendByte((connectWifi(getString(0),getString(1)))); break;
-case 0xFE:  // firmware name
-_println("PC mode: " mVersion);
-break;
-case 0xFF:  // software reset
-#if defined(__AVR_ATmega328P__)
-wdt_enable(WDTO_15MS);
-while(1);
-#elif defined(_SAMD21_)
-NVIC_SystemReset();
-#elif defined(ESP32)
-ESP.restart();
-#endif
-break;
-//### CUSTOMIZED ###
-#ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
-#define CMD_CHECKREMOTEKEY  0x80
-case CMD_CHECKREMOTEKEY:
-sendRemote();
-break;
-#endif
+    case 2: _setLED(getByte(0));; callOK(); break;
+    case 3: sendFloat((getIMU(getByte(0)))); break;
+    case 4: _tone(getShort(0),getShort(1));; callOK(); break;
+    case 5: _beep();; callOK(); break;
+    case 6: sendByte((_getSw(getByte(0)))); break;
+    case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+    case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+    case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+    case 11: _dummyN(getShort(0),getByte(1));; callOK(); break;
+    case 12: _dummyN(getShort(0),getShort(1));; callOK(); break;
+    case 13: _dummyN(getString(0));; callOK(); break;
+    case 14: _dummyN(getString(0));; callOK(); break;
+    case 15: _dummyN(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
+    case 16: _dummyN(getShort(0));; callOK(); break;
+    case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
+    case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
+    case 21: _setCar(0,0);; callOK(); break;
+    case 23: _setServo(getByte(0),getByte(1),0);; callOK(); break;
+    case 25: sendString((statusWifi())); break;
+    case 26: sendString((scanWifi())); break;
+    case 27: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 0xFE:  // firmware name
+    _println("PC mode: " mVersion);
+    break;
+    case 0xFF:  // software reset
+    #if defined(__AVR_ATmega328P__)
+    wdt_enable(WDTO_15MS);
+    while(1);
+    #elif defined(_SAMD21_)
+    NVIC_SystemReset();
+    #elif defined(ESP32)
+    ESP.restart();
+    #endif
+    break;
+    //### CUSTOMIZED ###
+    #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
+    #define CMD_CHECKREMOTEKEY  0x80
+    case CMD_CHECKREMOTEKEY:
+    sendRemote();
+    break;
+    #endif
 }
 }
 
@@ -444,30 +336,30 @@ void loop()
 {
 int16_t c;
 while((c=_read()) >= 0) {
-//_Serial.printf("%02x",c);  // for debug
-buffer[_index++] = c;
-
-switch(_index) {
-    case 1:
-    _packetLen = 4;
-    if(c != 0xff)
-    _index = 0;
-    break;
-    case 2:
-    if(c != 0x55) 
-    _index = 0;
-    break;
-    case 3:
-    _packetLen = 3+c;
-    break;
-}
-if(_index >= _packetLen) {
-    parseData();
-    _index = 0;
-}
-if(_index >= sizeof(buffer)) {
-    _index = 0;
-}
+    //_Serial.printf("%02x",c);  // for debug
+    buffer[_index++] = c;
+    
+    switch(_index) {
+        case 1:
+        _packetLen = 4;
+        if(c != 0xff)
+        _index = 0;
+        break;
+        case 2:
+        if(c != 0x55) 
+        _index = 0;
+        break;
+        case 3:
+        _packetLen = 3+c;
+        break;
+    }
+    if(_index >= _packetLen) {
+        parseData();
+        _index = 0;
+    }
+    if(_index >= sizeof(buffer)) {
+        _index = 0;
+    }
 }
 
   loopWebSocket();
@@ -485,14 +377,14 @@ static WebsocketsClient _client;
 
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
-    Serial.println("Connnection Opened");
+        Serial.println("Connnection Opened");
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-    Serial.println("Connnection Closed");
-    connected = 0;
+        Serial.println("Connnection Closed");
+        connected = 0;
   } else if(event == WebsocketsEvent::GotPing) {
-    Serial.println("Got a Ping!");
+        Serial.println("Got a Ping!");
   } else if(event == WebsocketsEvent::GotPong) {
-    Serial.println("Got a Pong!");
+        Serial.println("Got a Pong!");
   }
 }
 
@@ -508,11 +400,11 @@ static void loopWebSocket(void)
 {
   if(!wsServer.available()) return;
   if(wsServer.poll()) {
-    connected = 1;
-    Serial.println("connected");
-    _client = wsServer.accept();
-    _client.onMessage(onMessageCallback);
-    _client.onEvent(onEventsCallback);
+        connected = 1;
+        Serial.println("connected");
+        _client = wsServer.accept();
+        _client.onMessage(onMessageCallback);
+        _client.onEvent(onEventsCallback);
   }
   if(!connected || !_client.available()) return;
   _client.poll();
@@ -551,7 +443,7 @@ float getFloat(uint8_t n)
 uint8_t x = 4+offsetIdx[n];
 union floatConv conv;
 for(uint8_t i=0; i<4; i++) {
-conv._byte[i] = buffer[x+i];
+    conv._byte[i] = buffer[x+i];
 }
 return conv._float;
 }
@@ -561,7 +453,7 @@ double getDouble(uint8_t n)
 uint8_t x = 4+offsetIdx[n];
 union doubleConv conv;
 for(uint8_t i=0; i<8; i++) {
-conv._byte[i] = buffer[x+i];
+    conv._byte[i] = buffer[x+i];
 }
 return conv._double;
 }
@@ -646,7 +538,7 @@ uint8_t* dp = buffer;
 *dp++ = 1+sizeof(double);
 *dp++ = RSP_DOUBLE;
 for(uint8_t i=0; i<8; i++) {
-*dp++ = conv._byte[i];
+    *dp++ = conv._byte[i];
 }
 _write(buffer, dp-buffer);
 }
@@ -661,7 +553,7 @@ uint8_t* dp = buffer;
 *dp++ = 1+l;
 *dp++ = RSP_STRING;
 for(uint8_t i=0; i<l; i++) {
-*dp++ = s.charAt(i);
+    *dp++ = s.charAt(i);
 }
 _write(buffer, dp-buffer);
 }

@@ -99,19 +99,11 @@ class Scratch3DummyNameBlocks {
     ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'stopServo', text: {
-    'en': 'stop servo [ARG1]',
-    'ja': 'サーボ [ARG1] を止める',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
-}},
-
 {blockType: BlockType.COMMAND, opcode: 'setLED', text: {
-    'en': 'set LED [ARG1] [ARG2]',
-    'ja': 'LED [ARG1] を [ARG2]',
+    'en': 'set LED [ARG1]',
+    'ja': 'LED [ARG1]',
 }[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'led' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
 }},
 
 
@@ -152,9 +144,11 @@ direction: { acceptReporters: true, items: [
     'en': 'rotate right',
     'ja': '右旋回',
 }[this._locale], value: 6 },
+{ text: {
+    'en': 'calibration',
+    'ja': '原点調整',
+}[this._locale], value: 7 },
 ]},
-
-led: { acceptReporters: true, items: ['1',]},
 
 onoff: { acceptReporters: true, items: [
 { text: 'On', value: 1 },
@@ -174,7 +168,6 @@ setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
 stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
 enumDirection(args) { return args.ARG1; }
 setServo(args,util) { return this.getTest(arguments.callee.name, args); }
-stopServo(args,util) { return this.getTest(arguments.callee.name, args); }
 setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 
 
@@ -241,8 +234,8 @@ setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 			case 1: tmp = tmp2.getUint8(4); break;
 			case 2: tmp = tmp2.getInt16(4, true); break;
 			case 3: tmp = tmp2.getInt32(4, true); break;
-			case 4: tmp = tmp2.getFloat(4, true); break;
-			case 5: tmp = tmp2.getDouble(4, true); break;
+			case 4: tmp = tmp2.getFloat32(4, true); break;
+			case 5: tmp = tmp2.getFloat64(4, true); break;
 		//	case 6: break;		// string
 		//	case 7: break;		// bytes
 			}

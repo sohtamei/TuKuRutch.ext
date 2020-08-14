@@ -1,54 +1,102 @@
 {
-	"name"			: "M5CameraCar",
+	"name"			: "M5Atom",
 	"port"			: 0,										// 変更禁止
-	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
+	"boardType"		: "esp32:esp32:m5stack-core-esp32",			// package:platform:board
 
-	"sort"			: 11,										// メニュー上の表示順序
+	"sort"			: 12,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_orgel.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_orgel.html",
-	"sampleDir"		: "sample/WifiCar",							// サンプルディレクトリ
+	"helpURL"		: "https://github.com/sohtamei/docs/blob/master/M5.md",
+	"productInfoURL": "https://github.com/sohtamei/docs/blob/master/M5.md",
+	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"libraryPath"	: "M5CameraCarLib",							// 専用ライブラリ(option)
 	"prefs"			: ["custom_CPUFreq=esp32_240",
-						"custom_DebugLevel=esp32_none",
+						"custom_DebugLevel=m5stack-core-esp32_none",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
-						"custom_PSRAM=esp32_enabled",
-						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_921600"],
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=m5stack-core-esp32_default",
+						"custom_UploadSpeed=m5stack-core-esp32_115200"],
+
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5CameraCar\"
+#define mVersion \"M5Atom 1.0\"
 
+#include <M5Atom.h>
 #include \"TukurutchEsp.h\"
-#include \"M5CameraCar.h\"
 
 
 WebsocketsServer wsServer;
 
-#define P_LED	14
-
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
+
+esp_adc_cal_characteristics_t adc_chars;
+uint16_t _getAdc1(uint8_t idx, uint16_t count)
+{
+  if(count == 0) count = 1;
+
+  adc1_config_width(ADC_WIDTH_BIT_12);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
+  adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
+  uint32_t sum = 0;
+  for(int i = 0; i < count; i++)
+    sum += adc1_get_raw((adc1_channel_t)idx);
+
+  return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+}
 
 void _setLED(uint8_t onoff)
 {
-  digitalWrite(P_LED, !onoff);
-  pinMode(P_LED, OUTPUT);
+  if(onoff)
+    M5.dis.drawpix(0,0xf00000);
+  else
+    M5.dis.clear();
 }
 
-uint8_t _getSw(uint8_t idx)
+uint8_t _getSw(uint8_t button)
 {
+  switch(button) {
+  case 0: return M5.Btn.isPressed();
+//case 1: return M5.BtnB.isPressed();
+//case 2: return M5.BtnC.isPressed();
+  }
   return 0;
 }
 
-const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,13},{9,4}};
+float getIMU(uint8_t index)
+{
+  float data[3]={0};
+  if(index < 3) {
+    M5.IMU.getGyroData(data+0,data+1,data+2);
+    return data[index-0];
+  } else if(index < 6) {
+    M5.IMU.getAccelData(data+0,data+1,data+2);
+    return data[index-3];
+  } else if(index < 9) {
+    //M5.IMU.getAhrsData(data+0,data+1,data+2);
+    return data[index-6];
+  } else {
+    M5.IMU.getTempData(data+0);
+    return data[0];
+  }
+}
+
+void _tone(int sound, int ms)
+{
+}
+
+void _beep(void)
+{
+}
+
+// ServoCar
+
+const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,32},{9,26}};
 void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
 {
   if(idx >= numof(servoTable)) return;
@@ -101,16 +149,15 @@ void onConnect(String ip)
   _setLED(1);
 
   wsServer.listen(PORT_WEBSOCKET);
-  startCameraServer();
   Serial.println(ip);
 }
+
+#define _dummyN(...)
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
-_setLED(0);
-
-M5CameraCar_init();
-
+M5.begin(true, true, true); // init lcd, power, serial
+M5.IMU.Init();
 Serial.begin(115200);
 if(_getSw(0)) {
   Serial.println(\"Waiting for SmartConfig.\");
@@ -119,7 +166,7 @@ if(_getSw(0)) {
   while (!WiFi.smartConfigDone()) {
     delay(2000);
     _setLED(1);
-    delay(100);
+    _tone(T_C5, 100);
     _setLED(0);
   }
   Serial.println(\"SmartConfig received.\");
@@ -141,6 +188,8 @@ initWifi(mVersion, false, onConnect);
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif
+  M5.update();  // update button and speaker
+  delay(50);
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -156,14 +205,36 @@ initWifi(mVersion, false, onConnect);
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
+		["-"],	// ブロック区切り
+
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
+	//	["w", "reset IMU",								"resetIMU",						{"remote":[],			"func":"M5.IMU.Init();"}],
+		["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
+		["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
+		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read adc1 ch %n average %n times",		"getAdc1",			0,4,		{"remote":["B","S",	"S"], "func":"_getAdc1({0},{1})"}],
+
+		["-"],
+
+		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"_dummyN({0},{1});"}],
+		["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"_dummyN({0},{1});"}],
+		["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
+		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
+		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"_dummyN({0},{1},{2},{3});"}],
+		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"_dummyN({0});"}],
+
+		["-"],
+
+		["w", "--- ServoCar ---",						"tagServo",						{"enum":"",					"func":"0"}],
 		["w", "%d.direction at speed %n",				"setCar",  "run forward",100,	{"remote":["B","B"],	"func":"_setCar({0},{1});"}],
 		["w", "set motor %d.servoch speed %d.speed",	"setMotor",			0,100,		{"remote":["B","S"],	"func":"_setServo({0},{1},1);"}],
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
 	//	["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
-
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 
 		["-"],
 
@@ -173,26 +244,29 @@ initWifi(mVersion, false, onConnect);
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
-		"onoff"		:["On","Off"],
+		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
+		"button":["buttonA","buttonB","buttonC"],
+		"imu":["GyroX","GyroY","GyroZ","AccelX","AccelY","AccelZ","Pitch","Roll","Yaw","Temp"],
+
 		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
 		"servoch"	:[0,1],
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
 	},
 	"values":{
+		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
+		"buttonA":0,"buttonB":1,"buttonC":2,
+		"GyroX":0,"GyroY":1,"GyroZ":2,"AccelX":3,"AccelY":4,"AccelZ":5,"Pitch":6,"Roll":7,"Yaw":8,"Temp":9,
+
 		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,"calibration":7,
 	},
 	"translators":{
 		"ja":{
-			"stop":"ストップ", "run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回", "calibration":"原点調整",
-			"%d.direction at speed %n"						:"%d.direction 向きに %n の速さで動かす",
-			"set motor %d.servoch speed %d.speed"			:"モーター %d.servoch の速さを %d.speed にする",
-			"set servo %d.servoch %d.angle"					:"サーボ %d.servoch の角度を %d.angle にする",
-			"stop servo %d.servoch"							:"サーボ %d.servoch を止める",
-
-			"set LED %d.onoff"								:"LED %d.onoff",
-			"SW %d.sw"										:"スイッチ %d.sw",
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"read digital pin %n"							:"デジタルピン %n",
+			"read analog pin %n"							:"アナログピン %n",
 		}
 	}
 }
