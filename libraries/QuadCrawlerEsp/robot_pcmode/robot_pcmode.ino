@@ -14,11 +14,11 @@ WebsocketsServer wsServer;
 
 void _setLED(uint8_t onoff)
 {
-      digitalWrite(PORT_LED1, onoff);
+      digitalWrite(P_LED1, onoff);
 }
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, _setLED);
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, _setLED);
 
 void onConnect(String ip)
 {
@@ -180,7 +180,7 @@ static void parseData()
         case 4: quadCrawler_setPose1(2,getByte(0),getByte(1));; callOK(); break;
         case 5: quadCrawler_setPose1(3,getByte(0),getByte(1));; callOK(); break;
         case 6: quadCrawler_Walk(200,0);; callOK(); break;
-        case 7: pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,getByte(0));; callOK(); break;
+        case 7: pinMode(P_LED1,OUTPUT);digitalWrite(P_LED1,getByte(0));; callOK(); break;
         case 8: quadCrawler_colorWipe(getByte(0));; callOK(); break;
         case 9: quadCrawler_rainbow(getByte(0));; callOK(); break;
         case 10: quadCrawler_tone(getShort(0),getShort(1));; callOK(); break;
