@@ -9,18 +9,18 @@
 // ポート定義
 
 /*
-#define PORT_IRRX	13
-#define PORT_LED1	2
+#define P_IRRX	13
+#define P_LED1	2
 */
 
-#define MEN		4	// Surbo Moter Drive Enable Pin
-#define Neopix	14
-#define Echo	12	// Echo Pin
-#define Trig	15	// Trigger Pin
-#define Bz		33	// Bzzer Pin
+#define P_MEN		4	// Surbo Moter Drive Enable Pin
+#define P_Neopix	14
+#define P_Echo		12	// P_Echo Pin
+#define P_Trig		15	// Trigger Pin
+#define P_BUZZER	33	// Bzzer Pin
 
-#define SCL		27
-#define SDA		26
+#define P_SCL		27
+#define P_SDA		26
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define servo_min 200  // Min pulse length out of 4096
@@ -217,13 +217,13 @@ void quadCrawler_servoLoop(void)
   case ServoNormal:
     if(elapsed >= 180*1000UL) {
       set_servo_off8(ServoOff);
-      digitalWrite(PORT_LED1, 0);
+      digitalWrite(P_LED1, 0);
       return;
     }
     if((elapsed >> 8) & 1)      // 256
-      digitalWrite(PORT_LED1, 1);
+      digitalWrite(P_LED1, 1);
     else
-      digitalWrite(PORT_LED1, 0);
+      digitalWrite(P_LED1, 0);
     return;
 
   default:
@@ -408,7 +408,7 @@ void quadCrawler_Walk(uint16_t speed, uint8_t com) {
   }
 }
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(8, Neopix, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(8, P_Neopix, NEO_GRB + NEO_KHZ800);
 
 static void colorWipe(uint32_t c, uint8_t wait) {
   for (uint16_t i = 0; i < strip.numPixels(); i++) {
@@ -485,17 +485,17 @@ void quadCrawler_theaterChaseRainbow(uint8_t wait) {
 }
 
 double quadCrawler_getSonner() {
-  if(digitalRead(Echo) == HIGH)
+  if(digitalRead(P_Echo) == HIGH)
     return 100.0;
 
   double data;
   double distance;
-  digitalWrite(Trig, LOW);
+  digitalWrite(P_Trig, LOW);
   delayMicroseconds(2);
-  digitalWrite(Trig, HIGH );
+  digitalWrite(P_Trig, HIGH );
   delayMicroseconds(10);
-  digitalWrite(Trig, LOW );
-  data = pulseIn(Echo, HIGH );
+  digitalWrite(P_Trig, LOW );
+  data = pulseIn(P_Echo, HIGH );
   if (data > 0) {
     distance = data * 0.017;
     return distance;
@@ -505,29 +505,29 @@ double quadCrawler_getSonner() {
   }
 }
 
-#define LEDC_CHANNEL_15 15
+#define LEDC_BUZZER 15
 void quadCrawler_tone(int sound, int ms) {
-  ledcWriteTone(LEDC_CHANNEL_15, sound);
+  ledcWriteTone(LEDC_BUZZER, sound);
   delay(ms);
-  ledcWriteTone(LEDC_CHANNEL_15, 0);
+  ledcWriteTone(LEDC_BUZZER, 0);
 }
 
 void quadCrawler_init(void)
 {
-  pinMode( PORT_LED1, OUTPUT );
-  pinMode( MEN, OUTPUT );
-  digitalWrite( MEN, HIGH);
-  pinMode( Echo, INPUT_PULLUP );
-  pinMode( Trig, OUTPUT );
-  ledcSetup(LEDC_CHANNEL_15, 5000/*Hz*/, 13/*bit*/);
-  ledcAttachPin(Bz, LEDC_CHANNEL_15);
+  pinMode( P_LED1, OUTPUT );
+  pinMode( P_MEN, OUTPUT );
+  digitalWrite( P_MEN, HIGH);
+  pinMode( P_Echo, INPUT_PULLUP );
+  pinMode( P_Trig, OUTPUT );
+  ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
+  ledcAttachPin(P_BUZZER, LEDC_BUZZER);
 
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
-  Wire.begin(SDA,SCL);
+  Wire.begin(P_SDA,P_SCL);
   pwm.begin();
   pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
   yield();
-  digitalWrite( MEN, LOW);
+  digitalWrite( P_MEN, LOW);
   sv_init();
 }

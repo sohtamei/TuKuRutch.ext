@@ -133,7 +133,7 @@ class Scratch3DummyNameBlocks {
     'en': 'play tone on note [ARG1] beat [ARG2]',
     'ja': '[ARG1] を [ARG2] 鳴らす',
 }[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'ド4', menu: 'noteJ2' },
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:262, menu: 'noteJ2' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:500, menu: 'beats' },
 }},
 

@@ -210,8 +210,8 @@ initWifi(mVersion, false, onConnect);
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 		["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
-		["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
-		["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
+		["-"],//["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
+		["-"],//["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
 		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
 		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
@@ -219,12 +219,12 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],
 
-		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"_dummyN({0},{1});"}],
-		["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"_dummyN({0},{1});"}],
-		["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
-		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
-		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"_dummyN({0},{1},{2},{3});"}],
-		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"_dummyN({0});"}],
+		["-"],//["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"_dummyN({0},{1});"}],
+		["-"],//["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"_dummyN({0},{1});"}],
+		["-"],//["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
+		["-"],//["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
+		["-"],//["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"_dummyN({0},{1},{2},{3});"}],
+		["-"],//["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"_dummyN({0});"}],
 
 		["-"],
 

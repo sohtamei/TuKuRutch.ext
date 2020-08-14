@@ -4,9 +4,9 @@
 #include <stdint.h>
 
 // ポート定義
-#define PORT_SW		0
-#define PORT_IRRX	13
-#define PORT_LED1	2
+#define P_SW	0
+#define P_IRRX	13
+#define P_LED1	2
 
 //動作速度定義
 enum {

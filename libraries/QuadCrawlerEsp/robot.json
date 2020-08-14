@@ -37,11 +37,11 @@ WebsocketsServer wsServer;
 
 void _setLED(uint8_t onoff)
 {
-  digitalWrite(PORT_LED1, onoff);
+  digitalWrite(P_LED1, onoff);
 }
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/PORT_IRRX, _setLED);
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, _setLED);
 
 void onConnect(String ip)
 {
@@ -92,12 +92,12 @@ initWifi(mVersion, false, onConnect);
 		["w", "RearL  %d.knee %d.crotch",				"setPoseLR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(3,{0},{1});"}],
 		["w", "stop",									"setStop",						{"remote":[],			"func":"quadCrawler_Walk(200,0);"}],
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(PORT_LED1,OUTPUT);digitalWrite(PORT_LED1,{0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(P_LED1,OUTPUT);digitalWrite(P_LED1,{0});"}],
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
 		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
-		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "ド4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
 		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
-//		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"digitalRead(PORT_SW)==0"}],
+//		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"digitalRead(P_SW)==0"}],
 
 		["-"],	// ブロック区切り
 
