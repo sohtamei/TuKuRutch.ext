@@ -10,7 +10,8 @@ copy_sb3 () {
   fi
 }
 
-copy_sb3 TukuBoard1.0 TukuBoard
-copy_sb3 M5CameraCar  M5CameraCar    SupportCamera
-copy_sb3 M5StickC     M5Series
-copy_sb3 Duke32AIO    Duke32AIO
+copy_sb3 TukuBoard1.0   TukuBoard
+copy_sb3 M5CameraCar    M5CameraCar    SupportCamera
+copy_sb3 M5StickC       M5Series
+copy_sb3 Duke32AIO      Duke32AIO
+copy_sb3 QuadCrawlerEsp QuadCrawlerEsp SupportCamera

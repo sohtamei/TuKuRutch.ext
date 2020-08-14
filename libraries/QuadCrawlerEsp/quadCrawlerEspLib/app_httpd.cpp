@@ -111,8 +111,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
             break;
         }
         int64_t fr_end = esp_timer_get_time();
-        Serial.printf("%4llu %4llu %4llu\n",
-        (fr_end-last_frame)/1000, (fr_start-last_frame)/1000, (fr_end-fr_start)/1000);
+      //Serial.printf("%4llu %4llu %4llu\n", (fr_end-last_frame)/1000, (fr_start-last_frame)/1000, (fr_end-fr_start)/1000);
         last_frame = fr_end;
     }
 

@@ -8,7 +8,7 @@
 
 // ポート定義
 
-#if 0
+#if 1
 // quadCrawler
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    -1
