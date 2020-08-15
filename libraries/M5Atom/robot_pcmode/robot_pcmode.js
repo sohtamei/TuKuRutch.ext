@@ -50,7 +50,7 @@ class Scratch3DummyNameBlocks {
 			let tmp = cookies_get[i].trim().split('=');
 			if(tmp[0]=='DummyName_ip') {
 				this._ipadrs=tmp[1];
-				log.log('DummyName_ip='+this._ipadrs);
+				console.log('DummyName_ip='+this._ipadrs);
 				break;
 			}
 		}
@@ -74,14 +74,8 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:3, menu: 'imu' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'Buzzer', text: 'play tone on note [ARG1] beat [ARG2]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'C4', menu: 'note' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'Half', menu: 'beats' },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'Beep', text: 'Beep', arguments: {
-}},
-
+'---',
+'---',
 {blockType: BlockType.BOOLEAN, opcode: 'getSw', text: '[ARG1] is pressed', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'button' },
 }},
@@ -90,7 +84,7 @@ class Scratch3DummyNameBlocks {
     'en': 'set digital pin [ARG1] output as [ARG2]',
     'ja': 'デジタルピン [ARG1] の出力を [ARG2] にする',
 }[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:22 },
     ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'digital' },
 }},
 
@@ -98,44 +92,24 @@ class Scratch3DummyNameBlocks {
     'en': 'read digital pin [ARG1]',
     'ja': 'デジタルピン [ARG1]',
 }[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:22 },
 }},
 
-{blockType: BlockType.REPORTER, opcode: 'getAdc1', text: 'read adc1 ch [ARG1] average [ARG2] times', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+{blockType: BlockType.REPORTER, opcode: 'getAnalog', text: {
+    'en': 'read analog pin [ARG1] average [ARG2] times',
+    'ja': 'アナログピン [ARG1] の [ARG2] 回平均',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:33 },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4 },
 }},
 
 '---',
-{blockType: BlockType.COMMAND, opcode: 'setText', text: 'set text [ARG1] size=[ARG2]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'WHITE', menu: 'color' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2 },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'setCursor', text: 'set cursor at ([ARG1] ,[ARG2] )', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
-    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'printText', text: 'print text [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'printlnText', text: 'print text [ARG1] and return', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'drawString', text: 'draw text [ARG1] ([ARG2] ,[ARG3] ) font=[ARG4]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
-    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
-    ARG4: { type: ArgumentType.NUMBER, type2:'B', defaultValue:'Ascii16', menu: 'font' },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'fillScreen', text: 'fill screen with [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:'BLACK', menu: 'color' },
-}},
-
+'---',
+'---',
+'---',
+'---',
+'---',
+'---',
 '---',
 {blockType: BlockType.COMMAND, opcode: 'tagServo', text: '--- ServoCar ---', arguments: {
 }},
@@ -221,18 +195,10 @@ speed: { acceptReporters: true, items: ['100','50','0','-50','-100',]},
 
 setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 getIMU(args,util) { return this.getTest(arguments.callee.name, args); }
-Buzzer(args,util) { return this.getTest(arguments.callee.name, args); }
-Beep(args,util) { return this.getTest(arguments.callee.name, args); }
 getSw(args,util) { return this.getTest(arguments.callee.name, args); }
 setDigital(args,util) { return this.getTest(arguments.callee.name, args); }
 getDigital(args,util) { return this.getTest(arguments.callee.name, args); }
-getAdc1(args,util) { return this.getTest(arguments.callee.name, args); }
-setText(args,util) { return this.getTest(arguments.callee.name, args); }
-setCursor(args,util) { return this.getTest(arguments.callee.name, args); }
-printText(args,util) { return this.getTest(arguments.callee.name, args); }
-printlnText(args,util) { return this.getTest(arguments.callee.name, args); }
-drawString(args,util) { return this.getTest(arguments.callee.name, args); }
-fillScreen(args,util) { return this.getTest(arguments.callee.name, args); }
+getAnalog(args,util) { return this.getTest(arguments.callee.name, args); }
 tagServo(args) { return args.ARG1; }
 setCar(args,util) { return this.getTest(arguments.callee.name, args); }
 setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
@@ -254,7 +220,6 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
             this._locale = 'en';
             break;
         }
-        log.log(this._locale);
 
 	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
         return {
@@ -282,21 +247,12 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
             'ja': 'を保存しました',
           }[this._locale]);
         }
-        log.log(this._ipadrs);
+        console.log(this._ipadrs);
     }
 
-/*
-	onmessage(err, res, body) {
-		if (err) {
-			log.warn(`error fetching translate result! ${res}`);
-			_error('');
-			return '';
-		}
-		var respUint8 = base64.toByteArray(String.fromCharCode.apply(null,body));
-*/
 	onmessage(event) {
 		var respUint8 = new Uint8Array(event.data);
-		//for(i=0;i<respUint8.length;i++) log.log(respUint8[i].toString(16));	// debug
+		//for(i=0;i<respUint8.length;i++) console.log(respUint8[i].toString(16));	// debug
 		var tmp = 0;
 		if(respUint8[0] == 0xFF && respUint8[1] == 0x55 && respUint8[2] == respUint8.length-3 && respUint8.length >= 5) {
 			var tmp2 = new DataView(respUint8.buffer);
@@ -306,10 +262,10 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 			case 3: tmp = tmp2.getInt32(4, true); break;
 			case 4: tmp = tmp2.getFloat32(4, true); break;
 			case 5: tmp = tmp2.getFloat64(4, true); break;
-		//	case 6: break;		// string
+			case 6: tmp = String.fromCharCode.apply(null, respUint8.subarray(4)); break;
 		//	case 7: break;		// bytes
 			}
-			log.log(tmp);
+			console.log(tmp);
 		}
 		const resp = tmp;
 		_resolve(resp);
@@ -334,16 +290,23 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 		for(i = 1; ; i++) {
 			eval("var param = args.ARG"+i);
 			eval("var def = this._blocks[index].arguments.ARG"+i);
-		//	log.log(i,param, def);
+		//	console.log(i,param, def);
 			if(typeof param === "undefined") break;
 			switch(def.type2) {
 			case "B": cmd.setUint8(ofs,param);        ofs+=1; break;
 			case "S": cmd.setInt16(ofs,param, true);  ofs+=2; break;
 			case "L": cmd.setInt32(ofs,param, true);  ofs+=4; break;
-			case "F": cmd.setFloat(ofs,param, true);  ofs+=4; break;
-			case "D": cmd.setDouble(ofs,param,true); ofs+=8; break;
+			case "F": cmd.setFloat32(ofs,param, true);ofs+=4; break;
+			case "D": cmd.setFloat64(ofs,param,true); ofs+=8; break;
+
+			case "s":
+				var charList = param.split('');
+				for (var j = 0; j < charList.length; j++)
+					cmdUint8[ofs+j] = charList[j].charCodeAt(0);
+				cmdUint8[ofs+j] = 0;
+				ofs += charList.length+1;
+				break;
 /*
-			case "s": cmd.writeUTFBytes(param); cmd.writeByte(0); break;
 			case "b":
 				var n = param.length/2;
 				cmd.writeByte(n);
@@ -354,13 +317,13 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 			}
 		}
 		cmd.setUint8(2, ofs-3);
-	//	for(i=0;i<ofs;i++) log.log(cmd.getUint8(i).toString(16));
+	//	for(i=0;i<ofs;i++) console.log(cmd.getUint8(i).toString(16));
 
 		const tempThis = this;
 		const netsPromise = new Promise(function(resolve, error) {
 			_resolve = resolve;
 			_error = error;
-			//log.log('send: ' + cmdUint8.slice(0,ofs));	// debug
+			//console.log('send: ' + cmdUint8.slice(0,ofs));	// debug
 
 			if(tempThis._ws === null) {
 			/*
@@ -375,7 +338,7 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 				tempThis._ws.binaryType = 'arraybuffer';
 
 				tempThis._ws.onopen = function(e) {
-					log.log('open: ' + e);
+					console.log('open: ' + e);
 					tempThis._ws.send(_sendBuf);
 				}
 
@@ -383,16 +346,16 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 
 				tempThis._ws.onclose = function(event) {
 					if (event.wasClean) {
-						log.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+						console.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
 					} else {
-						log.log('close: Connection died');
+						console.log('close: Connection died');
 					}
 					tempThis._ws = null;
 					if(_error !== null) _error('');
 				};
 
 				tempThis._ws.onerror = function(error) {
-					log.log('[error] '+error.message);
+					console.log('[error] '+error.message);
 					tempThis._ws.close();
 					tempThis._ws = null;
 					if(_error !== null) _error('');
@@ -404,16 +367,7 @@ setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 				tempThis._ws.send(cmdUint8.slice(0,ofs));
 			}
 		});
-/*
-		var _base64 = base64url.encode(cmdUint8.slice(0,ofs));
-		const netsPromise = new Promise(function(resolve) {
-			_resolve = resolve;
-			nets({
-				url: `http://${tempThis._ipadrs}:80/cmd?d=${_base64}`,
-				timeout: serverTimeoutMs
-				}, tempThis.onmessage);
-		});
-*/
+
 		netsPromise.then(result => result);
 		netsPromise.catch(result => result);
 		return netsPromise;

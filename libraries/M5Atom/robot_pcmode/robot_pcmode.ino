@@ -12,28 +12,12 @@ WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-esp_adc_cal_characteristics_t adc_chars;
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
-{
-      if(count == 0) count = 1;
-    
-      adc1_config_width(ADC_WIDTH_BIT_12);
-      esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
-      adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
-      uint32_t sum = 0;
-      for(int i = 0; i < count; i++)
-        sum += adc1_get_raw((adc1_channel_t)idx);
-    
-      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
-}
-
 void _setLED(uint8_t onoff)
 {
       if(onoff)
         M5.dis.drawpix(0,0xf00000);
       else
         M5.dis.clear();
-      M5.update();
 }
 
 uint8_t _getSw(uint8_t button)
@@ -67,10 +51,6 @@ float getIMU(uint8_t index)
 void _tone(int sound, int ms)
 {
       delay(ms);
-}
-
-void _beep(void)
-{
 }
 
 // ServoCar
@@ -130,8 +110,6 @@ void onConnect(String ip)
   wsServer.listen(PORT_WEBSOCKET);
   Serial.println(ip);
 }
-
-#define _dummyN(...)
 
 
 #ifdef __AVR_ATmega328P__
@@ -202,19 +180,19 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B',},
   {'B',},
-  {'S','S',},
+  {},
   {},
   {'B',},
   {'B','B',},
   {'B',},
   {'B','S',},
   {},
-  {'S','B',},
-  {'S','S',},
-  {'s',},
-  {'s',},
-  {'s','S','S','B',},
-  {'S',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
   {},
   {},
   {'B','B',},
@@ -297,18 +275,10 @@ if(buffer[3] < ITEM_NUM) {
 switch(buffer[3]){
     case 2: _setLED(getByte(0));; callOK(); break;
     case 3: sendFloat((getIMU(getByte(0)))); break;
-    case 4: _tone(getShort(0),getShort(1));; callOK(); break;
-    case 5: _beep();; callOK(); break;
     case 6: sendByte((_getSw(getByte(0)))); break;
     case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
     case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-    case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
-    case 11: _dummyN(getShort(0),getByte(1));; callOK(); break;
-    case 12: _dummyN(getShort(0),getShort(1));; callOK(); break;
-    case 13: _dummyN(getString(0));; callOK(); break;
-    case 14: _dummyN(getString(0));; callOK(); break;
-    case 15: _dummyN(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-    case 16: _dummyN(getShort(0));; callOK(); break;
+    case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
     case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
     case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
     case 21: _setCar(0,0);; callOK(); break;

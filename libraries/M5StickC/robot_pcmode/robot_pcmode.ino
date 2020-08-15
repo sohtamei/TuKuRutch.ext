@@ -23,21 +23,6 @@ WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-esp_adc_cal_characteristics_t adc_chars;
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
-{
-      if(count == 0) count = 1;
-    
-      adc1_config_width(ADC_WIDTH_BIT_12);
-      esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
-      adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
-      uint32_t sum = 0;
-      for(int i = 0; i < count; i++)
-        sum += adc1_get_raw((adc1_channel_t)idx);
-    
-      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
-}
-
 void _setLED(uint8_t onoff)
 {
       digitalWrite(P_LED, !onoff);
@@ -399,7 +384,7 @@ case 5: _beep();; callOK(); break;
 case 6: sendByte((_getSw(getByte(0)))); break;
 case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
 case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
 case 11: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
 case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
 case 13: M5.Lcd.print(getString(0));; callOK(); break;
