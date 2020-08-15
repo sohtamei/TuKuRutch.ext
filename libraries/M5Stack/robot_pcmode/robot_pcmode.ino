@@ -14,21 +14,6 @@ WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-esp_adc_cal_characteristics_t adc_chars;
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
-{
-      if(count == 0) count = 1;
-    
-      adc1_config_width(ADC_WIDTH_BIT_12);
-      esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
-      adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
-      uint32_t sum = 0;
-      for(int i = 0; i < count; i++)
-        sum += adc1_get_raw((adc1_channel_t)idx);
-    
-      return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
-}
-
 void _setLED(uint8_t onoff)
 {;}
 
@@ -52,11 +37,6 @@ float getIMU(uint8_t index)
             M5.IMU.getAccelData(data+0,data+1,data+2);
             return data[index-3];
       } else if(index < 9) {
-          bmm.read_mag_data();
-          magX = bmm.raw_mag_data.raw_datax;
-          magY = bmm.raw_mag_data.raw_datay;
-          magZ = bmm.raw_mag_data.raw_dataz;
-        
             //M5.IMU.getAhrsData(data+0,data+1,data+2);
             return data[index-6];
       } else {
@@ -256,13 +236,13 @@ static void parseData()
         case 6: sendByte((_getSw(getByte(0)))); break;
         case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
         case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 9: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+        case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
         case 11: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
         case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
         case 13: M5.Lcd.print(getString(0));; callOK(); break;
         case 14: M5.Lcd.println(getString(0));; callOK(); break;
         case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
-        case 16: M5.Lcd.fillScreen(getShort(0));; callOK(); break;
+        case 16: M5.Lcd.fillScreen(getShort(0)); M5.Lcd.setCursor(0,0);; callOK(); break;
         case 18: sendString((statusWifi())); break;
         case 19: sendString((scanWifi())); break;
         case 20: sendByte((connectWifi(getString(0),getString(1)))); break;
@@ -325,7 +305,7 @@ void loop()
       sendNotifyArduinoMode();
     #endif
       M5.update();  // update button and speaker
-      delay(50);
+    //delay(50);
     
 }
 

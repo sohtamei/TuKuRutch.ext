@@ -27,8 +27,9 @@ WebsocketsServer wsServer;
 #define LEDC_SERVO1  1
 
 #define P_NEOPIXEL     27
+#define PixelCount     64
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(64/*count*/, P_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(PixelCount, P_NEOPIXEL, NEO_GRB + NEO_KHZ800);
 void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b)
 {
       for(uint8_t i=0; i<strip.numPixels(); i++) {

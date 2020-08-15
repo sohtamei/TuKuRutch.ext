@@ -67,7 +67,7 @@ class Scratch3DummyNameBlocks {
 
 '---',
 {blockType: BlockType.COMMAND, opcode: 'setLED', text: 'set LED [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:'On', menu: 'onoff' },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
 }},
 
 '---',
@@ -146,9 +146,9 @@ class Scratch3DummyNameBlocks {
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'setNeoPixelRGB', text: 'NeoPixel red [ARG1] green [ARG2] blue [ARG3]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
-    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
-    ARG3: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:64 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:64 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'B', defaultValue:64 },
 }},
 
 
@@ -210,6 +210,11 @@ neopixel: { acceptReporters: true, items: [
 { text: 'magenta', value: 5 },
 { text: 'cyan', value: 6 },
 { text: 'white', value: 7 },
+]},
+
+onoff: { acceptReporters: true, items: [
+{ text: 'On', value: 1 },
+{ text: 'Off', value: 0 },
 ]},
 
 servoch: { acceptReporters: true, items: ['0','1',]},

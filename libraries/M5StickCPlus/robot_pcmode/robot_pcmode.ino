@@ -2,8 +2,8 @@
 
 #define PCMODE
 
-#define _M5StickC
-//#define _M5StickCPlus
+//#define _M5StickC
+#define _M5StickCPlus
 
 #ifdef _M5StickC
   #define mVersion "M5StickC 1.0"

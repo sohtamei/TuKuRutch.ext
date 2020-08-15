@@ -139,6 +139,58 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'color' },
 }},
 
+'---',
+{blockType: BlockType.COMMAND, opcode: 'tagServo', text: '--- ServoCar ---', arguments: {
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCar', text: '[ARG1] at speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:100 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setMotor', text: 'set motor [ARG1] speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:100, menu: 'speed' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'stopCar', text: 'stop', arguments: {
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'enumDirection', text: '[ARG1] .', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setServo', text: 'set servo [ARG1] [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
+}},
+
+'---',
+{blockType: BlockType.COMMAND, opcode: 'tagRover', text: '--- RoverC ---', arguments: {
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setRoverC', text: 'FL [ARG1] FR [ARG2] RL [ARG3] RR [ARG4]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setRoverC_XYR', text: 'x [ARG1] y [ARG2] role [ARG3]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'moveRoverC', text: 'dir [ARG1] speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2, menu: 'roverDir' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:100 },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'enumRoverDir', text: '[ARG1] .', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2, menu: 'roverDir' },
+}},
+
 
 		];
 		return this._blocks;
@@ -146,6 +198,8 @@ class Scratch3DummyNameBlocks {
 
 	get_menus() {
 	  return {
+angle: { acceptReporters: true, items: ['0','90','180',]},
+
 beats: { acceptReporters: true, items: [
 { text: 'Half', value: 500 },
 { text: 'Quarter', value: 250 },
@@ -185,6 +239,17 @@ color: { acceptReporters: true, items: [
 digital: { acceptReporters: true, items: [
 { text: 'HIGH', value: 1 },
 { text: 'LOW', value: 0 },
+]},
+
+direction: { acceptReporters: true, items: [
+{ text: 'stop', value: 0 },
+{ text: 'run forward', value: 1 },
+{ text: 'turn left', value: 2 },
+{ text: 'turn right', value: 3 },
+{ text: 'run backward', value: 4 },
+{ text: 'rotate left', value: 5 },
+{ text: 'rotate right', value: 6 },
+{ text: 'calibration', value: 7 },
 ]},
 
 font: { acceptReporters: true, items: [
@@ -261,6 +326,24 @@ onoff: { acceptReporters: true, items: [
 { text: 'Off', value: 0 },
 ]},
 
+roverDir: { acceptReporters: true, items: [
+{ text: 'STOP', value: 0 },
+{ text: 'UP_R', value: 1 },
+{ text: 'UP', value: 2 },
+{ text: 'UP_L', value: 3 },
+{ text: 'RIGHT', value: 4 },
+{ text: 'LEFT', value: 5 },
+{ text: 'DOWN_R', value: 6 },
+{ text: 'DOWN', value: 7 },
+{ text: 'DOWN_L', value: 8 },
+{ text: 'ROLL_R', value: 9 },
+{ text: 'ROLL_L', value: 10 },
+]},
+
+servoch: { acceptReporters: true, items: ['0','1',]},
+
+speed: { acceptReporters: true, items: ['100','50','0','-50','-100',]},
+
 
 	  };
 	}
@@ -279,6 +362,17 @@ printText(args,util) { return this.getTest(arguments.callee.name, args); }
 printlnText(args,util) { return this.getTest(arguments.callee.name, args); }
 drawString(args,util) { return this.getTest(arguments.callee.name, args); }
 fillScreen(args,util) { return this.getTest(arguments.callee.name, args); }
+tagServo(args) { return args.ARG1; }
+setCar(args,util) { return this.getTest(arguments.callee.name, args); }
+setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
+stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
+enumDirection(args) { return args.ARG1; }
+setServo(args,util) { return this.getTest(arguments.callee.name, args); }
+tagRover(args) { return args.ARG1; }
+setRoverC(args,util) { return this.getTest(arguments.callee.name, args); }
+setRoverC_XYR(args,util) { return this.getTest(arguments.callee.name, args); }
+moveRoverC(args,util) { return this.getTest(arguments.callee.name, args); }
+enumRoverDir(args) { return args.ARG1; }
 
 
     /**

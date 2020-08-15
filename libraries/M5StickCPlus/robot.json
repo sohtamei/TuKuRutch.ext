@@ -1,5 +1,5 @@
 {
-	"name"			: "M5StickC",
+	"name"			: "M5StickCPlus",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:m5stick-c",					// package:platform:board
 
@@ -24,8 +24,8 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define _M5StickC
-//#define _M5StickCPlus
+//#define _M5StickC
+#define _M5StickCPlus
 
 #ifdef _M5StickC
   #define mVersion \"M5StickC 1.0\"
