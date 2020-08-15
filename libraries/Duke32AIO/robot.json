@@ -26,10 +26,8 @@
 	"header":"
 #define mVersion \"Duke32AIO 1.0\"
 
+#include <Adafruit_NeoPixel.h>
 #include \"TukurutchEsp.h\"
-
-// https://github.com/Makuna/NeoPixelBus
-#include <NeoPixelBus.h>
 
 WebsocketsServer wsServer;
 
@@ -51,9 +49,41 @@ WebsocketsServer wsServer;
 #define LEDC_SERVO1  1
 
 #define P_NEOPIXEL     27
+#define PixelCount     64
 
-const uint16_t PixelCount = 64;
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledStrip(PixelCount, P_NEOPIXEL);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(PixelCount, P_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b)
+{
+  for(uint8_t i=0; i<strip.numPixels(); i++) {
+    strip.setPixelColor(i, r, g, b);
+    strip.show();
+    delay(10);
+  }
+}
+
+void SetNeoPixel(uint8_t index){
+  int r,g,b;
+  switch(index) {
+    case 0: r=0;   g=0;   b=0;   break;  // black
+    case 1: r=255; g=0;   b=0;   break;  // red
+    case 2: r=0;   g=255; b=0;   break;  // green
+    case 3: r=128; g=128; b=0;   break;  // yellow
+    case 4: r=0;   g=0;   b=255; break;  // blue
+    case 5: r=128; g=0;   b=128; break;  // magenta
+    case 6: r=0;   g=128; b=128; break;  // cyan
+    case 7: r=128; g=128; b=128; break;  // white
+    default: return;
+  }
+  SetNeoPixelRGB(r, g, b);
+}
+
+void _setLED(uint8_t onoff)
+{
+  if(onoff)
+    SetNeoPixel(4);
+  else
+    SetNeoPixel(0);
+}
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{0,23},{1,4}};
 void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
@@ -118,32 +148,10 @@ void _setCar(uint8_t direction, uint8_t speed)
   _setMotor(MotorR, speed * dir_table[direction].R);
 }
 
-//#define colorSaturation 32
-void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b)
-{
-  for(uint8_t i=0; i<PixelCount; i++)
-    ledStrip.SetPixelColor(i, r, g, b);
-  ledStrip.Show();
-}
-
-void SetNeoPixel(uint8_t index){
-  int r,g,b;
-  switch(index) {
-    case 0: r=0;  g=0;  b=0;  break;  // black
-    case 1: r=32; g=0;  b=0;  break;  // red
-    case 2: r=0;  g=32; b=0;  break;  // green
-    case 3: r=0;  g=0;  b=32; break;  // blue
-    case 4: r=32; g=32; b=0;  break;  // yellow
-    case 5: r=0;  g=32; b=32; break;  // cyan
-    case 6: r=32; g=0;  b=32; break;  // magenta
-    case 7: r=32; g=32; b=32; break;  // white
-    default: return;
-  }
-  SetNeoPixelRGB(r, g, b);
-}
-
 void onConnect(String ip)
 {
+  _setLED(1);
+
   wsServer.listen(PORT_WEBSOCKET);
   Serial.println(ip);
 }
@@ -152,7 +160,8 @@ void onConnect(String ip)
 	"setup":"
 Serial.begin(115200);
 
-ledStrip.Begin();
+strip.begin();
+SetNeoPixel(0);
 
 // DC motor
 digitalWrite(P_MOTOR0_IN1, LOW);
@@ -199,20 +208,40 @@ initWifi(mVersion, false, onConnect);
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
+		["-"],	// ブロック区切り
+
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+		["-"],//["R", "get IMU %d.imu",							"getIMU",			"AccelX",	{"remote":["B","F"],	"func":"getIMU({0})"}],
+		["-"],//["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
+		["-"],//["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
+		["-"],//["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		33,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		33,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read analog pin %n average %n times",	"getAnalog",		35,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
+
+		["-"],
+
+		["-"],//["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
+		["-"],//["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"M5.Lcd.setCursor({0},{1});"}],
+		["-"],//["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"M5.Lcd.print({0});"}],
+		["-"],//["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"M5.Lcd.println({0});"}],
+		["-"],//["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"M5.Lcd.drawString({0},{1},{2},{3});"}],
+		["-"],//["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0}); M5.Lcd.setCursor(0,0);"}],
+
+		["-"],
+
+		["-"],//["w", "--- ServoCar ---",						"tagServo",						{"enum":"",					"func":"0"}],
 		["w", "%d.direction at speed %n",				"setCar",  "run forward",100,	{"remote":["B","B"],	"func":"_setCar({0},{1});"}],
 		["w", "set motor %d.motorch speed %d.speed",	"setMotor",			"ch-L",100,	{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
-		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);_setServo(0,0,1);_setServo(1,0,1);"}],
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
-		["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
+		//["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
 
 		["-"],
 
 		["w", "NeoPixel %d.neopixel",					"setNeoPixel",		"white",	{"remote":["B"],		"func":"SetNeoPixel({0});"}],
-		["w", "NeoPixel red %n, green %n, blue %n",		"setNeoPixelRGB",	32,32,32,	{"remote":["B","B","B"],"func":"SetNeoPixelRGB({0},{1},{2});"}],
-		["w", "set digital pin %n output as %d.digital","setDigital",		33,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		33,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["R", "read analog pin %n average %n times",	"getAnalog",		35,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
+		["w", "NeoPixel red %n, green %n, blue %n",		"setNeoPixelRGB",	64,64,64,	{"remote":["B","B","B"],"func":"SetNeoPixelRGB({0},{1},{2});"}],
 
 		["-"],
 
@@ -223,19 +252,21 @@ initWifi(mVersion, false, onConnect);
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],
+		"onoff":["On","Off"],
 		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
 		"motorch"	:["ch-L","ch-R"],
 		"servoch"	:[0,1],
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
 
-		"neopixel"	:["off","red","green","blue","yellow","cyan","magenta","white"],
+		"neopixel"	:["off","red","green","yellow","blue","magenta","cyan","white"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
 		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
-		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"cyan":5,"magenta":6,"white":7,
+		"off":0,"red":1,"green":2,"yellow":3,"blue":4,"magenta":5,"cyan":6,"white":7,
 	},
 	"translators":{
 		"ja":{

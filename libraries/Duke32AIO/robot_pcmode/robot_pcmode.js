@@ -65,6 +65,47 @@ class Scratch3DummyNameBlocks {
 	ARG1: { type: ArgumentType.STRING, defaultValue: this._ipadrs},
 }},
 
+'---',
+{blockType: BlockType.COMMAND, opcode: 'setLED', text: 'set LED [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:'On', menu: 'onoff' },
+}},
+
+'---',
+'---',
+'---',
+'---',
+{blockType: BlockType.COMMAND, opcode: 'setDigital', text: {
+    'en': 'set digital pin [ARG1] output as [ARG2]',
+    'ja': 'デジタルピン [ARG1] の出力を [ARG2] にする',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:33 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'digital' },
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'getDigital', text: {
+    'en': 'read digital pin [ARG1]',
+    'ja': 'デジタルピン [ARG1]',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:33 },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getAnalog', text: {
+    'en': 'read analog pin [ARG1] average [ARG2] times',
+    'ja': 'アナログピン [ARG1] の [ARG2] 回平均',
+}[this._locale], arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:35 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4 },
+}},
+
+'---',
+'---',
+'---',
+'---',
+'---',
+'---',
+'---',
+'---',
+'---',
 {blockType: BlockType.COMMAND, opcode: 'setCar', text: {
     'en': '[ARG1] at speed [ARG2]',
     'ja': '[ARG1] 向きに [ARG2] の速さで動かす',
@@ -99,36 +140,15 @@ class Scratch3DummyNameBlocks {
     ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'stopServo', text: {
-    'en': 'stop servo [ARG1]',
-    'ja': 'サーボ [ARG1] を止める',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
-}},
-
 '---',
 {blockType: BlockType.COMMAND, opcode: 'setNeoPixel', text: 'NeoPixel [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:4, menu: 'neopixel' },
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:7, menu: 'neopixel' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'setNeoPixelRGB', text: 'NeoPixel red [ARG1] green [ARG2] blue [ARG3]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
     ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
     ARG3: { type: ArgumentType.NUMBER, type2:'B', defaultValue:32 },
-}},
-
-{blockType: BlockType.BOOLEAN, opcode: 'getDigital', text: {
-    'en': 'read digital pin [ARG1]',
-    'ja': 'デジタルピン [ARG1]',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'din' },
-}},
-
-{blockType: BlockType.REPORTER, opcode: 'getAnalog', text: {
-    'en': 'read analog pin [ARG1]',
-    'ja': 'アナログピン [ARG1]',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'analog' },
 }},
 
 
@@ -138,11 +158,12 @@ class Scratch3DummyNameBlocks {
 
 	get_menus() {
 	  return {
-analog: { acceptReporters: true, items: ['0','1',]},
-
 angle: { acceptReporters: true, items: ['0','90','180',]},
 
-din: { acceptReporters: true, items: ['0','1','2','3',]},
+digital: { acceptReporters: true, items: [
+{ text: 'HIGH', value: 1 },
+{ text: 'LOW', value: 0 },
+]},
 
 direction: { acceptReporters: true, items: [
 { text: {
@@ -184,8 +205,11 @@ neopixel: { acceptReporters: true, items: [
 { text: 'off', value: 0 },
 { text: 'red', value: 1 },
 { text: 'green', value: 2 },
-{ text: 'blue', value: 3 },
-{ text: 'white', value: 4 },
+{ text: 'yellow', value: 3 },
+{ text: 'blue', value: 4 },
+{ text: 'magenta', value: 5 },
+{ text: 'cyan', value: 6 },
+{ text: 'white', value: 7 },
 ]},
 
 servoch: { acceptReporters: true, items: ['0','1',]},
@@ -196,16 +220,17 @@ speed: { acceptReporters: true, items: ['100','50','0','-50','-100',]},
 	  };
 	}
 
+setLED(args,util) { return this.getTest(arguments.callee.name, args); }
+setDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+getDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+getAnalog(args,util) { return this.getTest(arguments.callee.name, args); }
 setCar(args,util) { return this.getTest(arguments.callee.name, args); }
 setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
 stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
 enumDirection(args) { return args.ARG1; }
 setServo(args,util) { return this.getTest(arguments.callee.name, args); }
-stopServo(args,util) { return this.getTest(arguments.callee.name, args); }
 setNeoPixel(args,util) { return this.getTest(arguments.callee.name, args); }
 setNeoPixelRGB(args,util) { return this.getTest(arguments.callee.name, args); }
-getDigital(args,util) { return this.getTest(arguments.callee.name, args); }
-getAnalog(args,util) { return this.getTest(arguments.callee.name, args); }
 
 
     /**

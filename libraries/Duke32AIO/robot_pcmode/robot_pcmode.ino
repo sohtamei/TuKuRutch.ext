@@ -4,43 +4,63 @@
 
 #define mVersion "Duke32AIO 1.0"
 
+#include <Adafruit_NeoPixel.h>
 #include "TukurutchEsp.h"
-
-// https://github.com/Makuna/NeoPixelBus
-#include <NeoPixelBus.h>
 
 WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-#define Servo_PIN1  23
-#define Servo_PIN2   4
-#define MOTOR0_IN1  13
-#define MOTOR0_IN2  12
-#define MOTOR0_EN   18
-#define MOTOR1_IN1  14
-#define MOTOR1_IN2  15
-#define MOTOR1_EN   19
-
-#define ANA11   34  //I, GPIO34, ADC1_CH6
-#define ANA12   35  //I, GPIO35, ADC1_CH7
-#define DIGI01  32  //IO, GPIO32, ADC1_CH4, TOUCH9
-#define DIGI02  33  //IO, GPIO33, ADC1_CH5, TOUCH8
-#define DIGI11  26  //IO, GPIO25, DAC_1, ADC2_CH8
-#define DIGI12  25  //IO, GPIO26, DAC_2, ADC2_CH9
-
-#define NEO_PIN     27
-
-#define LEDC_SERVO0  0
-#define LEDC_SERVO1  1
+#define P_MOTOR0_IN1  13
+#define P_MOTOR0_IN2  12
+#define P_MOTOR0_EN   18
+#define P_MOTOR1_IN1  14
+#define P_MOTOR1_IN2  15
+#define P_MOTOR1_EN   19
 #define LEDC_MOTOR0  2
 #define LEDC_MOTOR1  3
 
 #define MotorL 0
 #define MotorR 1
 
-const uint16_t PixelCount = 64;
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledStrip(PixelCount, NEO_PIN);
+#define LEDC_SERVO0  0
+#define LEDC_SERVO1  1
+
+#define P_NEOPIXEL     27
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(64/*count*/, P_NEOPIXEL, NEO_GRB + NEO_KHZ800);
+void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b)
+{
+      for(uint8_t i=0; i<strip.numPixels(); i++) {
+            strip.setPixelColor(i, r, g, b);
+            strip.show();
+            delay(10);
+      }
+}
+
+void SetNeoPixel(uint8_t index){
+      int r,g,b;
+      switch(index) {
+            case 0: r=0;   g=0;   b=0;   break;  // black
+            case 1: r=255; g=0;   b=0;   break;  // red
+            case 2: r=0;   g=255; b=0;   break;  // green
+            case 3: r=128; g=128; b=0;   break;  // yellow
+            case 4: r=0;   g=0;   b=255; break;  // blue
+            case 5: r=128; g=0;   b=128; break;  // magenta
+            case 6: r=0;   g=128; b=128; break;  // cyan
+            case 7: r=128; g=128; b=128; break;  // white
+            default: return;
+      }
+      SetNeoPixelRGB(r, g, b);
+}
+
+void _setLED(uint8_t onoff)
+{
+      if(onoff)
+        SetNeoPixel(4);
+      else
+        SetNeoPixel(0);
+}
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{0,23},{1,4}};
 void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
@@ -55,7 +75,7 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
             else if(data > 100) data = 100;
             if(idx == 1) data = -data;
             pwmWidth = (data * srvCoef) / 100 + srvZero;
-            if(data==0) pwmWidth=0;
+            if(data==0 && continuous!=2) pwmWidth=0;
       } else {
             #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
             #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
@@ -77,12 +97,12 @@ void _setMotor(uint8_t motorNo, int16_t speed){
     
       switch(motorNo) {
           case MotorL:
-            digitalWrite(MOTOR0_IN1, (speed>0) ? HIGH:LOW);
-            digitalWrite(MOTOR0_IN2, (speed<0) ? HIGH:LOW);
+            digitalWrite(P_MOTOR0_IN1, (speed>0) ? HIGH:LOW);
+            digitalWrite(P_MOTOR0_IN2, (speed<0) ? HIGH:LOW);
             break;
           case MotorR:
-            digitalWrite(MOTOR1_IN1, (speed>0) ? HIGH:LOW);
-            digitalWrite(MOTOR1_IN2, (speed<0) ? HIGH:LOW);
+            digitalWrite(P_MOTOR1_IN1, (speed>0) ? HIGH:LOW);
+            digitalWrite(P_MOTOR1_IN2, (speed<0) ? HIGH:LOW);
             break;
       }
 }
@@ -90,13 +110,13 @@ void _setMotor(uint8_t motorNo, int16_t speed){
 struct { int16_t L; int16_t R;
 } static const dir_table[7] = {
     //  L   R
-  { 0,  0},  // STOP
-  { 1,  1},  // FORWARD
-  { 0,  1},  // LEFT
-  { 1,  0},  // RIGHT
-  {-1, -1},  // BACK
-  {-1,  1},  // ROLL_LEFT
-  { 1, -1},  // ROLL_RIGHT
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
@@ -105,61 +125,10 @@ void _setCar(uint8_t direction, uint8_t speed)
       _setMotor(MotorR, speed * dir_table[direction].R);
 }
 
-uint16_t getAdc(uint8_t index)
-{
-  uint8_t adcCh[2] = {ANA11,ANA12};
-      if(index>=2) return 0;
-      return analogRead(adcCh[index]);
-}
-
-uint8_t getDigital(uint8_t index)
-{
-  uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
-      if(index>=4) return 0;
-      return digitalRead(din_ch[index]);
-}
-
-/********************************
-* for LED Control
-*********************************/
-#define colorSaturation 32
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor white(colorSaturation);
-RgbColor black(0);
-
-void SetNeoPixel(uint8_t index){
-      RgbColor* npcolor = NULL;
-      switch(index) {
-            case 0: npcolor = &black; break;
-            case 1: npcolor = &red;   break;
-            case 2: npcolor = &green; break;
-            case 3: npcolor = &blue;  break;
-            case 4: npcolor = &white; break;
-            default: return;
-      }
-    
-      for(uint8_t i=0; i<PixelCount; i++){
-            ledStrip.SetPixelColor(i, *npcolor);
-      }
-      ledStrip.Show();
-}
-
-void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b){
-      if(r>32) r=32;
-      if(g>32) g=32;
-      if(b>32) b=32;
-      RgbColor color(r,g,b);
-    
-      for(uint8_t i=0; i<PixelCount; i++){
-            ledStrip.SetPixelColor(i, color);
-      }
-      ledStrip.Show();
-}
-
 void onConnect(String ip)
 {
+      _setLED(1);
+    
       wsServer.listen(PORT_WEBSOCKET);
       Serial.println(ip);
 }
@@ -195,31 +164,26 @@ void setup()
     
     Serial.begin(115200);
     
-    ledStrip.Begin();
+    strip.begin();
+    SetNeoPixel(0);
     
-    pinMode(ANA11, INPUT);
-    pinMode(ANA12, INPUT);
-    pinMode(DIGI01, INPUT);
-    pinMode(DIGI02, INPUT);
-    pinMode(DIGI11, INPUT);
-    pinMode(DIGI12, INPUT);
-    pinMode(MOTOR0_IN1, OUTPUT);
-    pinMode(MOTOR0_IN2, OUTPUT);
-    pinMode(MOTOR1_IN1, OUTPUT);
-    pinMode(MOTOR1_IN2, OUTPUT);
-    
-    digitalWrite(MOTOR0_IN1, LOW);
-    digitalWrite(MOTOR0_IN2, LOW);
-    digitalWrite(MOTOR1_IN1, LOW);
-    digitalWrite(MOTOR1_IN2, LOW);
-    
+    // DC motor
+    digitalWrite(P_MOTOR0_IN1, LOW);
+    digitalWrite(P_MOTOR0_IN2, LOW);
+    digitalWrite(P_MOTOR1_IN1, LOW);
+    digitalWrite(P_MOTOR1_IN2, LOW);
+    pinMode(P_MOTOR0_IN1, OUTPUT);
+    pinMode(P_MOTOR0_IN2, OUTPUT);
+    pinMode(P_MOTOR1_IN1, OUTPUT);
+    pinMode(P_MOTOR1_IN2, OUTPUT);
     ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
     ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
     
+    // servo motor
     ledcSetup(LEDC_MOTOR0, 255/*Hz*/, 8/*bit*/);
     ledcSetup(LEDC_MOTOR1, 255/*Hz*/, 8/*bit*/);
-    ledcAttachPin(MOTOR0_EN, LEDC_MOTOR0);
-    ledcAttachPin(MOTOR1_EN, LEDC_MOTOR1);
+    ledcAttachPin(P_MOTOR0_EN, LEDC_MOTOR0);
+    ledcAttachPin(P_MOTOR1_EN, LEDC_MOTOR1);
     
     #ifndef PCMODE
     initWifi(mVersion, true, onConnect);
@@ -238,17 +202,32 @@ static uint8_t _packetLen = 4;
 static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
+  {},
+  {'B',},
+  {},
+  {},
+  {},
+  {},
+  {'B','B',},
+  {'B',},
+  {'B','S',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
   {'B','B',},
   {'B','S',},
   {},
   {},
   {'B','B',},
-  {'B',},
   {},
   {'B',},
   {'B','B','B',},
-  {'B',},
-  {'B',},
   {},
   {},
   {},
@@ -322,18 +301,19 @@ static void parseData()
     }
     
     switch(buffer[3]){
-        case 1: _setCar(getByte(0),getByte(1));; callOK(); break;
-        case 2: _setMotor(getByte(0),getShort(1));; callOK(); break;
-        case 3: _setCar(0,0);; callOK(); break;
-        case 5: _setServo(getByte(0),getByte(1),0);; callOK(); break;
-        case 6: _setServo(getByte(0),0,1);; callOK(); break;
-        case 8: SetNeoPixel(getByte(0));; callOK(); break;
-        case 9: SetNeoPixelRGB(getByte(0),getByte(1),getByte(2));; callOK(); break;
-        case 10: sendByte((getDigital(getByte(0)))); break;
-        case 11: sendShort((getAdc(getByte(0)))); break;
-        case 13: sendString((statusWifi())); break;
-        case 14: sendString((scanWifi())); break;
-        case 15: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 2: _setLED(getByte(0));; callOK(); break;
+        case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
+        case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
+        case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
+        case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
+        case 20: _setMotor(getByte(0),getShort(1));; callOK(); break;
+        case 21: _setCar(0,0);_setServo(0,0,1);_setServo(1,0,1);; callOK(); break;
+        case 23: _setServo(getByte(0),getByte(1),0);; callOK(); break;
+        case 25: SetNeoPixel(getByte(0));; callOK(); break;
+        case 26: SetNeoPixelRGB(getByte(0),getByte(1),getByte(2));; callOK(); break;
+        case 28: sendString((statusWifi())); break;
+        case 29: sendString((scanWifi())); break;
+        case 30: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;

@@ -76,10 +76,6 @@ void _tone(int sound, int ms)
   delay(ms);
 }
 
-void _beep(void)
-{
-}
-
 // ServoCar
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,32},{9,26}};
@@ -137,8 +133,6 @@ void onConnect(String ip)
   wsServer.listen(PORT_WEBSOCKET);
   Serial.println(ip);
 }
-
-#define _dummyN(...)
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
@@ -204,12 +198,12 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],
 
-		["-"],//["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"_dummyN({0},{1});"}],
-		["-"],//["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"_dummyN({0},{1});"}],
-		["-"],//["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
-		["-"],//["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"_dummyN({0});"}],
-		["-"],//["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"_dummyN({0},{1},{2},{3});"}],
-		["-"],//["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"_dummyN({0});"}],
+		["-"],//["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
+		["-"],//["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"M5.Lcd.setCursor({0},{1});"}],
+		["-"],//["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"M5.Lcd.print({0});"}],
+		["-"],//["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"M5.Lcd.println({0});"}],
+		["-"],//["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"M5.Lcd.drawString({0},{1},{2},{3});"}],
+		["-"],//["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0}); M5.Lcd.setCursor(0,0);"}],
 
 		["-"],
 
