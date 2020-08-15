@@ -1,9 +1,6 @@
 #ifndef TUKURUTCH_ESP
 #define TUKURUTCH_ESP
 
-#include <driver/adc.h>
-#include <esp_adc_cal.h>
-
 #include <ArduinoWebsockets.h>
 using namespace websockets;
 #define ENABLE_WEBSOCKET
@@ -24,4 +21,6 @@ int readWifi(void);
 void writeWifi(uint8_t* dp, int count);
 void printlnWifi(char* mes);
 void sendNotifyArduinoMode(void);
+
+uint16_t getAdc1(uint8_t port, uint16_t count);
 #endif // TUKURUTCH_ESP

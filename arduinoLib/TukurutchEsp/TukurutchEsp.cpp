@@ -1,6 +1,9 @@
 #include <WiFi.h>
 #include <AsyncUDP.h>
 #include <Preferences.h>
+#include <driver/adc.h>
+#include <esp_adc_cal.h>
+
 #include "TukurutchEsp.h"
 
 #define PORT  54321
@@ -72,7 +75,7 @@ uint8_t connectWifi(char* ssid, char*pass)
 
 char* statusWifi(void)
 {
-	preferences.getString("ssid", g_ssid, sizeof(g_ssid));
+	preferences.getBytes("sta.ssid", g_ssid, sizeof(g_ssid));
 	memset(buf, 0, sizeof(buf));
     
 	if(WiFi.status() == WL_CONNECTED) {
@@ -186,3 +189,32 @@ void printlnWifi(char* mes)
 {
 	client.println(mes);
 }
+
+#define numof(a) (sizeof(a)/sizeof((a)[0]))
+const struct {uint8_t port; uint8_t ch;} adc1Table[] = {{36, 0}, {39, 3}, {32, 4}, {33, 5}, {34, 6}, {35, 7}};
+esp_adc_cal_characteristics_t adc_chars;
+uint16_t getAdc1(uint8_t port, uint16_t count)
+{
+  int i;
+  if(count == 0) count = 1;
+
+  int ch = -1;
+  for(i = 0; i < numof(adc1Table); i++) {
+    if(adc1Table[i].port == port) {
+      ch = adc1Table[i].ch;
+      break;
+    }
+  }
+  if(ch == -1) return 0;
+
+  adc1_config_width(ADC_WIDTH_BIT_12);
+  adc1_config_channel_atten((adc1_channel_t)ch, ADC_ATTEN_DB_11);
+  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
+
+  uint32_t sum = 0;
+  for(i = 0; i < count; i++)
+    sum += adc1_get_raw((adc1_channel_t)ch);
+
+  return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
+}
+

@@ -145,23 +145,28 @@ class Scratch3DummyNameBlocks {
 
 '---',
 '---',
-'[ARG1] .', arguments: {
+'---',
+'---',
+'---',
+'---',
+'---',
+{blockType: BlockType.REPORTER, opcode: 'enumIrcode', text: '[ARG1] .', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:69, menu: 'ircode' },
 }},
 
-'[ARG1] .', arguments: {
+{blockType: BlockType.REPORTER, opcode: 'enumIrcodeA', text: '[ARG1] .', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:113, menu: 'ircodeA' },
 }},
 
-'[ARG1] .', arguments: {
+{blockType: BlockType.REPORTER, opcode: 'enumColor', text: '[ARG1] .', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'color' },
 }},
 
-'[ARG1] .', arguments: {
+{blockType: BlockType.REPORTER, opcode: 'enumWalkcmd', text: '[ARG1] .', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'walkcmd' },
 }},
 
-'[ARG1] .', arguments: {
+{blockType: BlockType.REPORTER, opcode: 'enumKnee', text: '[ARG1] .', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'knee' },
 }},
 

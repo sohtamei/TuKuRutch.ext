@@ -35,21 +35,6 @@ WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-esp_adc_cal_characteristics_t adc_chars;
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
-{
-  if(count == 0) count = 1;
-
-  adc1_config_width(ADC_WIDTH_BIT_12);
-  esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100/*VREF*/, &adc_chars);
-  adc1_config_channel_atten((adc1_channel_t)idx, ADC_ATTEN_DB_11);
-  uint32_t sum = 0;
-  for(int i = 0; i < count; i++)
-    sum += adc1_get_raw((adc1_channel_t)idx);
-
-  return esp_adc_cal_raw_to_voltage(sum/count, &adc_chars);
-}
-
 void _setLED(uint8_t onoff)
 {
   if(onoff)
@@ -213,9 +198,9 @@ initWifi(mVersion, false, onConnect);
 		["-"],//["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
 		["-"],//["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
-		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["R", "read adc1 ch %n average %n times",		"getAdc1",			0,4,		{"remote":["B","S",	"S"], "func":"_getAdc1({0},{1})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		22,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		22,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read analog pin %n average %n times",	"getAnalog",		33,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
 
 		["-"],
 
@@ -266,7 +251,7 @@ initWifi(mVersion, false, onConnect);
 		"ja":{
 			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
 			"read digital pin %n"							:"デジタルピン %n",
-			"read analog pin %n"							:"アナログピン %n",
+			"read analog pin %n average %n times"			:"アナログピン %n の %n 回平均",
 		}
 	}
 }

@@ -519,15 +519,16 @@ void quadCrawler_init(void)
   digitalWrite( P_MEN, HIGH);
   pinMode( P_Echo, INPUT_PULLUP );
   pinMode( P_Trig, OUTPUT );
+
   ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
   ledcAttachPin(P_BUZZER, LEDC_BUZZER);
 
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
+
   Wire.begin(P_SDA,P_SCL);
   pwm.begin();
   pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
-  yield();
   digitalWrite( P_MEN, LOW);
   sv_init();
 }

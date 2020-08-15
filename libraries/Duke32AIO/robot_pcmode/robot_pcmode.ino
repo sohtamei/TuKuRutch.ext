@@ -15,12 +15,12 @@ WebsocketsServer wsServer;
 
 #define Servo_PIN1  23
 #define Servo_PIN2   4
-#define MTR_A1  13  // moterA IN1
-#define MTR_A2  12  // moterA IN2
-#define MTR_AE  18  // moterA EN
-#define MTR_B1  14  // moterB IN1
-#define MTR_B2  15  // moterB IN2
-#define MTR_BE  19  // moterB EN
+#define MOTOR0_IN1  13
+#define MOTOR0_IN2  12
+#define MOTOR0_EN   18
+#define MOTOR1_IN1  14
+#define MOTOR1_IN2  15
+#define MOTOR1_EN   19
 
 #define ANA11   34  //I, GPIO34, ADC1_CH6
 #define ANA12   35  //I, GPIO35, ADC1_CH7
@@ -31,10 +31,10 @@ WebsocketsServer wsServer;
 
 #define NEO_PIN     27
 
-#define LEDC_CHANNEL_0  0  // channel of 16 channels (started from zero)
-#define LEDC_CHANNEL_1  1  // channel of 16 channels (started from zero)
-#define LEDC_CHANNEL_2  2   // channel of 16 channels (started from zero)
-#define LEDC_CHANNEL_3  3   // channel of 16 channels (started from zero)
+#define LEDC_SERVO0  0
+#define LEDC_SERVO1  1
+#define LEDC_MOTOR0  2
+#define LEDC_MOTOR1  3
 
 #define MotorL 0
 #define MotorR 1
@@ -73,16 +73,16 @@ void _setMotor(uint8_t motorNo, int16_t speed){
       int16_t abs = speed;
       if(abs < 0)   abs = -abs;
       if(abs > 100) abs = 100;
-      ledcWrite(LEDC_CHANNEL_2+motorNo, (abs*255)/100);
+      ledcWrite(LEDC_MOTOR0+motorNo, (abs*255)/100);
     
       switch(motorNo) {
           case MotorL:
-            digitalWrite(MTR_A1, (speed>0) ? HIGH:LOW);
-            digitalWrite(MTR_A2, (speed<0) ? HIGH:LOW);
+            digitalWrite(MOTOR0_IN1, (speed>0) ? HIGH:LOW);
+            digitalWrite(MOTOR0_IN2, (speed<0) ? HIGH:LOW);
             break;
           case MotorR:
-            digitalWrite(MTR_B1, (speed>0) ? HIGH:LOW);
-            digitalWrite(MTR_B2, (speed<0) ? HIGH:LOW);
+            digitalWrite(MOTOR1_IN1, (speed>0) ? HIGH:LOW);
+            digitalWrite(MOTOR1_IN2, (speed<0) ? HIGH:LOW);
             break;
       }
 }
@@ -203,24 +203,23 @@ void setup()
     pinMode(DIGI02, INPUT);
     pinMode(DIGI11, INPUT);
     pinMode(DIGI12, INPUT);
-    pinMode(MTR_A1, OUTPUT);
-    pinMode(MTR_A2, OUTPUT);
-    pinMode(MTR_B1, OUTPUT);
-    pinMode(MTR_B2, OUTPUT);
+    pinMode(MOTOR0_IN1, OUTPUT);
+    pinMode(MOTOR0_IN2, OUTPUT);
+    pinMode(MOTOR1_IN1, OUTPUT);
+    pinMode(MOTOR1_IN2, OUTPUT);
     
-    digitalWrite(MTR_A1, LOW);
-    digitalWrite(MTR_A2, LOW);
-    digitalWrite(MTR_B1, LOW);
-    digitalWrite(MTR_B2, LOW);
+    digitalWrite(MOTOR0_IN1, LOW);
+    digitalWrite(MOTOR0_IN2, LOW);
+    digitalWrite(MOTOR1_IN1, LOW);
+    digitalWrite(MOTOR1_IN2, LOW);
     
-    int i;
-    for(i=0; i<numof(servoTable); i++)
-      ledcSetup(servoTable[i].ledc, 50/*Hz*/, 12/*bit*/);
+    ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
+    ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
     
-    ledcSetup(LEDC_CHANNEL_2, 255/*Hz*/, 8/*bit*/);
-    ledcSetup(LEDC_CHANNEL_3, 255/*Hz*/, 8/*bit*/);
-    ledcAttachPin(MTR_AE, LEDC_CHANNEL_2);
-    ledcAttachPin(MTR_BE, LEDC_CHANNEL_3);
+    ledcSetup(LEDC_MOTOR0, 255/*Hz*/, 8/*bit*/);
+    ledcSetup(LEDC_MOTOR1, 255/*Hz*/, 8/*bit*/);
+    ledcAttachPin(MOTOR0_EN, LEDC_MOTOR0);
+    ledcAttachPin(MOTOR1_EN, LEDC_MOTOR1);
     
     #ifndef PCMODE
     initWifi(mVersion, true, onConnect);

@@ -35,34 +35,25 @@ WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-#define Servo_PIN1  23
-#define Servo_PIN2   4
-#define MOTOR0_IN1  13
-#define MOTOR0_IN2  12
-#define MOTOR0_EN   18
-#define MOTOR1_IN1  14
-#define MOTOR1_IN2  15
-#define MOTOR1_EN   19
-
-#define ANA11   34  //I, GPIO34, ADC1_CH6
-#define ANA12   35  //I, GPIO35, ADC1_CH7
-#define DIGI01  32  //IO, GPIO32, ADC1_CH4, TOUCH9
-#define DIGI02  33  //IO, GPIO33, ADC1_CH5, TOUCH8
-#define DIGI11  26  //IO, GPIO25, DAC_1, ADC2_CH8
-#define DIGI12  25  //IO, GPIO26, DAC_2, ADC2_CH9
-
-#define NEO_PIN     27
-
-#define LEDC_SERVO0  0
-#define LEDC_SERVO1  1
+#define P_MOTOR0_IN1  13
+#define P_MOTOR0_IN2  12
+#define P_MOTOR0_EN   18
+#define P_MOTOR1_IN1  14
+#define P_MOTOR1_IN2  15
+#define P_MOTOR1_EN   19
 #define LEDC_MOTOR0  2
 #define LEDC_MOTOR1  3
 
 #define MotorL 0
 #define MotorR 1
 
+#define LEDC_SERVO0  0
+#define LEDC_SERVO1  1
+
+#define P_NEOPIXEL     27
+
 const uint16_t PixelCount = 64;
-NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledStrip(PixelCount, NEO_PIN);
+NeoPixelBus<NeoGrbFeature, Neo800KbpsMethod> ledStrip(PixelCount, P_NEOPIXEL);
 
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{0,23},{1,4}};
 void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
@@ -77,7 +68,7 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
     else if(data > 100) data = 100;
     if(idx == 1) data = -data;
     pwmWidth = (data * srvCoef) / 100 + srvZero;
-    if(data==0) pwmWidth=0;
+    if(data==0 && continuous!=2) pwmWidth=0;
   } else {
     #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
     #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
@@ -99,12 +90,12 @@ void _setMotor(uint8_t motorNo, int16_t speed){
 
   switch(motorNo) {
   case MotorL:
-    digitalWrite(MOTOR0_IN1, (speed>0) ? HIGH:LOW);
-    digitalWrite(MOTOR0_IN2, (speed<0) ? HIGH:LOW);
+    digitalWrite(P_MOTOR0_IN1, (speed>0) ? HIGH:LOW);
+    digitalWrite(P_MOTOR0_IN2, (speed<0) ? HIGH:LOW);
     break;
   case MotorR:
-    digitalWrite(MOTOR1_IN1, (speed>0) ? HIGH:LOW);
-    digitalWrite(MOTOR1_IN2, (speed<0) ? HIGH:LOW);
+    digitalWrite(P_MOTOR1_IN1, (speed>0) ? HIGH:LOW);
+    digitalWrite(P_MOTOR1_IN2, (speed<0) ? HIGH:LOW);
     break;
   }
 }
@@ -112,13 +103,13 @@ void _setMotor(uint8_t motorNo, int16_t speed){
 struct { int16_t L; int16_t R;
 } static const dir_table[7] = {
 //  L   R
-  { 0,  0},  // STOP
-  { 1,  1},  // FORWARD
-  { 0,  1},  // LEFT
-  { 1,  0},  // RIGHT
-  {-1, -1},  // BACK
-  {-1,  1},  // ROLL_LEFT
-  { 1, -1},  // ROLL_RIGHT
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
 };
 
 void _setCar(uint8_t direction, uint8_t speed)
@@ -127,57 +118,28 @@ void _setCar(uint8_t direction, uint8_t speed)
   _setMotor(MotorR, speed * dir_table[direction].R);
 }
 
-uint16_t getAdc(uint8_t index)
+//#define colorSaturation 32
+void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b)
 {
-  uint8_t adcCh[2] = {ANA11,ANA12};
-  if(index>=2) return 0;
-  return analogRead(adcCh[index]);
+  for(uint8_t i=0; i<PixelCount; i++)
+    ledStrip.SetPixelColor(i, r, g, b);
+  ledStrip.Show();
 }
-
-uint8_t getDigital(uint8_t index)
-{
-  uint8_t din_ch[4] = {DIGI01,DIGI02,DIGI11,DIGI12};
-  if(index>=4) return 0;
-  return digitalRead(din_ch[index]);
-}
-
-/********************************
-* for LED Control
-*********************************/
-#define colorSaturation 32
-RgbColor red(colorSaturation, 0, 0);
-RgbColor green(0, colorSaturation, 0);
-RgbColor blue(0, 0, colorSaturation);
-RgbColor white(colorSaturation);
-RgbColor black(0);
 
 void SetNeoPixel(uint8_t index){
-  RgbColor* npcolor = NULL;
+  int r,g,b;
   switch(index) {
-    case 0: npcolor = &black; break;
-    case 1: npcolor = &red;   break;
-    case 2: npcolor = &green; break;
-    case 3: npcolor = &blue;  break;
-    case 4: npcolor = &white; break;
+    case 0: r=0;  g=0;  b=0;  break;  // black
+    case 1: r=32; g=0;  b=0;  break;  // red
+    case 2: r=0;  g=32; b=0;  break;  // green
+    case 3: r=0;  g=0;  b=32; break;  // blue
+    case 4: r=32; g=32; b=0;  break;  // yellow
+    case 5: r=0;  g=32; b=32; break;  // cyan
+    case 6: r=32; g=0;  b=32; break;  // magenta
+    case 7: r=32; g=32; b=32; break;  // white
     default: return;
   }
-
-  for(uint8_t i=0; i<PixelCount; i++){
-    ledStrip.SetPixelColor(i, *npcolor);
-  }
-  ledStrip.Show();
-}
-
-void SetNeoPixelRGB(uint8_t r, uint8_t g, uint8_t b){
-  if(r>32) r=32;
-  if(g>32) g=32;
-  if(b>32) b=32;
-  RgbColor color(r,g,b);
-
-  for(uint8_t i=0; i<PixelCount; i++){
-    ledStrip.SetPixelColor(i, color);
-  }
-  ledStrip.Show();
+  SetNeoPixelRGB(r, g, b);
 }
 
 void onConnect(String ip)
@@ -192,29 +154,23 @@ Serial.begin(115200);
 
 ledStrip.Begin();
 
-pinMode(ANA11, INPUT);
-pinMode(ANA12, INPUT);
-pinMode(DIGI01, INPUT);
-pinMode(DIGI02, INPUT);
-pinMode(DIGI11, INPUT);
-pinMode(DIGI12, INPUT);
-pinMode(MOTOR0_IN1, OUTPUT);
-pinMode(MOTOR0_IN2, OUTPUT);
-pinMode(MOTOR1_IN1, OUTPUT);
-pinMode(MOTOR1_IN2, OUTPUT);
-
-digitalWrite(MOTOR0_IN1, LOW);
-digitalWrite(MOTOR0_IN2, LOW);
-digitalWrite(MOTOR1_IN1, LOW);
-digitalWrite(MOTOR1_IN2, LOW);
-
+// DC motor
+digitalWrite(P_MOTOR0_IN1, LOW);
+digitalWrite(P_MOTOR0_IN2, LOW);
+digitalWrite(P_MOTOR1_IN1, LOW);
+digitalWrite(P_MOTOR1_IN2, LOW);
+pinMode(P_MOTOR0_IN1, OUTPUT);
+pinMode(P_MOTOR0_IN2, OUTPUT);
+pinMode(P_MOTOR1_IN1, OUTPUT);
+pinMode(P_MOTOR1_IN2, OUTPUT);
 ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
+// servo motor
 ledcSetup(LEDC_MOTOR0, 255/*Hz*/, 8/*bit*/);
 ledcSetup(LEDC_MOTOR1, 255/*Hz*/, 8/*bit*/);
-ledcAttachPin(MOTOR0_EN, LEDC_MOTOR0);
-ledcAttachPin(MOTOR1_EN, LEDC_MOTOR1);
+ledcAttachPin(P_MOTOR0_EN, LEDC_MOTOR0);
+ledcAttachPin(P_MOTOR1_EN, LEDC_MOTOR1);
 
 #ifndef PCMODE
 initWifi(mVersion, true, onConnect);
@@ -254,8 +210,9 @@ initWifi(mVersion, false, onConnect);
 
 		["w", "NeoPixel %d.neopixel",					"setNeoPixel",		"white",	{"remote":["B"],		"func":"SetNeoPixel({0});"}],
 		["w", "NeoPixel red %n, green %n, blue %n",		"setNeoPixelRGB",	32,32,32,	{"remote":["B","B","B"],"func":"SetNeoPixelRGB({0},{1},{2});"}],
-		["B", "read digital pin %d.din",				"getDigital",		0,			{"remote":["B",		"B"],"func":"getDigital({0})"}],
-		["R", "read analog pin %d.analog",				"getAnalog",		0,			{"remote":["B",		"S"],"func":"getAdc({0})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		33,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		33,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["R", "read analog pin %n average %n times",	"getAnalog",		35,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
 
 		["-"],
 
@@ -265,20 +222,20 @@ initWifi(mVersion, false, onConnect);
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
+		"digital":["HIGH","LOW"],
 		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
 		"motorch"	:["ch-L","ch-R"],
 		"servoch"	:[0,1],
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
 
-		"neopixel"	:["off","red","green","blue","white"],
-		"din"		:[0,1,2,3],
-		"analog"	:[0,1],
+		"neopixel"	:["off","red","green","blue","yellow","cyan","magenta","white"],
 	},
 	"values":{
+		"HIGH":1,"LOW":0,
 		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
-		"off":0,"red":1,"green":2,"blue":3,"white":4,
+		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"cyan":5,"magenta":6,"white":7,
 	},
 	"translators":{
 		"ja":{
@@ -288,8 +245,9 @@ initWifi(mVersion, false, onConnect);
 			"set servo %d.servoch %d.angle"					:"サーボ %d.servoch の角度を %d.angle にする",
 			"stop servo %d.servoch"							:"サーボ %d.servoch を止める",
 
-			"read digital pin %d.din"						:"デジタルピン %d.din",
-			"read analog pin %d.analog"						:"アナログピン %d.analog",
+			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
+			"read digital pin %n"							:"デジタルピン %n",
+			"read analog pin %n average %n times"			:"アナログピン %n の %n 回平均",
 		}
 	}
 }
