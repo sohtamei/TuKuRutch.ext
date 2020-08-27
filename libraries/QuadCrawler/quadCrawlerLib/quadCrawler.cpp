@@ -1,531 +1,598 @@
+// copyright to SohtaMei & H.Sunakawa 2020.
+
 #include <stdint.h>
-//#include <Wire.h> is necessary in .ino
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
+#include <EEPROM.h>
 #include "quadCrawler.h"
 
 // ポート定義
 
-#define Bz 8    // Bzzer Pin
-#define Echo A0 // Echo Pin
-#define Trig A1 // Trigger Pin
-#define Moter_EN A3 // Surbo Moter Drive Enable Pin
+#define P_Bz		8	// Bzzer Pin
+#define P_Echo		A0	// P_Echo Pin
+#define P_Trig		A1	// Trigger Pin
+#define P_Moter_EN	A3	// Surbo Moter Drive Enable Pin
+#define P_Neopix	A2
+
+#define EEPROM_CALIB	0x00
+static int8_t calib[8] = {0,0,0,0,0,0,0,0};
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
-#define servo_min 200  // Min pulse length out of 4096
-#define servo_max 400 // Max pulse length out of 4096
-#define deg_max   130  // Max deg
-#define deg_min   20   // Min deg
-
-
-//各サーボ定義
-//Right Front Knee SV1-1
-#define RFK  1
-#define RFK_N 70
-#define RFK_U 58
-#define RFK_D 80
-#define RFK_UD 130
-
-//Right Front Crach SV1-3
-#define RFC  0
-#define RFC_N 85
-#define RFC_R 60
-#define RFC_F 90
-
-//Right Rear Knee SV3-1
-#define RRK  5
-#define RRK_N 68
-#define RRK_U 55
-#define RRK_D 75
-#define RRK_UD 130
-
-//Right Rear Crach SV3-4
-#define RRC  4
-#define RRC_N 90
-#define RRC_R 80
-#define RRC_F 110
-
-//Left Front Knee SV2-1
-#define LFK  3
-#define LFK_N 90
-#define LFK_U 105
-#define LFK_D 80
-#define LFK_UD 20
-
-//Left Front Crach SV2-4
-#define LFC  2
-#define LFC_N 90
-#define LFC_R 110
-#define LFC_F 80
-
-//Left Rear Knee SV4-1
-#define LRK  7
-#define LRK_N 90
-#define LRK_U 103
-#define LRK_D 80
-#define LRK_UD 20
-
-//Left Rear Crach SV4-4
-#define LRC  6
-#define LRC_N 90
-#define LRC_R 90
-#define LRC_F 60
+#define SERVO_MIN 90L   // Min pulse length out of 4096 (実測 75)
+#define SERVO_MAX 545L  // Max pulse length out of 4096 (実測 560)
+#define DEG_MIN   -5L   // Min deg
+#define DEG_MAX   185L  // Max deg (実測190度)
 
 enum {
-  ServoOff = 0,
-  ServoNeutral,
-  ServoNormal,
-  ServoRepeat0,
-  ServoRepeat1,
-  ServoRepeat2,
-  ServoRepeat3,
-  ServoPose,
+	RFK = 0,	// right-front-knee
+	RFC,		//            -crotch
+	RRK,		//      -rear
+	RRC,
+	LFK,		// left
+	LFC,
+	LRK,
+	LRC,
 };
 
-#define RATE  0.6
+#define INV		127		// invalid
+
+// knee
+#define K_min	(-20)	// min(up)
+#define K_max	(100)	// max(down)
+
+#define K_U		(-20)
+#define K_D		( 10)
+#define K_D2	( 60)
+
+// crotch
+#define C_Fmin	(-55)	// frontLeg-front
+#define C_Fmax	( 60)	//         -rear
+#define C_Rmin	(-90)	// rearLeg
+#define C_Rmax	( 45)
+
+// crotch walk position
+#define C_FR1	(0)		// FW/RW
+#define C_FR2	(55)
+#define C_LR1	(0)		// Left/right
+#define C_LR2	(45)
+#define C_CW	(25)	// cw/ccw
+
+// neutral
+#define RFK_N	79
+#define RRK_N	77
+#define LFK_N	94
+#define LRK_N	94
+
+#define RFC_N	90
+#define RRC_N	94
+#define LFC_N	94
+#define LRC_N	94
+
+enum {
+	ServoOff = 0,
+	ServoSet,
+	ServoWalk,
+
+	ServoNeutral,
+	ServoRepeat0,
+	ServoRepeat1,
+};
 
 static uint8_t  servoState = 0;
 static uint32_t servoTime = 0;
 static uint16_t servoDelay = quadCrawler_fast;
-static uint16_t accel_duration = 0;
-static int32_t inv_accel = 1;
-
-static const uint8_t (*servoMotion)[8] = NULL;
-static uint8_t servoStart[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
-static uint8_t servoEnd[8] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
-
-static uint8_t cur_com = stop;
-
+static uint8_t cur_com = COM_STOP;
 extern volatile unsigned long timer0_millis;
 
+static int8_t servoStart[8] = {0,0,0,0,0,0,0,0};
+static int8_t servoEnd[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
 
-static void set_servo_deg(uint8_t id, unsigned int deg) {
-  const uint8_t channel_table[] = {RFK, RFC, RRK, RRC, LFK, LFC, LRK, LRC};
-  uint8_t channel = channel_table[id];
-  unsigned int setdata;
-  setdata = (unsigned int)((deg - deg_min) *  (servo_max - servo_min) / (deg_max - deg_min)) + servo_min;
-  if (setdata <= servo_max) {
-    if (setdata >= servo_min) {
-      pwm.setPWM(channel, 0, setdata);
-      //delay(20);
-    }
-  }
+//---------------------------------------------------------
+
+static void _set_servo(uint8_t id, int16_t deg)
+{
+										// RFK		RFC		RRK		RRC		LFK		LFC		LRK		LRC
+	static const  int8_t polTbl[8]		= {+1,		-1,		+1,		-1,		-1,		+1,		-1,		+1};
+	static const  int8_t neutralTbl[8]	= {RFK_N,	RFC_N,	RRK_N,	RRC_N,	LFK_N,	LFC_N,	LRK_N,	LRC_N};
+	static const  int8_t minTbl[8]		= {K_min,	C_Fmin,	K_min,	C_Rmin,	K_min,	C_Fmin,	K_min,	C_Rmin};
+	static const  int8_t maxTbl[8]		= {K_max,	C_Fmax,	K_max,	C_Rmax,	K_max,	C_Fmax,	K_max,	C_Rmax};
+	static const uint8_t channelTbl[8]	= {1,		0,		5,		4,		3,		2,		7,		6};
+
+	if(id >= sizeof(channelTbl)) return;
+
+	if(deg > maxTbl[id]) deg = maxTbl[id];
+	else if(deg < minTbl[id]) deg = minTbl[id];
+
+	deg = (deg + calib[id]) * polTbl[id] + neutralTbl[id];
+	if(deg > DEG_MAX) deg = DEG_MAX;
+	else if(deg < DEG_MIN) deg = DEG_MIN;
+
+	pwm.setPWM(channelTbl[id], 0, ((deg-DEG_MIN)*(SERVO_MAX-SERVO_MIN)) / (DEG_MAX-DEG_MIN) + SERVO_MIN);
 }
 
-static void set_servo_deg8(const uint8_t motion[8], uint8_t state) {
-  uint8_t i;
-  for(i = 0; i < 8; i++) {
-    if(state >= ServoRepeat0 && state <= ServoRepeat3 || state == ServoNeutral) {
-      set_servo_deg(i, servoEnd[i]);
-      servoStart[i] = servoEnd[i];
-      if(motion[i] != 0xFF) {
-        servoEnd[i] = motion[i];
-      }
-    } else {
-      if(motion[i] != 0xFF) {
-        set_servo_deg(i, motion[i]);
-        servoEnd[i] = motion[i];
-      }
-    }
-  }
-  servoState = state;
-  servoTime = timer0_millis;
+static void setServo1(uint8_t id, int16_t deg)
+{
+	_set_servo(id, deg);
+	servoEnd[id] = deg;
 }
 
-static void set_servo_motion(const uint8_t (*motion)[8], uint8_t state) {
-  servoMotion = motion;
-  set_servo_deg8(motion[0], state);
+static void setServo(const int8_t motion[8])
+{
+	uint8_t i;
+	for(i = 0; i < 8; i++)
+		if(motion[i] != INV) setServo1(i, motion[i]);
+	servoState = ServoSet;
+	servoTime = timer0_millis;
 }
 
-static void set_servo_off8(uint8_t state) {
-  uint8_t i;
-  for(i = 0; i < 8; i++)
-    pwm.setPWM(i, 0, 0);
-  servoState = state;
-  servoTime = timer0_millis;
-  cur_com = stop;
+static void setServoOff(void)
+{
+	uint8_t i;
+	for(i = 0; i < 8; i++)
+		pwm.setPWM(i, 0, 0);
+	servoState = ServoOff;
+	cur_com = COM_STOP;
 }
 
-static void sv_init() {
-  const uint8_t motion[] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
-  set_servo_motion(&motion, ServoNeutral);
+//---------------------------------------------------------
+
+static void setTarget(const int8_t motion[8], uint8_t state)
+{
+	uint8_t i;
+	for(i = 0; i < 8; i++) {
+	//	_set_servo(i, servoEnd[i]);
+		servoStart[i] = servoEnd[i];
+		if(motion[i] != INV)
+			servoEnd[i] = motion[i];
+	}
+	servoState = state;
+	servoTime = timer0_millis;
 }
 
-static const uint8_t angle_table[5][8] = {
-	{-1,    -1,    -1,    -1,    -1,    -1,    -1,    -1},			// keep
-	{RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N},		// neutral
-	{RFK_U, RFC_R, RRK_U, RRC_R, LFK_U, LFC_R, LRK_U, LRC_R},		// up/rear
-	{RFK_D, RFC_F, RRK_D, RRC_F, LFK_D, LFC_F, LRK_D, LRC_F},		// down/forward
-	{RFK_UD,RFC_N, RRK_UD,RRC_N, LFK_UD,LFC_N, LRK_UD,LRC_N},		// downMax
-};
+static void setTargetLoop(int elapsed)
+{
+	int32_t k256 = (elapsed * 256)/servoDelay;		// 距離の係数*256
+	uint8_t i;
+	for(i = 0; i < 8; i++) {
+		if(servoEnd[i] != servoStart[i])
+			_set_servo(i, ((((int)servoEnd[i] - (int)servoStart[i]) * k256)>>8) + servoStart[i]);
+	}
+}
+
+static const int8_t (*repeatMotion)[8] = NULL;
+static void repeatServo(const int8_t (*motion)[8])
+{
+	repeatMotion = motion;
+	setTarget(motion[0], ServoRepeat0);
+}
+
+static void neutralServo()
+{
+	static const int8_t motion[] = {0,0,0,0,0,0,0,0};
+	setTarget(motion, ServoNeutral);
+}
+
+//---------------------------------------------------------
+
+typedef struct { int8_t RF; int8_t LF; int8_t RR; int8_t LR; } s_walk;
+static const s_walk* walkTable = NULL;
+
+typedef struct { int16_t RF; int16_t LF; int16_t RR; int16_t LR; } s_walkCalib;
+static s_walkCalib walkCalib256;
+static const s_walkCalib walkCalibInit = {256,256,256,256};
+
+static uint8_t firstFlag = 0;
+static void walkServo(s_walk pWalk[2])
+{
+	walkTable = pWalk;
+	servoState = ServoWalk;
+	servoTime = timer0_millis;
+	firstFlag = 1;
+}
+
+static void walkServoLoop(int elapsed)
+{
+	#define SwingDuration1 30		// up
+	#define SwingDuration2 100		// swing
+
+	int32_t t;
+	t = elapsed;
+	if(t < SwingDuration1) {
+		setServo1(RFK, K_U);
+		setServo1(LRK, K_U);
+	} else if(t < SwingDuration2) {
+		setServo1(RFC, walkTable[0].RF);
+		setServo1(LRC, walkTable[0].LR);
+	} else {
+		int32_t k256 = ((t-SwingDuration2)*256)/(servoDelay*4);
+		setServo1(RFK, K_D);
+		setServo1(LRK, K_D);
+		setServo1(RFC, walkTable[0].RF + (walkTable[1].RF*k256*walkCalib256.RF)/65536);
+		setServo1(LRC, walkTable[0].LR + (walkTable[1].LR*k256*walkCalib256.LR)/65536);
+	}
+
+	if(firstFlag) {
+		if(t < SwingDuration1) {
+			setServo1(LFK, K_U);
+			setServo1(RRK, K_U);
+		} else if(t < SwingDuration2) {
+			setServo1(LFC, walkTable[0].LF + walkTable[1].LF/2);
+			setServo1(RRC, walkTable[0].RR + walkTable[1].RR/2);
+		} else {
+			firstFlag = 0;
+		}
+	} else {
+		t = elapsed + (SwingDuration2 + (servoDelay*4))/2;
+		if(t >= SwingDuration2 + (servoDelay*4))
+			t -= SwingDuration2 + (servoDelay*4);
+
+		if(t < SwingDuration1) {
+			setServo1(LFK, K_U);
+			setServo1(RRK, K_U);
+		} else if(t < SwingDuration2) {
+			setServo1(LFC, walkTable[0].LF);
+			setServo1(RRC, walkTable[0].RR);
+		} else {
+			int32_t k256 = ((t-SwingDuration2)*256)/(servoDelay*4);
+			setServo1(LFK, K_D);
+			setServo1(RRK, K_D);
+			setServo1(LFC, walkTable[0].LF + (walkTable[1].LF*k256*walkCalib256.LF)/65536);
+			setServo1(RRC, walkTable[0].RR + (walkTable[1].RR*k256*walkCalib256.RR)/65536);
+		}
+	}
+	if(elapsed >= SwingDuration2 + (servoDelay*4))
+		servoTime = timer0_millis;
+}
+
+//---------------------------------------------------------
+
+void quadCrawler_setPose1(uint8_t id, int8_t knee, int8_t crotch)
+{
+	if(id >= 4) return;
+
+	setServo1(id*2+0, knee);
+	setServo1(id*2+1, crotch);
+	servoState = ServoSet;
+	servoTime = timer0_millis;
+	cur_com = COM_POSE;
+}
 
 void quadCrawler_setPose4(
-	uint8_t rfk, uint8_t rfc,
-	uint8_t rrk, uint8_t rrc,
-	uint8_t lfk, uint8_t lfc,
-	uint8_t lrk, uint8_t lrc)
+	int8_t rfk, int8_t rfc,
+	int8_t rrk, int8_t rrc,
+	int8_t lfk, int8_t lfc,
+	int8_t lrk, int8_t lrc)
 {
-	uint8_t motion[8];
-	motion[0] = angle_table[rfk][0];
-	motion[1] = angle_table[rfc][1];
-	motion[2] = angle_table[rrk][2];
-	motion[3] = angle_table[rrc][3];
-	motion[4] = angle_table[lfk][4];
-	motion[5] = angle_table[lfc][5];
-	motion[6] = angle_table[lrk][6];
-	motion[7] = angle_table[lrc][7];
-	set_servo_motion(&motion, ServoPose);
-	cur_com = pose;
-}
-
-void quadCrawler_setPose1(uint8_t index, uint8_t knee, uint8_t crach)
-{
-	if(index >= 4) return;
-
-	uint8_t motion[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
-	motion[index*2+0] = angle_table[knee][index*2+0];
-	motion[index*2+1] = angle_table[crach][index*2+1];
-	set_servo_motion(&motion, ServoPose);
-	cur_com = pose;
+	quadCrawler_setPose1(0, rfk, rfc);
+	quadCrawler_setPose1(1, rrk, rrc);
+	quadCrawler_setPose1(2, lfk, lfc);
+	quadCrawler_setPose1(3, lrk, lrc);
 }
 
 uint8_t quadCrawler_checkServoON(void)
 {
-  return (servoState != ServoOff);
+	return (servoState != ServoOff);
 }
 
 void quadCrawler_servoLoop(void)
 {
-  int32_t elapsed = (timer0_millis - servoTime) & 0x7FFFFFFF;
-  // サーボOFFか、サーボHoldか、delay時間が経過してないとき
-  switch(servoState) {
-  case ServoOff:
-    return;
+	int32_t elapsed = (timer0_millis - servoTime) & 0x7FFFFFFF;
+	switch(servoState) {
+	case ServoOff:
+		break;
 
-  case ServoPose:
-  case ServoNormal:
-    if(elapsed >= 180*1000UL) {
-      set_servo_off8(ServoOff);
-      digitalWrite(13, 0);
-      return;
-    }
-    if((elapsed >> 8) & 1)      // 256
-      digitalWrite(13, 1);
-    else
-      digitalWrite(13, 0);
-    return;
+	// 固定姿勢: 赤点滅、180秒後にサーボOFF
+	case ServoSet:
+		if(elapsed >= 180*1000UL) {
+			setServoOff();
+			digitalWrite(P_LED, 0);
+			return;
+		}
+		if((elapsed >> 8) & 1)      // 256
+			digitalWrite(P_LED, 1);
+		else
+			digitalWrite(P_LED, 0);
+		break;
 
-  default:
-    if(elapsed < servoDelay + accel_duration/2) {	// 動作時間=servoDelay + accel_duration/2
-	  int32_t k256;		// 距離の係数*256
-	  if(elapsed < accel_duration) {
-		// 等加速度運動 v=elapsed/inv_accel, x=elapsed^2/inv_accel/2
-	    k256 = (elapsed * elapsed * (256/2))/inv_accel;
-	  } else {
-	    // 等速運動 v=1/servoDelay, x=(elapsed - accel_duration/2)*v
-	    k256 = ((elapsed - accel_duration/2) * 256)/servoDelay;
-	  }
+	case ServoWalk:
+		walkServoLoop(elapsed);
+		break;
 
-	  uint8_t i;
-	  for(i = 0; i < 8; i++) {
-	    if(servoEnd[i] != servoStart[i])
-		  set_servo_deg(i, ((((int)servoEnd[i] - (int)servoStart[i]) * k256)>>8) + servoStart[i]);
-	  }
-      return;
-    }
-    break;
-  }
+	case ServoRepeat0:
+		if(elapsed < servoDelay)
+			setTargetLoop(elapsed);
+		else
+			setTarget(repeatMotion[1], ServoRepeat1);
+		break;
 
-  // normal-なにもしない、repeat-動作を繰り返し
-  switch(servoState) {
-  case ServoRepeat0:
-    set_servo_deg8(servoMotion[1], ServoRepeat1);
-    break;
-  case ServoRepeat1:
-    set_servo_deg8(servoMotion[2], ServoRepeat2);
-    break;
-  case ServoRepeat2:
-    set_servo_deg8(servoMotion[3], ServoRepeat3);
-    break;
-  case ServoRepeat3:
-    set_servo_deg8(servoMotion[0], ServoRepeat0);
-    break;
-  case ServoNeutral:
-    set_servo_off8(ServoOff);
-    break;
-  }
+	case ServoRepeat1:
+		if(elapsed < servoDelay)
+			setTargetLoop(elapsed);
+		else
+			setTarget(repeatMotion[0], ServoRepeat0);
+		break;
+
+	case ServoNeutral:
+		if(elapsed < servoDelay)
+			setTargetLoop(elapsed);
+		else
+			setServoOff();
+		break;
+
+	default:
+		break;
+	}
 }
 
-void quadCrawler_setSpeed(uint16_t speed) {
-  servoDelay = speed;
-  accel_duration = servoDelay * RATE;				// 加速時間
-  inv_accel = ((uint32_t)servoDelay) * accel_duration;	// v=1/servoDelay, 加速度係数=1/servoDelay/accel_duration,
-														// 加速度係数(逆数)=servoDelay*accel_duration
+void quadCrawler_setSpeed(uint16_t speed)
+{
+	servoDelay = speed;
+	memcpy(&walkCalib256, &walkCalibInit, sizeof(walkCalib256));
 }
 
-void quadCrawler_Walk(uint16_t speed, uint8_t com) {
-  quadCrawler_setSpeed(speed);
+void quadCrawler_setSpeed(uint16_t speed, int16_t x, int16_t y)
+{
+	servoDelay = speed;
+	memcpy(&walkCalib256, &walkCalibInit, sizeof(walkCalib256));
 
-  if (cur_com == com) return;
-  cur_com = com;
+	if(x == 0 || y == 0) return;
 
-  if (com == stop) {
-    const uint8_t motion[] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
+	// x/yで進行方向 微調整
+	int16_t calib;
+	switch(cur_com) {
+	case COM_RW:
+		x = -x;
+	case COM_FW:
+		calib = x*256L*2/y;
+		if(calib>=0)
+			walkCalib256.RF = walkCalib256.RR = 256 - calib;
+		else
+			walkCalib256.LF = walkCalib256.LR = 256 + calib;
+		break;
 
-    // normal, repeatのとき : neutral姿勢
-    if(servoState != ServoNeutral && servoState != ServoOff) {
-      set_servo_motion(&motion, ServoNeutral);
-    }
-  }
-  else if (com == fw) {
-    //Serial.println ("-fw");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_R, -1,    LFC_R, -1,    LRC_F},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1,  },
-                           {-1,    RFC_R, -1,    RRC_F, -1,    LFC_F, -1,    LRC_R},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1,  }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == rw) {
-    //Serial.println ("-rw");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_R, -1,    LFC_R, -1,    LRC_F},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1,  },
-                           {-1,    RFC_R, -1,    RRC_F, -1,    LFC_F, -1,    LRC_R},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1,  }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == cw) {
-    //Serial.println ("-cw");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_R, -1,    LFC_F, -1,    LRC_R},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1,  },
-                           {-1,    RFC_R, -1,    RRC_F, -1,    LFC_R, -1,    LRC_F},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1,  }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == ccw) {
-    //Serial.println ("-ccw");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_R, -1,    LFC_F, -1,    LRC_R},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1,  },
-                           {-1,    RFC_R, -1,    RRC_F, -1,    LFC_R, -1,    LRC_F},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1,  }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == Rigt) {
-    //Serial.println ("-right");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_F, -1,    LFC_F, -1,    LRC_F},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1,  },
-                           {-1,    RFC_R, -1,    RRC_R, -1,    LFC_R, -1,    LRC_R},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1,  }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == Left) {
-    //Serial.println ("-right");
-    static const uint8_t motion[4][8] = {
-                           {-1,    RFC_F, -1,    RRC_F, -1,    LFC_F, -1,    LRC_F},
-                           {RFK_D, -1,    RRK_U, -1,    LFK_U, -1,    LRK_D, -1   },
-                           {-1,    RFC_R, -1,    RRC_R, -1,    LFC_R, -1,    LRC_R},
-                           {RFK_U, -1,    RRK_D, -1,    LFK_D, -1,    LRK_U, -1   }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-/*
-  else if (com == nt) {
-    //Serial.println ("-nutral");
-    const uint8_t motion[] = {RFK_N, RFC_N, RRK_N, RRC_N, LFK_N, LFC_N, LRK_N, LRC_N};
-    set_servo_motion(&motion, ServoNormal);
-  }
-*/
-  else if (com == all_up) {
-    //Serial.println ("-all up");
-    const uint8_t motion[] = {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == all_dn) {
-    //Serial.println ("-all down");
-    const uint8_t motion[] = {RFK_UD,-1,    RRK_UD,-1,    LFK_UD,-1,    LRK_UD,-1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == t_dn) {
-    //Serial.println ("-Hip up");
-    const uint8_t motion[] = {RFK_U, -1,    RRK_UD,-1,    LFK_U, -1,    LRK_UD,-1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == h_dn) {
-    //Serial.println ("-Top up");
-    const uint8_t motion[] = {RFK_UD,-1,    RRK_U, -1,    LFK_UD,-1,    LRK_U, -1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == l_dn) {
-    //Serial.println ("-Right up");
-    const uint8_t motion[] = {RFK_U, -1,    RRK_U, -1,    LFK_UD,-1,    LRK_UD,-1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == r_dn) {
-    //Serial.println ("Left up");
-    const uint8_t motion[] = {RFK_UD,-1,    RRK_UD,-1,    LFK_U, -1,    LRK_U, -1   };
-    set_servo_motion(&motion, ServoNormal);
-  }
-  else if (com == t_up_dn) {
-    static const uint8_t motion[4][8] = {
-                           {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_U, -1,    RRK_UD,-1,    LFK_U, -1,    LRK_UD,-1   },
-                           {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_U, -1,    RRK_UD,-1,    LFK_U, -1,    LRK_UD,-1   }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == l_r_up) {
-    static const uint8_t motion[4][8] = {
-                           {RFK_UD,-1,    RRK_UD,-1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_U, -1,    RRK_U, -1,    LFK_UD,-1,    LRK_UD,-1   },
-                           {RFK_UD,-1,    RRK_UD,-1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_U, -1,    RRK_U, -1,    LFK_UD,-1,    LRK_UD,-1   }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else if (com == all_up_dn) {
-    static const uint8_t motion[4][8] = {
-                           {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_UD,-1,    RRK_UD,-1,    LFK_UD,-1,    LRK_UD,-1   },
-                           {RFK_U, -1,    RRK_U, -1,    LFK_U, -1,    LRK_U, -1   },
-                           {RFK_UD,-1,    RRK_UD,-1,    LFK_UD,-1,    LRK_UD,-1   }};
-    set_servo_motion(motion, ServoRepeat0);
-  }
-  else {
-
-  }
+	case COM_RIGHT:
+		y = -y;
+	case COM_LEFT:
+		calib = y*256L*2/x;
+		if(calib>=0)
+			walkCalib256.LR = walkCalib256.RR = 256 - calib;
+		else
+			walkCalib256.LF = walkCalib256.RF = 256 + calib;
+		break;
+	}
 }
 
+void quadCrawler_Walk(uint16_t speed, uint8_t com)
+{
+	quadCrawler_setSpeed(speed);
 
-#define Neopix A2
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(8, Neopix, NEO_GRB + NEO_KHZ800);
+	if (cur_com == com) return;
+	cur_com = com;
 
-static void colorWipe(uint32_t c, uint8_t wait) {
-  for (uint16_t i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-    strip.show();
-    delay(wait);
-  }
+	switch(com) {
+	case COM_STOP:
+		// normal, repeatのとき : neutral姿勢
+		if(servoState != ServoNeutral && servoState != ServoOff)
+			neutralServo();
+		break;
+									//	RF				LF				RR				LR
+	case COM_FW: {
+		static const s_walk walk[2] = {	{+C_FR1,		+C_FR1,			-C_FR2,			-C_FR2},
+										{+(C_FR2-C_FR1),+(C_FR2-C_FR1),	-(C_FR1-C_FR2),	-(C_FR1-C_FR2)} };	walkServo(walk);	break; }
+	case COM_RW: {
+		static const s_walk walk[2] = {	{+C_FR2,		+C_FR2,			-C_FR1,			-C_FR1},
+										{+(C_FR1-C_FR2),+(C_FR1-C_FR2),	-(C_FR2-C_FR1),	-(C_FR2-C_FR1)} };	walkServo(walk);	break; }
+	case COM_LEFT: {
+		static const s_walk walk[2] = {	{-C_LR2,		-C_LR1,			+C_LR2,			+C_LR1},
+										{-(C_LR1-C_LR2),-(C_LR2-C_LR1),	+(C_LR1-C_LR2),	+(C_LR2-C_LR1)} };	walkServo(walk);	break; }
+	case COM_RIGHT: {
+		static const s_walk walk[2] = {	{-C_LR1,		-C_LR2,			+C_LR1,			+C_LR2},
+										{-(C_LR2-C_LR1),-(C_LR1-C_LR2),	+(C_LR2-C_LR1),	+(C_LR1-C_LR2)} };	walkServo(walk);	break; }
+	case COM_CCW: {
+		static const s_walk walk[2] = {	{-C_CW,			+C_CW,			-C_CW,			+C_CW},
+										{+C_CW*2,		-C_CW*2,		+C_CW*2,		-C_CW*2} };		walkServo(walk);	break; }
+	case COM_CW: {
+		static const s_walk walk[2] = {	{+C_CW,			-C_CW,			+C_CW,			-C_CW},
+										{-C_CW*2,		+C_CW*2,		-C_CW*2,		+C_CW*2} };		walkServo(walk);	break; }
+
+										//	RF			RR			LF			LR
+	case COM_NEUTRAL: {
+		static const int8_t motion[] =		{0,0,		0,0,		0,0,		0,0};		setServo(motion);	break; }
+	case COM_ALL_UP: {
+		static const int8_t motion[] =		{K_U, INV,	K_U, INV,	K_U, INV,	K_U, INV};	setServo(motion);	break; }
+	case COM_ALL_DOWN: {
+		static const int8_t motion[] =		{K_D2,INV,	K_D2,INV,	K_D2,INV,	K_D2,INV};	setServo(motion);	break; }
+	case COM_T_DOWN: {
+		static const int8_t motion[] =		{K_U, INV,	K_D2,INV,	K_U, INV,	K_D2,INV};	setServo(motion);	break; }
+	case COM_H_DOWN: {
+		static const int8_t motion[] =		{K_D2,INV,	K_U, INV,	K_D2,INV,	K_U, INV};	setServo(motion);	break; }
+	case COM_L_DOWN: {
+		static const int8_t motion[] =		{K_U, INV,	K_U, INV,	K_D2,INV,	K_D2,INV};	setServo(motion);	break; }
+	case COM_R_DOWN: {
+		static const int8_t motion[] =		{K_D2,INV,	K_D2,INV,	K_U, INV,	K_U, INV};	setServo(motion);	break; }
+
+	case COM_T_UPDOWN: {
+		static const int8_t motion[2][8] = {{K_U, INV,	K_U, INV,	K_U, INV,	K_U, INV},
+											{K_U, INV,	K_D2,INV,	K_U, INV,	K_D2,INV}};	repeatServo(motion);	break; }
+	case COM_L_R_UP: {
+		static const int8_t motion[2][8] = {{K_D2,INV,	K_D2,INV,	K_U, INV,	K_U, INV},
+											{K_U, INV,	K_U, INV,	K_D2,INV,	K_D2,INV}};	repeatServo(motion);	break; }
+	case COM_ALL_UPDOWN: {
+		static const int8_t motion[2][8] = {{K_U, INV,	K_U, INV,	K_U, INV,	K_U, INV},
+											{K_D2,INV,	K_D2,INV,	K_D2,INV,	K_D2,INV}};	repeatServo(motion);	break; }
+	}
 }
 
-void quadCrawler_colorWipe(uint8_t color) {
-  switch(color) {
-  case COLOR_RED:
-    colorWipe(strip.Color(255,0,0), 10);
-    break;
-  case COLOR_GREEN:
-    colorWipe(strip.Color(0,255,0), 10);
-    break;
-  case COLOR_BLUE:
-    colorWipe(strip.Color(0,0,255), 10);
-    break;
-  case COLOR_YELLOW:
-    colorWipe(strip.Color(128,128,0), 10);
-    break;
-  case COLOR_PURPLE:
-    colorWipe(strip.Color(128,0,128), 10);
-    break;
-  case COLOR_LIGHTBLUE:
-    colorWipe(strip.Color(0,128,128), 10);
-    break;
-  default:
-    break;
-  }
+int16_t _calibServo(uint8_t id, uint8_t cmd)
+{
+	if(id>8) return 0;
+
+	switch(cmd) {
+	case CALIB_GET:
+		return calib[id];
+
+	case CALIB_INC:
+		if(calib[id] < 127)
+			calib[id]++;
+		break;
+
+	case CALIB_DEC:
+		if(calib[id] > -128)
+			calib[id]--;
+		break;
+
+	case CALIB_RESET:
+		calib[id] = 0;
+		break;
+
+	case CALIB_RESET_ALL:
+		memset(calib, 0, sizeof(calib));
+		for(int i = 0; i < 8; i++)
+			EEPROM.update(EEPROM_CALIB+i, calib[i]);
+		return 0;
+	}
+	EEPROM.update(EEPROM_CALIB+id, calib[id]);
+	setServo1(id, 0);
+
+	servoState = ServoSet;
+	servoTime = timer0_millis;
+	cur_com = COM_POSE;
+	return calib[id];
 }
 
-static uint32_t Wheel(byte WheelPos) {
-  WheelPos = 255 - WheelPos;
-  if (WheelPos < 85) {
-    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  }
-  if (WheelPos < 170) {
-    WheelPos -= 85;
-    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
-  WheelPos -= 170;
-  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+//---------------------------------------------------------
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(8, P_Neopix, NEO_GRB + NEO_KHZ800);
+
+static void colorWipe(uint32_t c, uint8_t wait)
+{
+	uint8_t i;
+	for (i = 0; i < strip.numPixels(); i++) {
+		strip.setPixelColor(i, c);
+		strip.show();
+		delay(wait);
+	}
 }
 
-void quadCrawler_rainbow(uint8_t wait) {
-  uint16_t i, j;
-
-  for (j = 0; j < 256; j++) {
-    for (i = 0; i < strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel((i + j) & 255));
-    }
-    strip.show();
-    delay(wait);
-  }
-}
-/*
-void quadCrawler_theaterChaseRainbow(uint8_t wait) {
-  for (int j = 0; j < 256; j++) {   // cycle all 256 colors in the wheel
-    for (int q = 0; q < 3; q++) {
-      for (uint16_t i = 0; i < strip.numPixels(); i = i + 3) {
-        strip.setPixelColor(i + q, Wheel( (i + j) % 255)); //turn every third pixel on
-      }
-      strip.show();
-
-      delay(wait);
-
-      for (uint16_t i = 0; i < strip.numPixels(); i = i + 3) {
-        strip.setPixelColor(i + q, 0);      //turn every third pixel off
-      }
-    }
-  }
-}
-*/
-
-double quadCrawler_getSonner() {
-  if(digitalRead(Echo) == HIGH)
-    return 100.0;
-
-  double data;
-  double distance;
-  digitalWrite(Trig, LOW);
-  delayMicroseconds(2);
-  digitalWrite(Trig, HIGH );
-  delayMicroseconds(10);
-  digitalWrite(Trig, LOW );
-  data = pulseIn(Echo, HIGH );
-  if (data > 0) {
-    distance = data * 0.017;
-    return distance;
-  }
-  else {
-    return 0;
-  }
+void quadCrawler_colorWipe(uint8_t color)
+{
+	switch(color) {
+	case COLOR_OFF:
+		colorWipe(strip.Color(0,0,0), 10);
+		break;
+	case COLOR_RED:
+		colorWipe(strip.Color(255,0,0), 10);
+		break;
+	case COLOR_GREEN:
+		colorWipe(strip.Color(0,255,0), 10);
+		break;
+	case COLOR_BLUE:
+		colorWipe(strip.Color(0,0,255), 10);
+		break;
+	case COLOR_YELLOW:
+		colorWipe(strip.Color(128,128,0), 10);
+		break;
+	case COLOR_PURPLE:
+		colorWipe(strip.Color(128,0,128), 10);
+		break;
+	case COLOR_LIGHTBLUE:
+		colorWipe(strip.Color(0,128,128), 10);
+		break;
+	default:
+		break;
+	}
 }
 
-void quadCrawler_beep(int time) {
-  for (int i = 0; i < time; i++) {
-    digitalWrite(Bz, HIGH);
-    delayMicroseconds(400);
-    digitalWrite(Bz, LOW );
-    delayMicroseconds(400);
-  }
+static uint32_t Wheel(byte WheelPos)
+{
+	WheelPos = 255 - WheelPos;
+	if (WheelPos < 85) {
+		return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+	}
+	if (WheelPos < 170) {
+		WheelPos -= 85;
+		return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+	}
+	WheelPos -= 170;
+	return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+}
+
+void quadCrawler_rainbow(uint8_t wait)
+{
+	uint16_t i, j;
+
+	for (j = 0; j < 256; j++) {
+		for (i = 0; i < strip.numPixels(); i++) {
+			strip.setPixelColor(i, Wheel((i + j) & 255));
+		}
+		strip.show();
+		delay(wait);
+	}
+}
+
+//---------------------------------------------------------
+
+double quadCrawler_getSonner()
+{
+	if(digitalRead(P_Echo) == HIGH)
+		return 100.0;
+
+	double data;
+	digitalWrite(P_Trig, LOW);	delayMicroseconds(2);
+	digitalWrite(P_Trig, HIGH);	delayMicroseconds(10);
+	digitalWrite(P_Trig, LOW);
+
+	data = pulseIn(P_Echo, HIGH);
+	if (data > 0) {
+		return data * 0.017;
+	} else {
+		return 0;
+	}
+}
+
+void quadCrawler_beep(int time)
+{
+	for (int i = 0; i < time; i++) {
+		digitalWrite(P_Bz, HIGH);
+		delayMicroseconds(400);
+		digitalWrite(P_Bz, LOW);
+		delayMicroseconds(400);
+	}
 }
 
 
 void quadCrawler_init(void)
 {
-  pinMode( Moter_EN, OUTPUT );
-  digitalWrite( Moter_EN, HIGH);
-  pinMode( Echo, INPUT_PULLUP );
-  pinMode( Trig, OUTPUT );
-  pinMode( Bz, OUTPUT );
-  pinMode( Sw1, INPUT_PULLUP );
-  pinMode( Sw2, INPUT_PULLUP );
-  pinMode( Sw3, INPUT_PULLUP );
-  pinMode( Sw4, INPUT_PULLUP );
+	pinMode(P_Moter_EN, OUTPUT);
+	digitalWrite(P_Moter_EN, HIGH);
 
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
-  pwm.begin();
-  pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
-  yield();
-  digitalWrite( Moter_EN, LOW);
-  sv_init();
+	pinMode(P_Echo, INPUT_PULLUP);
+	pinMode(P_Trig, OUTPUT);
+	pinMode(P_Bz, OUTPUT);
+	pinMode(P_Sw1, INPUT_PULLUP);
+	pinMode(P_Sw2, INPUT_PULLUP);
+	pinMode(P_Sw3, INPUT_PULLUP);
+	pinMode(P_Sw4, INPUT_PULLUP);
+
+	strip.begin();
+	strip.show(); // Initialize all pixels to 'off'
+
+	uint8_t i;
+	uint8_t initFlag = 1;
+	for(i = 0; i < 8; i++) {
+		calib[i] = EEPROM.read(EEPROM_CALIB+i);
+		if(calib[i] != -1) initFlag = 0;
+	}
+	if(initFlag) {
+		Serial.println("init calib");
+		memset(calib, 0, sizeof(calib));
+		for(i = 0; i < 8; i++)
+			EEPROM.update(EEPROM_CALIB+i, calib[i]);
+	}
+
+	pwm.begin();
+	pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
+	digitalWrite(P_Moter_EN, LOW);
+	neutralServo();
 }
 

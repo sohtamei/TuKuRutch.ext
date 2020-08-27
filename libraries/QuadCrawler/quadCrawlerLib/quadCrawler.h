@@ -5,10 +5,12 @@
 
 // ポート定義
 enum {
-  Sw1 = 3,
-  Sw2 = 4,
-  Sw3 = 5,
-  Sw4 = 6,
+  P_IRRX = 2,
+  P_Sw1 = 3,
+  P_Sw2 = 4,
+  P_Sw3 = 5,
+  P_Sw4 = 6,
+  P_LED = 13,
 };
 
 //動作速度定義
@@ -22,60 +24,75 @@ enum {
 
 //制御ステート定義
 enum {
-  stop = 0,
+  COM_STOP = 0,
 
   // repeat
-  fw,
-  cw,
-  ccw,
-  rw,
-  Rigt,
-  Left,
+  COM_FW,
+  COM_CW,
+  COM_CCW,
+  COM_RW,
+  COM_RIGHT,
+  COM_LEFT,
 
   // normal
-  all_up,
-  all_dn,
-  t_dn,
-  h_dn,
-  l_dn,
-  r_dn,
+  COM_ALL_UP,
+  COM_ALL_DOWN,
+  COM_T_DOWN,
+  COM_H_DOWN,
+  COM_L_DOWN,
+  COM_R_DOWN,
 
   // repeat
-  t_up_dn,
-  l_r_up,
-  all_up_dn,
+  COM_T_UPDOWN,
+  COM_L_R_UP,
+  COM_ALL_UPDOWN,
 
-  pose,
+  COM_NEUTRAL,
+  COM_POSE,
 };
 
 void quadCrawler_Walk(                          // ロボット動作、指定した動作を継続する。
         uint16_t speed,                         //   quadCrawler_xx
         uint8_t com);                           //   stop, 他
 void quadCrawler_setSpeed(uint16_t speed);      // ロボット動作の速度を更新する。
+void quadCrawler_setSpeed(uint16_t speed, int16_t x, int16_t y);
 
 enum {
-  POSE_KEEP     = 0,
-  POSE_NEUTRAL  = 1,
-  POSE_UP       = 2,
-  POSE_DOWN     = 3,
-  POSE_DOWNMAX  = 4,
+	POSE_KEEP     = 0,
+	POSE_NEUTRAL  = 1,
+	POSE_UP       = 2,
+	POSE_DOWN     = 3,
+	POSE_DOWNMAX  = 4,
 
-  POSE_REAR     = 2,
-  POSE_FRONT    = 3,
+	POSE_REAR     = 2,
+	POSE_FRONT    = 3,
 };
 
-void quadCrawler_setPose4(uint8_t rfk, uint8_t rfc, uint8_t rrk, uint8_t rrc, uint8_t lfk, uint8_t lfc, uint8_t lrk, uint8_t lrc);
-
 enum {
-  FRONT_R   = 0,
-  REAR_R    = 1,
-  FRONT_L   = 2,
-  REAR_L    = 3,
+	FRONT_R   = 0,
+	REAR_R    = 1,
+	FRONT_L   = 2,
+	REAR_L    = 3,
 };
 void quadCrawler_setPose1(                      // 指定した足の上下、前後の姿勢を設定する。
-        uint8_t index,                          //   FRONT_R, 他
-        uint8_t knee,                           //   POSE_xx
-        uint8_t crach);                         //   POSE_xx
+		uint8_t id,                             //   FRONT_R, 他
+		int8_t knee,                            //   -128~+126
+		int8_t crach);                          //   -128~+126
+
+void quadCrawler_setPose4(
+		int8_t rfk, int8_t rfc,
+		int8_t rrk, int8_t rrc,
+		int8_t lfk, int8_t lfc,
+		int8_t lrk, int8_t lrc);
+
+enum {
+	CALIB_INC = 0,
+	CALIB_DEC,
+	CALIB_GET,
+	CALIB_RESET,
+	CALIB_RESET_ALL,
+};
+int16_t _calibServo(uint8_t id, uint8_t cmd);
 
 void quadCrawler_servoLoop(void);               // ロボット動作を経過時間に応じて更新する。
 

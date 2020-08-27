@@ -62,11 +62,13 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','S',},
-  {'B','B',},
-  {'B','B',},
-  {'B','B',},
-  {'B','B',},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
   {},
+  {'B','B',},
+  {'B','B',},
   {'B',},
   {'B',},
   {'S',},
@@ -80,13 +82,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
-  {'B','B',},
-  {'B','B',},
-  {'B',},
-  {'B',},
-  {'B',},
-  {},
-  {},
   {},
   {},
   {},
@@ -94,22 +89,19 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
 };
 
-#if 0		// wifi debug
-#define DPRINT(a) _Serial.println(a)
-#define DWRITE(a) _Serial.write(a)
-#else
-#define DPRINT(a)
-#define DWRITE(a)
-#endif
-
 uint8_t wifi_uart = 0;
 
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart)
-        client.write(dp, count);
-      else
+      if(wifi_uart == 1) {
+            writeWifi(dp, count);
+            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
+        #ifdef ENABLE_WEBSOCKET
+      } else if(wifi_uart == 2) {
+            _packetLen = count;
+        #endif
+      } else
     #endif
         _Serial.write(dp, count);
 }
@@ -118,21 +110,11 @@ void _println(char* mes)
 {
     #if defined(ESP32)
       if(wifi_uart)
-        client.println(mes);
+        printlnWifi(mes);
       else
     #endif
         _Serial.println(mes);
 }
-
-#if defined(ESP32)
-enum {
-      CONNECTION_NONE = 0,
-      CONNECTION_WIFI,
-      CONNECTION_TCP,
-};
-uint8_t connection_status = CONNECTION_NONE;
-uint32_t last_udp;
-#endif
 
 int16_t _read(void)
 {
@@ -141,48 +123,10 @@ int16_t _read(void)
             return _Serial.read();
       }
     #if defined(ESP32)
-      if(WiFi.status() != WL_CONNECTED) {
-            connection_status = CONNECTION_NONE;
-            return -1;
-      }
-    
-      uint32_t cur = millis();
-      if(cur - last_udp > 1000) {
-            last_udp = cur;
-            udp.broadcastTo(mVersion, PORT);
-      }
-    
-      switch(connection_status) {
-          case CONNECTION_NONE:
-            server.begin();
-        #ifdef _M5STACK_H_
-            M5.Lcd.clear(BLACK);
-            M5.Lcd.setCursor(0,0);
-            M5.Lcd.println(WiFi.localIP());
-        #endif
-            DPRINT(WiFi.localIP());
-            connection_status = CONNECTION_WIFI;
-        
-          case CONNECTION_WIFI:
-            client = server.available();
-            if(!client) {
-                  return -1;
-            }
-            DPRINT("connected");
-            connection_status = CONNECTION_TCP;
-        
-          case CONNECTION_TCP:
-            if(!client.connected()) {
-                  DPRINT("disconnected");
-                  client.stop();
-                  connection_status = CONNECTION_WIFI;
-                  return -1;
-            }
-            if(client.available()<=0) {
-                  return -1;
-            }
+      int ret = readWifi();
+      if(ret != -1) {
             wifi_uart = 1;
-            return client.read();
+            return ret;
       }
     #endif
       return -1;
@@ -213,22 +157,19 @@ static void parseData()
     
     switch(buffer[3]){
         case 1: quadCrawler_Walk(getShort(1),getByte(0));; callOK(); break;
-        case 2: quadCrawler_setPose1(0,getByte(0),getByte(1));; callOK(); break;
-        case 3: quadCrawler_setPose1(1,getByte(0),getByte(1));; callOK(); break;
-        case 4: quadCrawler_setPose1(2,getByte(0),getByte(1));; callOK(); break;
-        case 5: quadCrawler_setPose1(3,getByte(0),getByte(1));; callOK(); break;
+        case 2: quadCrawler_setPose1(0,getShort(0),getShort(1));; callOK(); break;
+        case 3: quadCrawler_setPose1(2,getShort(0),getShort(1));; callOK(); break;
+        case 4: quadCrawler_setPose1(1,getShort(0),getShort(1));; callOK(); break;
+        case 5: quadCrawler_setPose1(3,getShort(0),getShort(1));; callOK(); break;
         case 6: quadCrawler_Walk(200,0);; callOK(); break;
-        case 7: quadCrawler_colorWipe(getByte(0));; callOK(); break;
-        case 8: quadCrawler_rainbow(getByte(0));; callOK(); break;
-        case 9: quadCrawler_beep(getShort(0));; callOK(); break;
-        case 10: sendFloat((quadCrawler_getSonner())); break;
-        case 11: sendByte((((getByte(0)>=1&&getByte(0)<=4)?digitalRead(sw_table[getByte(0)-1]):0)==0)); break;
-        case 19: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
-        case 20: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 21: pinMode(A0+getByte(0),OUTPUT);digitalWrite(A0+getByte(0),getByte(1));; callOK(); break;
-        case 22: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 23: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
-        case 24: sendShort((pinMode(A0+getByte(0),INPUT),analogRead(A0+getByte(0)))); break;
+        case 7: sendShort((_calibServo(getByte(0)*2+0,getByte(1)))); break;
+        case 8: sendShort((_calibServo(getByte(0)*2+1,getByte(1)))); break;
+        case 9: quadCrawler_colorWipe(getByte(0));; callOK(); break;
+        case 10: quadCrawler_rainbow(getByte(0));; callOK(); break;
+        case 11: quadCrawler_beep(getShort(0));; callOK(); break;
+        case 12: sendFloat((quadCrawler_getSonner())); break;
+        case 13: sendByte((((getByte(0)>=1&&getByte(0)<=4)?digitalRead(sw_table[getByte(0)-1]):0)==0)); break;
+        case 21: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -257,7 +198,7 @@ void loop()
 {
     int16_t c;
     while((c=_read()) >= 0) {
-        DWRITE(c);
+        //_Serial.printf("%02x",c);  // for debug
         buffer[_index++] = c;
         
         switch(_index) {
@@ -286,6 +227,47 @@ void loop()
     quadCrawler_servoLoop();
     
 }
+
+#ifdef ENABLE_WEBSOCKET
+uint8_t connected = 0;
+static WebsocketsClient _client;
+
+void onEventsCallback(WebsocketsEvent event, String data) {
+      if(event == WebsocketsEvent::ConnectionOpened) {
+            Serial.println("Connnection Opened");
+      } else if(event == WebsocketsEvent::ConnectionClosed) {
+            Serial.println("Connnection Closed");
+            connected = 0;
+      } else if(event == WebsocketsEvent::GotPing) {
+            Serial.println("Got a Ping!");
+      } else if(event == WebsocketsEvent::GotPong) {
+            Serial.println("Got a Pong!");
+      }
+}
+
+void onMessageCallback(WebsocketsMessage msg) {
+      _packetLen = msg.length();
+      memcpy(buffer, msg.c_str(), _packetLen);
+      wifi_uart = 2;
+      parseData();
+      _client.sendBinary((char*)buffer, _packetLen);
+}
+
+static void loopWebSocket(void)
+{
+      if(!wsServer.available()) return;
+      if(wsServer.poll()) {
+            connected = 1;
+            Serial.println("connected");
+            _client = wsServer.accept();
+            _client.onMessage(onMessageCallback);
+            _client.onEvent(onEventsCallback);
+      }
+      if(!connected || !_client.available()) return;
+      _client.poll();
+      return;
+}
+#endif
 
 union floatConv { 
     float _float;
@@ -368,6 +350,7 @@ static void sendShort(uint16_t data)
     *dp++ = RSP_SHORT;
     *dp++ = data&0xff;
     *dp++ = data>>8;
+    _write(buffer, dp-buffer);
 }
 
 static void sendLong(uint32_t data)
