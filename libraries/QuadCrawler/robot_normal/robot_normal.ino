@@ -23,12 +23,39 @@ void setup()
 
 static uint8_t lastkey = 0;
 static uint8_t originAdj = 0;
-static uint8_t lastSw4 = 1;
+static uint8_t originAdjId;
 static uint32_t sonner_time = 0;
 extern volatile unsigned long timer0_millis;
 
+static uint8_t lastSw4 = 1;
+static int detect_sw4(void)
+{
+	int detect = 0;
+	uint8_t sw4 = digitalRead(P_Sw4);
+	if(lastSw4!=sw4 && sw4==0)
+		detect = 1;
+	lastSw4 = sw4;
+	return detect;
+}
+
 void loop()
 {
+	if(originAdj) {
+		loop_originAdj();
+		return;
+	}
+
+	// SW4を押したとき初期姿勢にする (組み立て用)
+	if(detect_sw4()) {
+		int i;
+		quadCrawler_colorWipe(COLOR_RED);
+		for(i = 0; i < 4; i++)
+			quadCrawler_setPose1(i, 0, 0);
+		originAdj = 1;
+		originAdjId = 0;
+		return;
+	}
+
 	// リモコン処理：標準リモコン、アナログリモコンを受信し、キーコードに従ってロボットを動かす。
 	#define A_DOWN_OFFSET  0x10
 	remote.checkUpdated();            // リモコンコード受信
@@ -147,24 +174,6 @@ void loop()
 		}
 	}
 
-	// SW4を押したとき初期姿勢にする (組み立て用)
-	uint8_t sw4 = digitalRead(P_Sw4);
-	if(lastSw4!=sw4 && sw4==0) {
-		if(!originAdj) {
-			quadCrawler_colorWipe(COLOR_RED);
-			quadCrawler_setPose4(POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL, POSE_NEUTRAL);
-		} else {
-			quadCrawler_colorWipe(COLOR_PURPLE);
-			quadCrawler_Walk(quadCrawler_fast, COM_STOP);
-		}
-		originAdj = !originAdj;
-	} else if(originAdj && !quadCrawler_checkServoON()) {
-		quadCrawler_colorWipe(COLOR_PURPLE);
-		quadCrawler_beep(50);
-		originAdj = 0;
-	}
-	lastSw4 = sw4;
-
 	// 歩行などのモーション処理、経過時間に応じてサーボモーターを制御する。
 	if(remote.xyLevel >= 10) {
 		// アナログリモコンのJOYSTICK操作のとき速度設定
@@ -184,6 +193,64 @@ void loop()
 				quadCrawler_colorWipe(COLOR_PURPLE);
 				quadCrawler_Walk(quadCrawler_fast, COM_STOP);
 			}
+		}
+	}
+}
+
+
+void loop_originAdj()
+{
+	if(detect_sw4()) {
+		quadCrawler_colorWipe(COLOR_PURPLE);
+		quadCrawler_Walk(quadCrawler_fast, COM_STOP);
+		originAdj = 0;
+		return;
+	} else if(originAdj && !quadCrawler_checkServoON()) {
+		quadCrawler_colorWipe(COLOR_PURPLE);
+		quadCrawler_beep(500);
+		originAdj = 0;
+		return;
+	}
+
+	remote.checkUpdated();            // リモコンコード受信
+	uint8_t key = remote.keys;        // 受信したリモコンコード取得
+	if(key != lastkey) {
+		lastkey = key;
+		int ret;
+		switch(key) {
+		case BUTTON_1: quadCrawler_colorRed(0); originAdjId = 1; break;
+		case BUTTON_2: quadCrawler_colorRed(3); originAdjId = 3; break;
+		case BUTTON_3: quadCrawler_colorRed(1); originAdjId = 2; break;
+		case BUTTON_4: quadCrawler_colorRed(2); originAdjId = 4; break;
+		}
+		if(!originAdjId) return;
+
+		switch(key) {
+		case BUTTON_UP:
+			ret = _calibServo((originAdjId-1)*2+0, CALIB_DEC);
+			quadCrawler_beep((ret <= -30) ? 1000:50);
+			break;
+
+		case BUTTON_DOWN:
+			ret = _calibServo((originAdjId-1)*2+0, CALIB_INC);
+			quadCrawler_beep((ret >= 30) ? 1000:50);
+			break;
+
+		case BUTTON_LEFT:
+			ret = _calibServo((originAdjId-1)*2+1, CALIB_DEC);
+			quadCrawler_beep((ret <= -30) ? 1000:50);
+			break;
+
+		case BUTTON_RIGHT:
+			ret = _calibServo((originAdjId-1)*2+1, CALIB_INC);
+			quadCrawler_beep((ret >= 30) ? 1000:50);
+			break;
+
+		case BUTTON_CENTER:
+			_calibServo((originAdjId-1)*2+0, CALIB_RESET);
+			_calibServo((originAdjId-1)*2+1, CALIB_RESET);
+			quadCrawler_beep(1000);
+			break;
 		}
 	}
 }

@@ -58,17 +58,6 @@ void quadCrawler_setSpeed(uint16_t speed);      // ロボット動作の速度�
 void quadCrawler_setSpeed(uint16_t speed, int16_t x, int16_t y);
 
 enum {
-	POSE_KEEP     = 0,
-	POSE_NEUTRAL  = 1,
-	POSE_UP       = 2,
-	POSE_DOWN     = 3,
-	POSE_DOWNMAX  = 4,
-
-	POSE_REAR     = 2,
-	POSE_FRONT    = 3,
-};
-
-enum {
 	FRONT_R   = 0,
 	REAR_R    = 1,
 	FRONT_L   = 2,
@@ -77,13 +66,7 @@ enum {
 void quadCrawler_setPose1(                      // 指定した足の上下、前後の姿勢を設定する。
 		uint8_t id,                             //   FRONT_R, 他
 		int8_t knee,                            //   -128~+126
-		int8_t crach);                          //   -128~+126
-
-void quadCrawler_setPose4(
-		int8_t rfk, int8_t rfc,
-		int8_t rrk, int8_t rrc,
-		int8_t lfk, int8_t lfc,
-		int8_t lrk, int8_t lrc);
+		int8_t crotch);                         //   -128~+126
 
 enum {
 	CALIB_INC = 0,
@@ -95,6 +78,8 @@ enum {
 int16_t _calibServo(uint8_t id, uint8_t cmd);
 
 void quadCrawler_servoLoop(void);               // ロボット動作を経過時間に応じて更新する。
+
+void _setPWM(uint8_t id, uint16_t value);
 
 
 void quadCrawler_init(void);                    // 初期化処理、setup()で実行。
@@ -112,6 +97,8 @@ enum {
   COLOR_PURPLE,
   COLOR_LIGHTBLUE,
 };
+
+void quadCrawler_colorRed(uint8_t id);
 
 void quadCrawler_rainbow(uint8_t wait);         // LEDを７色に光らせる。
 uint8_t quadCrawler_checkServoON(void);

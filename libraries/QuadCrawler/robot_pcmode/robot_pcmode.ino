@@ -2,17 +2,17 @@
 
 #define PCMODE
 
-#define mVersion "QuadCrawler1.2"
+#define mVersion "QuadCrawler1.3"
 
 #include <Arduino.h>
 #include <quadCrawler.h>
 #include <analogRemote.h>
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/2, funcLed);
+void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
 
-const uint8_t sw_table[4] = {3,4,5,6};
+const uint8_t sw_table[4] = {P_Sw1,P_Sw2,P_Sw3,P_Sw4};
 
 
 #ifdef __AVR_ATmega328P__
@@ -43,12 +43,12 @@ void setup()
     wdt_disable();
     #endif
     
-    pinMode(13, OUTPUT);
-    digitalWrite(13, LOW);
+    Serial.begin(115200);
+    pinMode(P_LED, OUTPUT);
+    digitalWrite(P_LED, LOW);
     quadCrawler_init();
     quadCrawler_colorWipe(COLOR_PURPLE);
     quadCrawler_beep(100);
-    Serial.begin(115200);
     
     _Serial.println("PC mode: " mVersion);
 }
@@ -169,7 +169,7 @@ static void parseData()
         case 11: quadCrawler_beep(getShort(0));; callOK(); break;
         case 12: sendFloat((quadCrawler_getSonner())); break;
         case 13: sendByte((((getByte(0)>=1&&getByte(0)<=4)?digitalRead(sw_table[getByte(0)-1]):0)==0)); break;
-        case 21: pinMode(13,OUTPUT);digitalWrite(13,getByte(0));; callOK(); break;
+        case 21: pinMode(P_LED,OUTPUT);digitalWrite(P_LED,getByte(0));; callOK(); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
