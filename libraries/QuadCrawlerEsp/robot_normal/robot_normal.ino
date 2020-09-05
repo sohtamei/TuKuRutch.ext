@@ -1,6 +1,7 @@
-#define mVersion "QuadCrawlerEsp1.0"
+/* copyright (C) 2020 Sohta. */
+#define mVersion "QuadCrawlerAI1.0"
 
-#include <quadCrawlerEsp.h>
+#include <QuadCrawlerAI.h>
 #include <analogRemote.h>
 #include "TukurutchEsp.h"
 

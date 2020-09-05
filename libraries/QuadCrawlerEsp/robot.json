@@ -1,5 +1,5 @@
 {
-	"name"			: "QuadCrawlerEsp",
+	"name"			: "QuadCrawlerAI",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
@@ -11,7 +11,7 @@
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"libraryPath"	: "quadCrawlerEspLib",						// 専用ライブラリ(option)
+	"libraryPath"	: "QuadCrawlerAiLib",						// 専用ライブラリ(option)
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
@@ -25,9 +25,9 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"QuadCrawlerEsp1.0\"
+#define mVersion \"QuadCrawlerAI1.0\"
 
-#include <quadCrawlerEsp.h>
+#include <QuadCrawlerAI.h>
 #include <analogRemote.h>
 #include \"TukurutchEsp.h\"
 #include \"M5CameraCar.h\"

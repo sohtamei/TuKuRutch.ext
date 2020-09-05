@@ -2,9 +2,9 @@
 
 #define PCMODE
 
-#define mVersion "QuadCrawlerEsp1.0"
+#define mVersion "QuadCrawlerAI1.0"
 
-#include <quadCrawlerEsp.h>
+#include <QuadCrawlerAI.h>
 #include <analogRemote.h>
 #include "TukurutchEsp.h"
 #include "M5CameraCar.h"
