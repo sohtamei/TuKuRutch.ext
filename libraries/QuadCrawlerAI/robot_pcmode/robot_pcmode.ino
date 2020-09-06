@@ -12,13 +12,9 @@
 
 WebsocketsServer wsServer;
 
-void _setLED(uint8_t onoff)
-{
-      digitalWrite(P_LED1, onoff);
-}
-
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, _setLED);
+void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
 
 void onConnect(String ip)
 {
@@ -56,11 +52,13 @@ void setup()
     wdt_disable();
     #endif
     
+    Serial.begin(115200);
+    pinMode(P_LED, OUTPUT);
+    digitalWrite(P_LED, LOW);
     quadCrawler_init();
     M5CameraCar_init();
     quadCrawler_colorWipe(COLOR_PURPLE);
     quadCrawler_tone(T_C5, 100);
-    Serial.begin(115200);
     #ifndef PCMODE
     initWifi(mVersion, true, onConnect);
     #else
@@ -79,12 +77,13 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','S',},
-  {'B','B',},
-  {'B','B',},
-  {'B','B',},
-  {'B','B',},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
+  {'S','S',},
   {},
-  {'B',},
+  {'B','B',},
+  {'B','B',},
   {'B',},
   {'B',},
   {'S','S',},
@@ -96,8 +95,7 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {},
-  {},
-  {},
+  {'B',},
   {},
   {},
   {},
@@ -175,16 +173,18 @@ static void parseData()
     
     switch(buffer[3]){
         case 1: quadCrawler_Walk(getShort(1),getByte(0));; callOK(); break;
-        case 2: quadCrawler_setPose1(0,getByte(0),getByte(1));; callOK(); break;
-        case 3: quadCrawler_setPose1(1,getByte(0),getByte(1));; callOK(); break;
-        case 4: quadCrawler_setPose1(2,getByte(0),getByte(1));; callOK(); break;
-        case 5: quadCrawler_setPose1(3,getByte(0),getByte(1));; callOK(); break;
+        case 2: quadCrawler_setPose1(0,getShort(0),getShort(1));; callOK(); break;
+        case 3: quadCrawler_setPose1(2,getShort(0),getShort(1));; callOK(); break;
+        case 4: quadCrawler_setPose1(1,getShort(0),getShort(1));; callOK(); break;
+        case 5: quadCrawler_setPose1(3,getShort(0),getShort(1));; callOK(); break;
         case 6: quadCrawler_Walk(200,0);; callOK(); break;
-        case 7: pinMode(P_LED1,OUTPUT);digitalWrite(P_LED1,getByte(0));; callOK(); break;
-        case 8: quadCrawler_colorWipe(getByte(0));; callOK(); break;
-        case 9: quadCrawler_rainbow(getByte(0));; callOK(); break;
-        case 10: quadCrawler_tone(getShort(0),getShort(1));; callOK(); break;
-        case 11: sendFloat((quadCrawler_getSonner())); break;
+        case 7: sendShort((_calibServo(getByte(0)*2+0,getByte(1)))); break;
+        case 8: sendShort((_calibServo(getByte(0)*2+1,getByte(1)))); break;
+        case 9: quadCrawler_colorWipe(getByte(0));; callOK(); break;
+        case 10: quadCrawler_rainbow(getByte(0));; callOK(); break;
+        case 11: quadCrawler_tone(getShort(0),getShort(1));; callOK(); break;
+        case 12: sendFloat((quadCrawler_getSonner())); break;
+        case 20: pinMode(P_LED,OUTPUT);digitalWrite(P_LED,getByte(0));; callOK(); break;
         case 25: sendString((statusWifi())); break;
         case 26: sendString((scanWifi())); break;
         case 27: sendByte((connectWifi(getString(0),getString(1)))); break;

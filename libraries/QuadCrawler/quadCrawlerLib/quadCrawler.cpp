@@ -11,7 +11,7 @@
 #define P_Bz		8	// Bzzer Pin
 #define P_Echo		A0	// P_Echo Pin
 #define P_Trig		A1	// Trigger Pin
-#define P_Moter_EN	A3	// Surbo Moter Drive Enable Pin
+#define P_Motor_EN	A3	// Surbo Moter Drive Enable Pin
 #define P_Neopix	A2
 
 #define EEPROM_CALIB	0x00
@@ -188,7 +188,7 @@ static s_walkCalib walkCalib256;
 static const s_walkCalib walkCalibInit = {256,256,256,256};
 
 static uint8_t firstFlag = 0;
-static void walkServo(s_walk pWalk[2])
+static void walkServo(const s_walk pWalk[2])
 {
 	walkTable = pWalk;
 	servoState = ServoWalk;
@@ -592,8 +592,8 @@ void quadCrawler_beep(int time)
 
 void quadCrawler_init(void)
 {
-	pinMode(P_Moter_EN, OUTPUT);
-	digitalWrite(P_Moter_EN, HIGH);
+	pinMode(P_Motor_EN, OUTPUT);
+	digitalWrite(P_Motor_EN, HIGH);
 
 	pinMode(P_Echo, INPUT_PULLUP);
 	pinMode(P_Trig, OUTPUT);
@@ -621,8 +621,7 @@ void quadCrawler_init(void)
 
 	pwm.begin();
 	pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
-	digitalWrite(P_Moter_EN, LOW);
+	digitalWrite(P_Motor_EN, LOW);
 	neutralServo();
 	setTargetLoop(0);
 }
-

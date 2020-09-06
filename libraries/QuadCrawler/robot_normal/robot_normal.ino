@@ -1,8 +1,6 @@
 // copyright to SohtaMei & H.Sunakawa 2020.
 #define mVersion "QuadCrawler1.3"
 
-#include <Arduino.h>
-#include <util/delay.h>
 #include <quadCrawler.h>
 #include <analogRemote.h>
 

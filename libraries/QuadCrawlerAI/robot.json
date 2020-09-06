@@ -35,13 +35,9 @@
 
 WebsocketsServer wsServer;
 
-void _setLED(uint8_t onoff)
-{
-  digitalWrite(P_LED1, onoff);
-}
-
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, _setLED);
+void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
+analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
 
 void onConnect(String ip)
 {
@@ -52,11 +48,13 @@ void onConnect(String ip)
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
+Serial.begin(115200);
+pinMode(P_LED, OUTPUT);
+digitalWrite(P_LED, LOW);
 quadCrawler_init();
 M5CameraCar_init();
 quadCrawler_colorWipe(COLOR_PURPLE);
 quadCrawler_tone(T_C5, 100);
-Serial.begin(115200);
 #ifndef PCMODE
 initWifi(mVersion, true, onConnect);
 #else
@@ -86,13 +84,17 @@ initWifi(mVersion, false, onConnect);
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
 		["w", "walk %d.walkcmd %d.speed",				"setWalk",			"fw","fast",{"remote":["B","S"],	"func":"quadCrawler_Walk({1},{0});"}],
-		["w", "FrontR %d.knee %d.crotch",				"setPoseRF", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(0,{0},{1});"}],
-		["w", "RearR  %d.knee %d.crotch",				"setPoseRR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(1,{0},{1});"}],
-		["w", "FrontL %d.knee %d.crotch",				"setPoseLF", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(2,{0},{1});"}],
-		["w", "RearL  %d.knee %d.crotch",				"setPoseLR", "Neutral","Neutral",{"remote":["B","B"],	"func":"quadCrawler_setPose1(3,{0},{1});"}],
+		["w", "FrontR up/down %d.knee fw/back %d.crotchF","setPoseRF",		0,0,		{"remote":["S","S"],	"func":"quadCrawler_setPose1(0,{0},{1});"}],
+		["w", "FrontL up/down %d.knee fw/back %d.crotchF","setPoseLF",		0,0,		{"remote":["S","S"],	"func":"quadCrawler_setPose1(2,{0},{1});"}],
+		["w", "RearR  up/down %d.knee fw/back %d.crotchR","setPoseRR",		0,0,		{"remote":["S","S"],	"func":"quadCrawler_setPose1(1,{0},{1});"}],
+		["w", "RearL  up/down %d.knee fw/back %d.crotchR","setPoseLR",		0,0,		{"remote":["S","S"],	"func":"quadCrawler_setPose1(3,{0},{1});"}],
 		["w", "stop",									"setStop",						{"remote":[],			"func":"quadCrawler_Walk(200,0);"}],
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(P_LED1,OUTPUT);digitalWrite(P_LED1,{0});"}],
+		["R", "calib up/down %d.leg %d.calibK",			"calibKnee",	"FrontR","get",	{"remote":["B","B",	"S"],"func":"_calibServo({0}*2+0,{1})"}],
+		["R", "calib fw/back %d.leg %d.calibC",			"calibCrotch",	"FrontR","get",	{"remote":["B","B",	"S"],"func":"_calibServo({0}*2+1,{1})"}],
+
+	//	["w", "set PWM %n %n",							"setPWM",			0,0,		{"remote":["B","S"],	"func":"_setPWM({0},{1});"}],
+
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
 		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
 		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
@@ -110,13 +112,12 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],
 
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(P_LED,OUTPUT);digitalWrite(P_LED,{0});"}],
 		// enum
 		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
 		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
-		["r", "%d.knee .",								"enumKnee",			"Neutral",	{"enum":"",				"func":"{0}"}],
-		["r", "%d.crotch .",							"enumCrotch",		"Neutral",	{"enum":"",				"func":"{0}"}],
 
 		// WiFi設定
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
@@ -134,11 +135,14 @@ initWifi(mVersion, false, onConnect);
 		"ircodeA":["A CENTER","A U","A R","A L","A D","A↑→","A↑","A←↑","A→","A←","A↓→","A↓","A←↓"],
 
 		"speed":["sslow","slow","typical","fast", "high"],
-		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_down","t_down","h_down","l_down","r_down","t_up_down","l_r_up","all_up_down"],
+		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_down","t_down","h_down","l_down","r_down","t_up_down","l_r_up","all_up_down","neutral",],
 		"color":["off","red","green","blue","yellow","purple","lightblue"],
-		"knee":["Neutral","up","down","max"],
-		"crotch":["Neutral","rear","front"],
-		"sw":["1"],
+		"knee":[-25,0,60,100],
+		"crotchF":[-55,0,60],
+		"crotchR":[-90,0,45],
+		"leg":["FrontR","FrontL","RearR","RearL",],
+		"calibC":["forward_C","back_C","get","reset","reset_all",],
+		"calibK":["up_K","down_K","get","reset","reset_all",],
 	},
 	"values":{
 		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
@@ -155,9 +159,11 @@ initWifi(mVersion, false, onConnect);
 		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
 		"A CENTER":0x61,"A U":0x62,"A R":0x63,"A L":0x64,"A D":0x65,"A↑→":0x70,"A↑":0x71,"A←↑":0x72,"A→":0x73,"A←":0x74,"A↓→":0x75,"A↓":0x76,"A←↓":0x77,
 		"sslow":2000,"slow":1000,"typical":500,"fast":200,"high":100,
-		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_down":8,"t_down":9,"h_down":10,"l_down":11,"r_down":12,"t_up_down":13,"l_r_up":14,"all_up_down":15,
+		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_down":8,"t_down":9,"h_down":10,"l_down":11,"r_down":12,"t_up_down":13,"l_r_up":14,"all_up_down":15,"neutral":16,
 		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
-		"keep":0,"Neutral":1,"up":2,"down":3,"max":4, "rear":2,"front":3,
+		"FrontR":0,"FrontL":2,"RearR":1,"RearL":3,
+		"back_C":0,"forward_C":1,"get":2,"reset":3,"reset_all":4,
+		"down_K":0,"up_K":1,
 	},
 	"translators":{
 		"ja":{
@@ -169,31 +175,36 @@ initWifi(mVersion, false, onConnect);
 			"C7":"ド7", "D7":"レ7", "E7":"ミ7", "F7":"ファ7", "G7":"ソ7", "A7":"ラ7", "B7":"シ7", "C8":"ド8", "D8":"レ8", 
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
 
-			"walk %d.walkcmd %d.speed"	:"動く %d.walkcmd %d.speed",
-			"FrontR %d.knee %d.crotch"	: "右前足 %d.knee %d.crotch",
-			"RearR  %d.knee %d.crotch"	: "右後足 %d.knee %d.crotch",
-			"FrontL %d.knee %d.crotch"	: "左前足 %d.knee %d.crotch",
-			"RearL  %d.knee %d.crotch"	: "左後足 %d.knee %d.crotch",
-
 			"set LED %d.onoff"								:"LEDを %d.onoff",
-			"LED rainbow %d sec"							: "LEDレインボー %d 秒",
-			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
-			"read Sonner"									: "距離取得",
-			"SW is pressed"									: "スイッチが押された",
-
 			"remote pressed"								:"リモコンボタンが押された",
 			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
 			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
 			"get remote X"									:"アナログXの値",
 			"get remote Y"									:"アナログYの値",
 
+			"walk %d.walkcmd %d.speed"	:"動く %d.walkcmd %d.speed",
+			"FrontR up/down %d.knee fw/back %d.crotchF"		:"右前脚 上下 %d.knee 前後 %d.crotchF",
+			"FrontL up/down %d.knee fw/back %d.crotchF"		:"左前脚 上下 %d.knee 前後 %d.crotchF",
+			"RearR  up/down %d.knee fw/back %d.crotchR"		:"右後脚 上下 %d.knee 前後 %d.crotchR",
+			"RearL  up/down %d.knee fw/back %d.crotchR"		:"左後脚 上下 %d.knee 前後 %d.crotchR",
+
+			"calib up/down %d.leg %d.calibK"				:"上下微調整 %d.leg %d.calibK",
+			"calib fw/back %d.leg %d.calibC"				:"前後微調整 %d.leg %d.calibC",
+
+			"LED rainbow %d sec"							: "LEDレインボー %d 秒",
+			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
+			"read Sonner"									: "距離取得",
+			"SW is pressed"									: "スイッチが押された",
+
 			"sslow":"超低速","slow":"低速","typical":"普通","fast":"高速","high":"超高速",
 			"stop":"停止","fw":"前進","cw":"右旋回","ccw":"左旋回","rw":"後進","right":"右移動","left":"左移動",
-			"all_up":"しゃがむ","all_down":"伸び","t_down":"後傾斜","h_down":"前傾斜","l_down":"左傾斜","r_down":"右傾斜","t_up_down":"背伸び","l_r_up":"左右傾斜","all_up_down":"スクワット",
+			"all_up":"しゃがむ","all_down":"伸び","t_down":"後傾斜","h_down":"前傾斜","l_down":"左傾斜","r_down":"右傾斜","t_up_down":"背伸び","l_r_up":"左右傾斜","all_up_down":"スクワット","neutral":"原点調整",
+
+			"FrontR":"右前脚","FrontL":"左前脚","RearR":"右後脚","RearL":"左後脚",
+			"down_K":"下＋","up_K":"上＋","get":"現在値","reset":"リセット","reset_all":"全リセット",
+			"back_C":"後＋","forward_C":"前＋",
 
 			"off":"消す","red":"赤色","green":"緑色","blue":"青色","yellow":"黄色","purple":"紫色","lightblue":"水色",
-			"keep":"保持","Neutral":"中立","up":"上","down":"下","max":"下最大",
-			"keep":"保持","Neutral":"中立","rear":"後","front":"前",
 		}
 	}
 }

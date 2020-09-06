@@ -4,7 +4,6 @@
 
 #define mVersion "QuadCrawler1.3"
 
-#include <Arduino.h>
 #include <quadCrawler.h>
 #include <analogRemote.h>
 
@@ -82,7 +81,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
-  {},
   {},
   {},
   {},

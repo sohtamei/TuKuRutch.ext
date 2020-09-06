@@ -19,7 +19,6 @@
 	"header":"
 #define mVersion \"QuadCrawler1.3\"
 
-#include <Arduino.h>
 #include <quadCrawler.h>
 #include <analogRemote.h>
 
@@ -86,15 +85,6 @@ quadCrawler_servoLoop();
 		["-"],
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(P_LED,OUTPUT);digitalWrite(P_LED,{0});"}],
-/*
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
-		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),analogRead(A0+{0})"}],
-*/
-		["-"],
-
 		// enum
 		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
 		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",				"func":"{0}"}],
@@ -102,7 +92,6 @@ quadCrawler_servoLoop();
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
 	],
 	"menus": {
-		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
 		"ircode":["POWER","MENU","TEST","RETURN","R0","C","↑","↓","←","→","CENTER","R1","R2","R3","R4","R5","R6","R7","R8","R9","B"],
 		"ircodeA":["A CENTER","A U","A R","A L","A D","A↑→","A↑","A←↑","A→","A←","A↓→","A↓","A←↓"],
@@ -119,7 +108,6 @@ quadCrawler_servoLoop();
 		"calibK":["up_K","down_K","get","reset","reset_all",],
 	},
 	"values":{
-		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 		"POWER":0x45,"B":0x46,"MENU":0x47,"TEST":0x44,"RETURN":0x43,"R0":0x16,"C":0x0D,"↑":0x40,"↓":0x19,"←":0x07,"→":0x09,"CENTER":0x15,
 		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
@@ -139,13 +127,7 @@ quadCrawler_servoLoop();
 			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
 			"get remote X"									:"アナログXの値",
 			"get remote Y"									:"アナログYの値",
-/*
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read digital pin A%n"							:"デジタルピン A%n",
-			"read analog pin A%n"							:"アナログピン A%n",
-*/
+
 			"walk %d.walkcmd %d.speed"						:"動く %d.walkcmd %d.speed",
 			"FrontR up/down %d.knee fw/back %d.crotchF"		:"右前脚 上下 %d.knee 前後 %d.crotchF",
 			"FrontL up/down %d.knee fw/back %d.crotchF"		:"左前脚 上下 %d.knee 前後 %d.crotchF",
@@ -169,8 +151,6 @@ quadCrawler_servoLoop();
 			"back_C":"後＋","forward_C":"前＋",
 
 			"off":"消す","red":"赤色","green":"緑色","blue":"青色","yellow":"黄色","purple":"紫色","lightblue":"水色",
-//			"keep":"保持","Neutral":"中立","up":"上","down":"下","max":"下最大",
-//			"keep":"保持","Neutral":"中立","rear":"後","front":"前",
 		}
 	}
 }
