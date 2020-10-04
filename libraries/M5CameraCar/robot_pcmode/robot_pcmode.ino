@@ -4,11 +4,13 @@
 
 #define mVersion "M5CameraCar"
 
+#include <Preferences.h>
 #include "TukurutchEsp.h"
 #include "M5CameraCar.h"
 
 
 WebsocketsServer wsServer;
+static Preferences preferencesRobot;
 
 #define P_LED	14
 
@@ -50,6 +52,17 @@ void _setServo(uint8_t idx, int16_t data/*normal:0~180, continuous:-100~+100*/, 
       ledcWrite(servoTable[idx].ledc, pwmWidth);
 }
 
+enum {
+      CMD_STOP = 0,
+      CMD_FORWARD,
+      CMD_LEFT,
+      CMD_RIGHT,
+      CMD_BACK,
+      CMD_ROLL_LEFT,
+      CMD_ROLL_RIGHT,
+      CMD_CALIBRATION,
+};
+
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
 //  L   R
   { 0,  0},  // 0:STOP
@@ -64,13 +77,146 @@ struct { int16_t L; int16_t R;} static const dir_table[7] = {
 
 void _setCar(uint8_t direction, uint8_t speed)
 {
-  if(direction >= numof(dir_table)) {
+  if(direction >= CMD_CALIBRATION) {
         _setServo(0, 0, 2);
         _setServo(1, 0, 2);
   } else {
         _setServo(0, speed * dir_table[direction].L, 1);
         _setServo(1, speed * dir_table[direction].R, 1);
   }
+}
+
+static uint32_t calTime = 0;
+static uint32_t drvStopTime = 0;
+struct calibrate {
+  struct {
+        uint8_t  speedL;
+        uint8_t  speedR;
+        uint16_t durL;
+        uint16_t durR;
+  } ROLL5;
+  
+  struct {
+        uint8_t  speedF_L;
+        uint8_t  speedF_R;
+        uint8_t  speedR_L;
+        uint8_t  speedR_R;
+        uint16_t durF;
+        uint16_t durR;
+  } _50CM;
+} static cal;
+
+void _calROLL5(uint8_t direction, uint8_t speed)
+{
+  switch(direction) {
+      case CMD_ROLL_LEFT:
+        if(!calTime) {
+              calTime = millis();
+              cal.ROLL5.speedL = speed;
+              _setCar(CMD_ROLL_LEFT, speed);
+        } else {
+              cal.ROLL5.durL = millis() - calTime;
+              calTime = 0;
+              _setCar(CMD_STOP, 0);
+              preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+        }
+        break;
+      case CMD_ROLL_RIGHT:
+        if(!calTime) {
+              calTime = millis();
+              cal.ROLL5.speedR = speed;
+              _setCar(CMD_ROLL_RIGHT, speed);
+        } else {
+              cal.ROLL5.durR = millis() - calTime;
+              calTime = 0;
+              _setCar(CMD_STOP, 0);
+              preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+        }
+        break;
+  }
+}
+
+void _cal50CM(uint8_t direction, uint8_t speedL, uint8_t speedR)
+{
+  switch(direction) {
+      case CMD_FORWARD:
+        if(!calTime) {
+              calTime = millis();
+              cal._50CM.speedF_L = speedL;
+              cal._50CM.speedF_R = speedR;
+              _setServo(0, speedL, 1);
+              _setServo(1, speedR, 1);
+        } else {
+              cal._50CM.durF = millis() - calTime;
+              calTime = 0;
+              _setCar(CMD_STOP, 0);
+              preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+        }
+        break;
+      case CMD_BACK:
+        if(!calTime) {
+              calTime = millis();
+              cal._50CM.speedR_L = speedL;
+              cal._50CM.speedR_R = speedR;
+              _setServo(0, -speedL, 1);
+              _setServo(1, -speedR, 1);
+        } else {
+              cal._50CM.durR = millis() - calTime;
+              calTime = 0;
+              _setCar(CMD_STOP, 0);
+              preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+        }
+        break;
+  }
+}
+
+void _setCarVal(uint8_t direction, int16_t val)
+{
+  if(val == 0) return;
+  if(val < 0) {
+        switch(direction) {
+            case CMD_FORWARD:		direction = CMD_BACK; break;
+            case CMD_BACK:			direction = CMD_FORWARD; break;
+            case CMD_ROLL_LEFT:		direction = CMD_ROLL_RIGHT; break;
+            case CMD_ROLL_RIGHT:	direction = CMD_ROLL_LEFT; break;
+        }
+        val = -val;
+  }
+
+  uint32_t dur = 0;
+  switch(direction) {
+      case CMD_FORWARD:
+        _setServo(0, cal._50CM.speedF_L, 1);
+        _setServo(1, cal._50CM.speedF_R, 1);
+        dur = (cal._50CM.durF*(uint32_t)val)/50UL;
+        break;
+    
+      case CMD_BACK:
+        _setServo(0, -cal._50CM.speedR_L, 1);
+        _setServo(1, -cal._50CM.speedR_R, 1);
+        dur =  (cal._50CM.durR*(uint32_t)val)/50UL;
+        break;
+    
+      case CMD_ROLL_LEFT:
+        _setCar(direction, cal.ROLL5.speedL);
+        dur = (cal.ROLL5.durL*(uint32_t)val)/(360UL*5);
+        break;
+    
+      case CMD_ROLL_RIGHT:
+        _setCar(direction, cal.ROLL5.speedR);
+        dur = (cal.ROLL5.durR*(uint32_t)val)/(360UL*5);
+        break;
+    
+      default:
+        return;
+  }
+#if 0
+  delay(dur);
+  _setServo(0, 0, 2);
+  _setServo(1, 0, 2);
+#else
+  drvStopTime = millis() + dur;
+#endif
 }
 
 void onConnect(String ip)
@@ -139,6 +285,13 @@ initWifi(mVersion, true, onConnect);
 initWifi(mVersion, false, onConnect);
 #endif
 
+preferencesRobot.begin("M5CameraCar", false);
+if(preferencesRobot.getBytes("calib", &cal, sizeof(cal)) < sizeof(cal)) {
+      Serial.println("init calib");
+      memset(&cal, 0, sizeof(cal));
+      preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+}
+
 _Serial.println("PC mode: " mVersion);
 }
 
@@ -156,6 +309,9 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','B',},
   {'B',},
+  {'B','S',},
+  {'B','B',},
+  {'B','B','B',},
   {},
   {},
   {},
@@ -234,9 +390,12 @@ switch(buffer[3]){
     case 3: _setCar(0,0);; callOK(); break;
     case 5: _setServo(getByte(0),getByte(1),0);; callOK(); break;
     case 6: _setLED(getByte(0));; callOK(); break;
-    case 8: sendString((statusWifi())); break;
-    case 9: sendString((scanWifi())); break;
-    case 10: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 7: _setCarVal(getByte(0),getShort(1));; callOK(); break;
+    case 8: _calROLL5(getByte(0),getByte(1));; callOK(); break;
+    case 9: _cal50CM(getByte(0),getByte(1),getByte(2));; callOK(); break;
+    case 11: sendString((statusWifi())); break;
+    case 12: sendString((scanWifi())); break;
+    case 13: sendByte((connectWifi(getString(0),getString(1)))); break;
     case 0xFE:  // firmware name
     _println("PC mode: " mVersion);
     break;
@@ -295,6 +454,14 @@ while((c=_read()) >= 0) {
 #ifndef PCMODE
   sendNotifyArduinoMode();
 #endif
+  if(drvStopTime) {
+        int32_t d = drvStopTime - millis();
+        if(d <= 0) {
+              drvStopTime = 0;
+              _setServo(0, 0, 2);
+              _setServo(1, 0, 2);
+        }
+  }
 
 }
 

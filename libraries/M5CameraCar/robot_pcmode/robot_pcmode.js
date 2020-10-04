@@ -106,6 +106,22 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
 }},
 
+{blockType: BlockType.COMMAND, opcode: 'setCarVal', text: '[ARG1] at value [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:10 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'calROLL5', text: 'calibrate [ARG1] 5times at speed [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:5, menu: 'direction' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:10 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'cal50CM', text: 'calibrate [ARG1] 50cm at speed L-[ARG2] R-[ARG3]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:20 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'B', defaultValue:20 },
+}},
+
 
 		];
 		return this._blocks;
@@ -169,6 +185,9 @@ stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
 enumDirection(args) { return args.ARG1; }
 setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 setLED(args,util) { return this.getTest(arguments.callee.name, args); }
+setCarVal(args,util) { return this.getTest(arguments.callee.name, args); }
+calROLL5(args,util) { return this.getTest(arguments.callee.name, args); }
+cal50CM(args,util) { return this.getTest(arguments.callee.name, args); }
 
 
     /**
