@@ -2,14 +2,14 @@
 
 #define PCMODE
 
-#define mVersion "M5CameraCar"
+#define mVersion "Calib1.0"
 
+#include <M5Atom.h>
 #include <HTTPClient.h>
 #include <libb64/cencode.h>
 #include <libb64/cdecode.h>
 #include <Preferences.h>
 #include "TukurutchEsp.h"
-#include "M5CameraCar.h"
 
 
 WebsocketsServer wsServer;
@@ -17,9 +17,26 @@ static Preferences preferencesRobot;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-#define P_LED		14
+uint32_t last_enc[2] = {0,0};
+int32_t duration[2] = {0,0};
+uint8_t cnt[2] = {0,0};
+#define CNT_MAX		10
+
+#define P_ENC0A		22
+#define P_ENC0B		19
+#define P_ENC1A		23
+#define P_ENC1B		33
+#define P_LED		21
+
+#if 1
+// ATOM
+#define P_SRV0		32
+#define P_SRV1		26
+#else
+// M5CAMERA
 #define P_SRV0		13
 #define P_SRV1		4
+#endif
 
 enum {
       CAL0P = 0,
@@ -39,10 +56,22 @@ enum {
 struct calibrate {
       uint16_t id;
       uint16_t ver;
+      uint16_t T;
+      uint16_t _reserve;
       uint16_t pwm[4][4];
        int16_t maxOffset[2];
        int16_t speedMax[4];
 } static cal;
+
+static const struct calibrate calInit = {
+      0,
+      1,
+      18,
+      0,
+  {{308,314,319,336},{297,292,287,270},{295,290,285,267},{309,315,320,339}},
+  {0,0},
+  {2000,-2000,2000,-2000},
+};
 
 enum {
       SERVO_IDLE,
@@ -55,21 +84,50 @@ static uint32_t servo_time = 0;
 void _setLED(uint8_t onoff)
 {
       digitalWrite(P_LED, !onoff);
-      pinMode(P_LED, OUTPUT);
 }
 
-uint8_t _getSw(uint8_t idx)
+uint8_t ledStatus = 0;
+static void irq_int0(void)
 {
-      int ret;
-      pinMode(4, INPUT_PULLDOWN);
-      digitalWrite(13, 1);
-      pinMode(13, OUTPUT);
-      delay(5);
-      ret = digitalRead(4);
-      pinMode(13, INPUT);
-      return ret;
+      cnt[0]++;
+      if(cnt[0] >= CNT_MAX) {
+            cnt[0] = 0;
+        
+            uint32_t cur = micros();
+            uint32_t d = (cur - last_enc[0]) & ~0x80000000;
+            duration[0] = digitalRead(P_ENC0B) ? d: -d;
+            last_enc[0] = cur;
+        
+            ledStatus ^= 1;
+            _setLED(ledStatus);
+      }
+      attachInterrupt(digitalPinToInterrupt(P_ENC0A), irq_int0, FALLING);  // RISING
 }
 
+static void irq_int1(void)
+{
+      cnt[1]++;
+      if(cnt[1] >= CNT_MAX) {
+            cnt[1] = 0;
+        
+            uint32_t cur = micros();
+            uint32_t d = (cur - last_enc[1]) & ~0x80000000;
+            duration[1] = digitalRead(P_ENC1B) ? d: -d;
+            last_enc[1] = cur;
+      }
+      attachInterrupt(digitalPinToInterrupt(P_ENC1A), irq_int1, FALLING);  // RISING
+}
+
+static int16_t _getSpeed(uint8_t index)
+{
+      int32_t ret = duration[index];
+      if(!ret) return 0;
+      duration[index] = 0;
+      return (1000000000L/(50L/CNT_MAX))/ret;  // us -> m rps
+    //  return ret;
+}
+
+//////////////////////////////
 #define PWM_MIN     143
 #define PWM_NEUTRAL 307
 #define PWM_MAX     471
@@ -84,7 +142,7 @@ static const uint16_t maxOffsetTbl[] = {164,83,70,63,58,54,51,48,45,43,41,40,38,
 
 int16_t limitOffset(int16_t offset)
 {
-           if(offset >= (int) numof(maxOffsetTbl)) offset =   numof(maxOffsetTbl)-1;
+           if(offset >= (int) numof(maxOffsetTbl)) offset = numof(maxOffsetTbl)-1;
       else if(offset <= (int)-numof(maxOffsetTbl)) offset = -(numof(maxOffsetTbl)-1);
       return offset;
 }
@@ -281,17 +339,37 @@ char* _getCal(void)
   return strBuf;
 }
 
-void _setServo(uint8_t idx, int16_t data/*0~180*/)
+void _setCID(int16_t id, int16_t ver, int16_t T)
 {
-  if(idx >= numof(servoTable)) return;
+  cal.id = id;
+  cal.ver = ver;
+  cal.T = T;
+  preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+}
 
-  #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
-  #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
-  if(data < 0) data = 0;
-  else if(data > 180) data = 180;
+void _setCPwm(uint8_t index, int16_t pwm0, int16_t pwm1, int16_t pwm2, int16_t pwm3)
+{
+  cal.pwm[index][0] = pwm0;
+  cal.pwm[index][1] = pwm1;
+  cal.pwm[index][2] = pwm2;
+  cal.pwm[index][3] = pwm3;
+  preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+}
 
-  uint16_t pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
-  _setPwm(idx, pwmWidth);
+void _setCMaxOffset(int16_t maxOffset0, int16_t maxOffset1)
+{
+  cal.maxOffset[0] = maxOffset0;
+  cal.maxOffset[1] = maxOffset1;
+  preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+}
+
+void _setCSpeedMax(int16_t speedMax0P, int16_t speedMax0M, int16_t speedMax1P, int16_t speedMax1M)
+{
+  cal.speedMax[0] = speedMax0P;
+  cal.speedMax[1] = speedMax0M;
+  cal.speedMax[2] = speedMax1P;
+  cal.speedMax[3] = speedMax1M;
+  preferencesRobot.putBytes("calib", &cal, sizeof(cal));
 }
 
 void onConnect(String ip)
@@ -299,7 +377,6 @@ void onConnect(String ip)
   _setLED(1);
 
   wsServer.listen(PORT_WEBSOCKET);
-  startCameraServer();
   Serial.println(ip);
 }
 
@@ -336,39 +413,31 @@ _setLED(0);
 
 Serial.begin(115200);
 
-M5CameraCar_init();
-
-if(_getSw(0)) {
-      _setLED(1);
-      delay(100);
-      _setLED(0);
-      Serial.println("Waiting for SmartConfig.");
-      WiFi.mode(WIFI_STA);
-      WiFi.beginSmartConfig();
-      while (!WiFi.smartConfigDone()) {
-            delay(1000);
-            _setLED(1);
-            delay(100);
-            _setLED(0);
-      }
-      Serial.println("SmartConfig received.");
-}
+pinMode(P_ENC0A, INPUT);
+pinMode(P_ENC0B, INPUT);
+attachInterrupt(digitalPinToInterrupt(P_ENC0A), irq_int0, FALLING);
+pinMode(P_ENC1A, INPUT);
+pinMode(P_ENC1B, INPUT);
+attachInterrupt(digitalPinToInterrupt(P_ENC1A), irq_int1, FALLING);
 
 // ServoCar
 ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
-#ifndef PCMODE
-initWifi(mVersion, true, onConnect);
-#else
 initWifi(mVersion, false, onConnect);
-#endif
 
 preferencesRobot.begin("M5CameraCar", false);
 if(preferencesRobot.getBytes("calib", &cal, sizeof(cal)) < sizeof(cal)) {
       Serial.println("init calib");
-      memset(&cal, 0, sizeof(cal));
+      //memset(&cal, 0, sizeof(cal));
+      memcpy(&cal, &calInit, sizeof(cal));
       preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+} else {
+      Serial.println(cal.id);
+      Serial.println(cal.ver);
+      for(uint8_t i=0; i<4; i++)
+        Serial.printf("%d %d %d %d %d %d\n", cal.pwm[i][0], cal.pwm[i][1], cal.pwm[i][2], cal.pwm[i][3], cal.speedMax[i]);
+      Serial.printf("%d %d\n", cal.maxOffset[0], cal.maxOffset[1]);
 }
 
 _Serial.println("PC mode: " mVersion);
@@ -384,11 +453,14 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','S','S','S',},
   {'S','S','S','S',},
-  {'B','B',},
   {'B','S',},
   {},
   {},
   {'B',},
+  {'S','S','S',},
+  {'B','S','S','S','S',},
+  {'S','S',},
+  {'S','S','S','S',},
   {'S','s',},
   {},
   {},
@@ -466,15 +538,18 @@ if(buffer[3] < ITEM_NUM) {
 switch(buffer[3]){
     case 1: _setCar(getByte(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
     case 2: _setMotor(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-    case 3: _setServo(getByte(0),getByte(1));; callOK(); break;
-    case 4: _setPwm(getByte(0),getShort(1));; callOK(); break;
-    case 5: _stopServo();; callOK(); break;
-    case 7: _setLED(getByte(0));; callOK(); break;
-    case 8: sendString((_downloadCal(getShort(0),getString(1)))); break;
-    case 9: sendString((_getCal())); break;
-    case 11: sendString((statusWifi())); break;
-    case 12: sendString((scanWifi())); break;
-    case 13: sendByte((connectWifi(getString(0),getString(1)))); break;
+    case 3: _setPwm(getByte(0),getShort(1));; callOK(); break;
+    case 4: _stopServo();; callOK(); break;
+    case 6: sendShort((_getSpeed(getByte(0)))); break;
+    case 7: _setCID(getShort(0),getShort(1),getShort(2));; callOK(); break;
+    case 8: _setCPwm(getByte(0),getShort(1),getShort(2),getShort(3),getShort(4));; callOK(); break;
+    case 9: _setCMaxOffset(getShort(0),getShort(1));; callOK(); break;
+    case 10: _setCSpeedMax(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
+    case 11: sendString((_downloadCal(getShort(0),getString(1)))); break;
+    case 12: sendString((_getCal())); break;
+    case 14: sendString((statusWifi())); break;
+    case 15: sendString((scanWifi())); break;
+    case 16: sendByte((connectWifi(getString(0),getString(1)))); break;
     case 0xFE:  // firmware name
     _println("PC mode: " mVersion);
     break;
@@ -530,9 +605,6 @@ while((c=_read()) >= 0) {
 }
 
   loopWebSocket();
-#ifndef PCMODE
-  sendNotifyArduinoMode();
-#endif
   if(servo_stt) {
         int32_t d = servo_time - millis();
         if(d <= 0) {

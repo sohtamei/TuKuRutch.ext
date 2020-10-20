@@ -7,6 +7,8 @@ using namespace websockets;
 
 #define PORT_WEBSOCKET 54323
 
+extern char strBuf[256];
+
 enum {
   T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
   T_C5=523, T_D5=587, T_E5=659, T_F5=698,

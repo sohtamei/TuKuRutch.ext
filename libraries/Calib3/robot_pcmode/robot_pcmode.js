@@ -65,38 +65,21 @@ class Scratch3DummyNameBlocks {
 	ARG1: { type: ArgumentType.STRING, defaultValue: this._ipadrs},
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setCar', text: {
-    'en': '[ARG1] at speed [ARG2] calib [ARG3] duration [ARG4]',
-    'ja': '[ARG1] 向きに [ARG2] の速さで動かす(補正 [ARG3] , [ARG4] ms)',
-}[this._locale], arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setCar', text: '[ARG1] at speed [ARG2] calib [ARG3] duration [ARG4]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
     ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'calib' },
     ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setMotor', text: {
-    'en': 'set motor left [ARG1] right [ARG2] calib [ARG3] duration [ARG4]',
-    'ja': '左 [ARG1] 右 [ARG2] で動かす(補正 [ARG3] , [ARG4] ms)',
-}[this._locale], arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setMotor', text: 'set motor left [ARG1] right [ARG2] calib [ARG3] duration [ARG4]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
     ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'calib' },
     ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setServo', text: {
-    'en': 'set servo [ARG1] [ARG2]',
-    'ja': 'サーボ [ARG1] の角度を [ARG2] にする',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
-}},
-
-{blockType: BlockType.COMMAND, opcode: 'setPwm', text: {
-    'en': 'set motor [ARG1] pwm [ARG2]',
-    'ja': 'サーボ [ARG1] にPWM [ARG2] を設定',
-}[this._locale], arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setPwm', text: 'set motor [ARG1] pwm [ARG2]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'pwm' },
 }},
@@ -111,25 +94,42 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setLED', text: {
-    'en': 'set LED [ARG1]',
-    'ja': 'LED [ARG1]',
-}[this._locale], arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'onoff' },
+{blockType: BlockType.REPORTER, opcode: 'getSpeed', text: 'get speed [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
 }},
 
-{blockType: BlockType.REPORTER, opcode: 'downloadCal', text: {
-    'en': 'download calibration [ARG1] [ARG2]',
-    'ja': '補正データダウンロード ID=[ARG1] データ[ARG2]',
-}[this._locale], arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setCID', text: 'set ID [ARG1] ver [ARG2] T [ARG3]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:1 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:18 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCPwm', text: 'set id-[ARG1] pwm-[ARG2] [ARG3] [ARG4] [ARG5]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG5: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCMaxOffset', text: 'set maxOffset 0-[ARG1] 1-[ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setCSpeedMax', text: 'set speedMax 0P-[ARG1] 0M-[ARG2] 1P-[ARG3] 1M-[ARG4]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+    ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'downloadCal', text: 'download calibration [ARG1] [ARG2]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:1 },
-    ARG2: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'.' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'s', defaultValue: },
 }},
 
-{blockType: BlockType.REPORTER, opcode: 'getCal', text: {
-    'en': 'get cal',
-    'ja': '補正データ表示',
-}[this._locale], arguments: {
+{blockType: BlockType.REPORTER, opcode: 'getCal', text: 'get cal', arguments: {
 }},
 
 
@@ -139,8 +139,6 @@ class Scratch3DummyNameBlocks {
 
 	get_menus() {
 	  return {
-angle: { acceptReporters: true, items: ['0','90','180',]},
-
 calib: { acceptReporters: true, items: ['50','25','0','-25','-50',]},
 
 direction: { acceptReporters: true, items: [
@@ -178,11 +176,6 @@ direction: { acceptReporters: true, items: [
 }[this._locale], value: 7 },
 ]},
 
-onoff: { acceptReporters: true, items: [
-{ text: 'On', value: 1 },
-{ text: 'Off', value: 0 },
-]},
-
 pwm: { acceptReporters: true, items: ['471','307','143','0',]},
 
 servoch: { acceptReporters: true, items: ['0','1',]},
@@ -195,11 +188,14 @@ speed: { acceptReporters: true, items: ['4','2','0','-2','-4',]},
 
 setCar(args,util) { return this.getTest(arguments.callee.name, args); }
 setMotor(args,util) { return this.getTest(arguments.callee.name, args); }
-setServo(args,util) { return this.getTest(arguments.callee.name, args); }
 setPwm(args,util) { return this.getTest(arguments.callee.name, args); }
 stopCar(args,util) { return this.getTest(arguments.callee.name, args); }
 enumDirection(args) { return args.ARG1; }
-setLED(args,util) { return this.getTest(arguments.callee.name, args); }
+getSpeed(args,util) { return this.getTest(arguments.callee.name, args); }
+setCID(args,util) { return this.getTest(arguments.callee.name, args); }
+setCPwm(args,util) { return this.getTest(arguments.callee.name, args); }
+setCMaxOffset(args,util) { return this.getTest(arguments.callee.name, args); }
+setCSpeedMax(args,util) { return this.getTest(arguments.callee.name, args); }
 downloadCal(args,util) { return this.getTest(arguments.callee.name, args); }
 getCal(args,util) { return this.getTest(arguments.callee.name, args); }
 
