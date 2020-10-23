@@ -39,10 +39,22 @@ enum {
 struct calibrate {
       uint16_t id;
       uint16_t ver;
+      uint16_t T;
+      uint16_t _reserve;
       uint16_t pwm[4][4];
        int16_t maxOffset[2];
        int16_t speedMax[4];
 } static cal;
+
+static const struct calibrate calInit = {
+      0,
+      1,
+      18,
+      0,
+  {{308,314,319,336},{297,292,287,270},{295,290,285,267},{309,315,320,339}},
+  {0,0},
+  {2000,-2000,2000,-2000},
+};
 
 enum {
       SERVO_IDLE,
