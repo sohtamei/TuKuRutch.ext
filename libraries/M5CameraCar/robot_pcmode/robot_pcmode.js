@@ -123,7 +123,7 @@ class Scratch3DummyNameBlocks {
     'ja': '補正データダウンロード ID=[ARG1] データ[ARG2]',
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:1 },
-    ARG2: { type: ArgumentType.NUMBER, type2:'s', defaultValue: },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
 }},
 
 {blockType: BlockType.REPORTER, opcode: 'getCal', text: {
