@@ -41,10 +41,11 @@ struct calibrate {
       uint16_t ver;
       uint16_t T;
       uint16_t _reserve;
-      uint16_t pwm[4][4];
+      uint16_t pwm[4][4];		// CAL0P,CAL0M,CAL1P,CAL1M  PWM0,PWM25,PWM50,PWM75
        int16_t maxOffset[2];
-       int16_t speedMax[4];
+       int16_t speedMax[4];		// CAL0P,CAL0M,CAL1P,CAL1M
 } static cal;
+static uint16_t pwm0[2];
 
 static const struct calibrate calInit = {
       0,
@@ -60,6 +61,7 @@ enum {
       SERVO_IDLE,
       SERVO_STOP_REQ,
       SERVO_OFF_REQ,
+      SERVO_REV_REQ,
 };
 static uint8_t servo_stt = 0;
 static uint32_t servo_time = 0;
@@ -82,6 +84,10 @@ uint8_t _getSw(uint8_t idx)
       return ret;
 }
 
+static uint16_t pwm_last[2];
+static uint16_t pwm_req[2];
+static uint16_t pwm_duration = 0;
+
 #define PWM_MIN     143
 #define PWM_NEUTRAL 307
 #define PWM_MAX     471
@@ -90,6 +96,7 @@ void _setPwm(uint8_t idx, int16_t data)
 {
       ledcAttachPin(servoTable[idx].port, servoTable[idx].ledc);
       ledcWrite(servoTable[idx].ledc, data);
+      pwm_last[idx] = data;
 }
 
 static const uint16_t maxOffsetTbl[] = {164,83,70,63,58,54,51,48,45,43,41,40,38,37,35,34,33,32,31,30,29,28,27,26,26,25,24,24,23,22,22,21,21,20,19,19,18,18,17,17,16,16,16,15,15,14,14,14,13,13,12};
@@ -134,7 +141,7 @@ void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
         
           case PWM0:
             if(calib == 0)
-              pwmL = (cal.pwm[CAL0P][PWM0] + cal.pwm[CAL0M][PWM0])/2;
+              pwmL = 0;
             else if(calib > 0)
               pwmL = cal.pwm[CAL0P][PWM0] + calib4;
             else
@@ -168,7 +175,7 @@ void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
         
           case PWM0:
             if(calib == 0)
-              pwmR = (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2;
+              pwmR = 0;
             else if(calib > 0)
               pwmR = cal.pwm[CAL1M][PWM0] + calib4;
             else
@@ -183,17 +190,31 @@ void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
             break;
       }
     //Serial.printf("%d %d\n", pwmL, pwmR);
-      _setPwm(0, pwmL);
-      _setPwm(1, pwmR);
     
-      if(duration) {
+      servo_stt = SERVO_IDLE;
+      if(pwm_last[0] && pwmL && ((pwm_last[0]>=pwm0[0]) != (pwmL>=pwm0[0]))) {
+            _setPwm(0, 0);
+            servo_stt = SERVO_REV_REQ;
+      } else {
+            _setPwm(0, pwmL);
+      }
+    
+      if(pwm_last[1] && pwmR && ((pwm_last[1]>=pwm0[1]) != (pwmR>=pwm0[1]))) {
+            _setPwm(1, 0);
+            servo_stt = SERVO_REV_REQ;
+      } else {
+            _setPwm(1, pwmR);
+      }
+    
+      if(servo_stt == SERVO_REV_REQ) {
+            servo_time = millis() + 40;
+            pwm_req[0] = pwmL;
+            pwm_req[1] = pwmR;
+            pwm_duration = duration;
+        
+      } else if(duration) {
             servo_stt = SERVO_STOP_REQ;
             servo_time = millis() + duration;
-        
-      } else if(left == PWM0 && right == PWM0) {
-            servo_stt = SERVO_OFF_REQ;
-            servo_time = millis() + 2000;
-        
       } else {
             servo_stt = SERVO_IDLE;
             servo_time = 0;
@@ -250,6 +271,8 @@ static char* _downloadCal(int16_t id, char* base64)
         if(len == sizeof(cal)) {
               memcpy((char*)&cal, strBuf, len);
               preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+              pwm0[0] = (cal.pwm[CAL0P][PWM0] + cal.pwm[CAL0M][PWM0])/2;
+              pwm0[1] = (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2;
               snprintf(strBuf, sizeof(strBuf), "OK");
         } else {
               snprintf(strBuf, sizeof(strBuf), "Error");
@@ -273,6 +296,8 @@ static char* _downloadCal(int16_t id, char* base64)
         if(len != sizeof(cal)) goto Error;
         memcpy((char*)&cal, strBuf, len);
         preferencesRobot.putBytes("calib", &cal, sizeof(cal));
+        pwm0[0] = (cal.pwm[CAL0P][PWM0] + cal.pwm[CAL0M][PWM0])/2;
+        pwm0[1] = (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2;
     
         uint16_t i;
         for(i=0; i<len; i++) Serial.printf("%02x", ((uint8_t*)&cal)[i]);
@@ -382,6 +407,8 @@ if(preferencesRobot.getBytes("calib", &cal, sizeof(cal)) < sizeof(cal)) {
       memset(&cal, 0, sizeof(cal));
       preferencesRobot.putBytes("calib", &cal, sizeof(cal));
 }
+pwm0[0] = (cal.pwm[CAL0P][PWM0] + cal.pwm[CAL0M][PWM0])/2;
+pwm0[1] = (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2;
 
 _Serial.println("PC mode: " mVersion);
 }
@@ -549,13 +576,19 @@ while((c=_read()) >= 0) {
         int32_t d = servo_time - millis();
         if(d <= 0) {
               switch(servo_stt) {
-                  case SERVO_STOP_REQ:
-                    servo_stt = SERVO_OFF_REQ;
-                    servo_time = millis() + 2000;
-                    _setPwm(0, (cal.pwm[CAL0P][PWM0] + cal.pwm[CAL0M][PWM0])/2);
-                    _setPwm(1, (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2);
+                  case SERVO_REV_REQ:
+                    if(pwm_duration) {
+                          servo_stt = SERVO_STOP_REQ;
+                          servo_time = millis() + pwm_duration;
+                    } else {
+                          servo_stt = SERVO_IDLE;
+                          servo_time = 0;
+                    }
+                    _setPwm(0, pwm_req[0]);
+                    _setPwm(1, pwm_req[1]);
                     break;
             
+                  case SERVO_STOP_REQ:
                   case SERVO_OFF_REQ:
                   default:
                     servo_stt = SERVO_IDLE;

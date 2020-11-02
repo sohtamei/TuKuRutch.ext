@@ -71,7 +71,7 @@ class Scratch3DummyNameBlocks {
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'direction' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
-    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'calib' },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
 }},
 
@@ -81,7 +81,7 @@ class Scratch3DummyNameBlocks {
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:4, menu: 'speed' },
-    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'calib' },
+    ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG4: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
 }},
 
@@ -90,7 +90,7 @@ class Scratch3DummyNameBlocks {
     'ja': 'サーボ [ARG1] の角度を [ARG2] にする',
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90, menu: 'angle' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:90 },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'setPwm', text: {
@@ -98,7 +98,7 @@ class Scratch3DummyNameBlocks {
     'ja': 'サーボ [ARG1] にPWM [ARG2] を設定',
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'servoch' },
-    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0, menu: 'pwm' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:307 },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'stopCar', text: {
@@ -123,7 +123,7 @@ class Scratch3DummyNameBlocks {
     'ja': '補正データダウンロード ID=[ARG1] データ[ARG2]',
 }[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'S', defaultValue:1 },
-    ARG2: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'.' },
+    ARG2: { type: ArgumentType.NUMBER, type2:'s', defaultValue: },
 }},
 
 {blockType: BlockType.REPORTER, opcode: 'getCal', text: {
@@ -139,10 +139,6 @@ class Scratch3DummyNameBlocks {
 
 	get_menus() {
 	  return {
-angle: { acceptReporters: true, items: ['0','90','180',]},
-
-calib: { acceptReporters: true, items: ['50','25','0','-25','-50',]},
-
 direction: { acceptReporters: true, items: [
 { text: {
     'en': 'stop',
@@ -183,11 +179,9 @@ onoff: { acceptReporters: true, items: [
 { text: 'Off', value: 0 },
 ]},
 
-pwm: { acceptReporters: true, items: ['471','307','143','0',]},
-
 servoch: { acceptReporters: true, items: ['0','1',]},
 
-speed: { acceptReporters: true, items: ['4','2','0','-2','-4',]},
+speed: { acceptReporters: true, items: ['4','2','1','0','-1','-2','-4',]},
 
 
 	  };
