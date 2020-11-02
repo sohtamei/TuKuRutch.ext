@@ -198,14 +198,21 @@ static void walkServo(const s_walk pWalk[2])
 
 static void walkServoLoop(uint16_t elapsed)
 {
-	#define SwingDuration1 30		// up
-	#define SwingDuration2 100		// swing
-	#define SwingDuration3 140		// down
+	#define SwingDuration1 40		// up
+	#define SwingDuration2 120		// swing
+	#define SwingDuration3 160		// down
 
 	if(firstFlag) {
 		if(elapsed < SwingDuration1) {
 			setServo1(LFK, K_U);
 			setServo1(RRK, K_U);
+
+			setServo1(LFC, servoEnd[LFC]);
+			setServo1(RRC, servoEnd[RRC]);
+		//	setServo1(RFK, servoEnd[RFK]);
+		//	setServo1(LRK, servoEnd[LRK]);
+			setServo1(RFC, servoEnd[RFC]);
+			setServo1(LRC, servoEnd[LRC]);
 			return;
 		} else if(elapsed < SwingDuration2) {
 			setServo1(LFC, walkTable[0].LF + walkTable[1].LF/2);

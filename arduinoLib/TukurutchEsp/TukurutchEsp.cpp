@@ -15,7 +15,7 @@ WiFiServer server(PORT);
 WiFiClient client;
 AsyncUDP udp;
 Preferences preferences;
-char buf[256];
+char strBuf[256];
 
 enum {
     CONNECTION_NONE = 0,
@@ -76,31 +76,31 @@ uint8_t connectWifi(char* ssid, char*pass)
 char* statusWifi(void)
 {
 	preferences.getBytes("sta.ssid", g_ssid, sizeof(g_ssid));
-	memset(buf, 0, sizeof(buf));
+	memset(strBuf, 0, sizeof(strBuf));
     
 	if(WiFi.status() == WL_CONNECTED) {
 		IPAddress ip = WiFi.localIP();
-		snprintf(buf,sizeof(buf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid+4, ip[0],ip[1],ip[2],ip[3]);
+		snprintf(strBuf,sizeof(strBuf)-1,"%d\t%s\t%d.%d.%d.%d", WiFi.status(), g_ssid+4, ip[0],ip[1],ip[2],ip[3]);
 	} else {
-		snprintf(buf,sizeof(buf)-1,"%d\t%s", WiFi.status(), g_ssid+4);
+		snprintf(strBuf,sizeof(strBuf)-1,"%d\t%s", WiFi.status(), g_ssid+4);
 	}
-	return buf;
+	return strBuf;
 }
 
 char* scanWifi(void)
 {
-	memset(buf, 0, sizeof(buf));
+	memset(strBuf, 0, sizeof(strBuf));
     
 	int n = WiFi.scanNetworks();
 	for(int i = 0; i < n; i++) {
 		if(i == 0) {
-			snprintf(buf, sizeof(buf)-1, "%s", WiFi.SSID(i).c_str());
+			snprintf(strBuf, sizeof(strBuf)-1, "%s", WiFi.SSID(i).c_str());
 		} else {
-			int ofs = strlen(buf);
-			snprintf(buf+ofs, sizeof(buf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
+			int ofs = strlen(strBuf);
+			snprintf(strBuf+ofs, sizeof(strBuf)-1-ofs, "\t%s", WiFi.SSID(i).c_str());
 		}
 	}
-	return buf;
+	return strBuf;
 }
 
 // connect		  : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED
