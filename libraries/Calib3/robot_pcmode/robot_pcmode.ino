@@ -128,7 +128,7 @@ static int16_t _getSpeed(uint8_t index)
 }
 
 //////////////////////////////
-#define PWM_MIN     143
+#define PWM_MIN     143  
 #define PWM_NEUTRAL 307
 #define PWM_MAX     471
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,P_SRV0},{9,P_SRV1}};

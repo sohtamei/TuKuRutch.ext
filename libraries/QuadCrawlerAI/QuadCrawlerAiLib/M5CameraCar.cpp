@@ -73,15 +73,9 @@ void M5CameraCar_init(void)
   config.xclk_freq_hz = 10000000;//20000000;
   config.pixel_format = PIXFORMAT_JPEG;
   //init with high specs to pre-allocate larger buffers
-  if(psramFound()){
-    config.frame_size = FRAMESIZE_UXGA;
-    config.jpeg_quality = 10;
-    config.fb_count = 2;
-  } else {
-    config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 12;
-    config.fb_count = 1;
-  }
+  config.frame_size = FRAMESIZE_SVGA;
+  config.jpeg_quality = 12;
+  config.fb_count = 1;
 
   // camera init
   esp_err_t err = esp_camera_init(&config);

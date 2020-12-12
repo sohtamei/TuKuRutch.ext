@@ -190,7 +190,8 @@ void loop()
 		quadCrawler_setSpeed(25000 / remote.xyLevel, remote.x, remote.y);
 	}
 	sendNotifyArduinoMode();
-	quadCrawler_servoLoop();
+//	quadCrawler_servoLoop();
+	delay(50);
 
 	uint16_t elapsed = (millis() - sonner_time);
 	if(elapsed >= 100) {

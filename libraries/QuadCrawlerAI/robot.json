@@ -17,7 +17,7 @@
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
-						"custom_PSRAM=esp32_enabled",
+						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
 

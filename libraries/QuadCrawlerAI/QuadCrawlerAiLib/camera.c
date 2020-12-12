@@ -82,12 +82,6 @@ typedef struct camera_fb_s {
     struct camera_fb_s * next;
 } camera_fb_int_t;
 
-typedef struct fb_s {
-    uint8_t * buf;
-    size_t len;
-    struct fb_s * next;
-} fb_item_t;
-
 typedef struct {
     camera_config_t config;
     sensor_t sensor;
@@ -116,8 +110,6 @@ typedef struct {
     dma_filter_t dma_filter;
     intr_handle_t i2s_intr_handle;
     QueueHandle_t data_ready;
-    QueueHandle_t fb_in;
-    QueueHandle_t fb_out;
 
     SemaphoreHandle_t frame_ready;
     TaskHandle_t dma_filter_task;
@@ -134,11 +126,6 @@ static void dma_desc_deinit();
 static void dma_filter_task(void *pvParameters);
 static void dma_filter_jpeg(const dma_elem_t* src, lldesc_t* dma_desc, uint8_t* dst);
 static void i2s_stop(bool* need_yield);
-
-static bool is_hs_mode()
-{
-    return s_state->config.xclk_freq_hz > 10000000;
-}
 
 static size_t i2s_bytes_per_sample(i2s_sampling_mode_t mode)
 {
@@ -470,18 +457,6 @@ static int i2s_run()
         memset(s_state->dma_buf[i], 0, d->length);
     }
 
-    // wait for frame
-    camera_fb_int_t * fb = s_state->fb;
-    while(s_state->config.fb_count > 1) {
-        while(s_state->fb->ref && s_state->fb->next != fb) {
-            s_state->fb = s_state->fb->next;
-        }
-        if(s_state->fb->ref == 0) {
-            break;
-        }
-        vTaskDelay(2);
-    }
-
     //todo: wait for vsync
     ESP_LOGV(TAG, "Waiting for negative edge on VSYNC");
 
@@ -548,10 +523,6 @@ static void IRAM_ATTR i2s_isr(void* arg)
     I2S0.int_clr.val = I2S0.int_raw.val;
     bool need_yield = false;
     signal_dma_buf_received(&need_yield);
-    if (s_state->config.pixel_format != PIXFORMAT_JPEG
-     && s_state->dma_received_count == s_state->height * s_state->dma_per_line) {
-        i2s_stop(&need_yield);
-    }
     if (need_yield) {
         portYIELD_FROM_ISR();
     }
@@ -592,61 +563,9 @@ static void IRAM_ATTR vsync_isr(void* arg)
 
 static void IRAM_ATTR camera_fb_done()
 {
-    camera_fb_int_t * fb = NULL, * fb2 = NULL;
-    BaseType_t taskAwoken = 0;
-
     if(s_state->config.fb_count == 1) {
         xSemaphoreGive(s_state->frame_ready);
         return;
-    }
-
-    fb = s_state->fb;
-    if(!fb->ref && fb->len) {
-        //add reference
-        fb->ref = 1;
-
-        //check if the queue is full
-        if(xQueueIsQueueFullFromISR(s_state->fb_out) == pdTRUE) {
-            //pop frame buffer from the queue
-            if(xQueueReceiveFromISR(s_state->fb_out, &fb2, &taskAwoken) == pdTRUE) {
-                //free the popped buffer
-                fb2->ref = 0;
-                fb2->len = 0;
-                //push the new frame to the end of the queue
-                xQueueSendFromISR(s_state->fb_out, &fb, &taskAwoken);
-            } else {
-                //queue is full and we could not pop a frame from it
-            }
-        } else {
-            //push the new frame to the end of the queue
-            xQueueSendFromISR(s_state->fb_out, &fb, &taskAwoken);
-        }
-    } else {
-        //frame was referenced or empty
-    }
-
-    //return buffers to be filled
-    while(xQueueReceiveFromISR(s_state->fb_in, &fb2, &taskAwoken) == pdTRUE) {
-        fb2->ref = 0;
-        fb2->len = 0;
-    }
-
-    //advance frame buffer only if the current one has data
-    if(s_state->fb->len) {
-        s_state->fb = s_state->fb->next;
-    }
-    //try to find the next free frame buffer
-    while(s_state->fb->ref && s_state->fb->next != fb) {
-        s_state->fb = s_state->fb->next;
-    }
-    //is the found frame buffer free?
-    if(!s_state->fb->ref) {
-        //buffer found. make sure it's empty
-        s_state->fb->len = 0;
-        *((uint32_t *)s_state->fb->buf) = 0;
-    } else {
-        //stay at the previous buffer
-        s_state->fb = fb;
     }
 }
 
@@ -950,14 +869,6 @@ esp_err_t camera_init(const camera_config_t* config)
             err = ESP_ERR_NO_MEM;
             goto fail;
         }
-    } else {
-        s_state->fb_in = xQueueCreate(s_state->config.fb_count, sizeof(camera_fb_t *));
-        s_state->fb_out = xQueueCreate(1, sizeof(camera_fb_t *));
-        if (s_state->fb_in == NULL || s_state->fb_out == NULL) {
-            ESP_LOGE(TAG, "Failed to fb queues");
-            err = ESP_ERR_NO_MEM;
-            goto fail;
-        }
     }
 
     //ToDo: core affinity?
@@ -1059,12 +970,14 @@ esp_err_t esp_camera_deinit()
     if (s_state->data_ready) {
         vQueueDelete(s_state->data_ready);
     }
+/*
     if (s_state->fb_in) {
         vQueueDelete(s_state->fb_in);
     }
     if (s_state->fb_out) {
         vQueueDelete(s_state->fb_out);
     }
+*/
     if (s_state->frame_ready) {
         vSemaphoreDelete(s_state->frame_ready);
     }
@@ -1090,9 +1003,11 @@ camera_fb_t* esp_camera_fb_get()
         return NULL;
     }
     if(!I2S0.conf.rx_start) {
+/*
         if(s_state->config.fb_count > 1) {
             ESP_LOGD(TAG, "i2s_run");
         }
+*/
         if (i2s_run() != 0) {
             return NULL;
         }
@@ -1106,23 +1021,13 @@ camera_fb_t* esp_camera_fb_get()
         }
         return (camera_fb_t*)s_state->fb;
     }
-    camera_fb_int_t * fb = NULL;
-    if(s_state->fb_out) {
-        if (xQueueReceive(s_state->fb_out, &fb, FB_GET_TIMEOUT) != pdTRUE) {
-            i2s_stop(&need_yield);
-            ESP_LOGE(TAG, "Failed to get the frame on time!");
-            return NULL;
-        }
-    }
-    return (camera_fb_t*)fb;
 }
 
 void esp_camera_fb_return(camera_fb_t * fb)
 {
-    if(fb == NULL || s_state == NULL || s_state->config.fb_count == 1 || s_state->fb_in == NULL) {
+    if(fb == NULL || s_state == NULL || s_state->config.fb_count == 1/* || s_state->fb_in == NULL*/) {
         return;
     }
-    xQueueSend(s_state->fb_in, &fb, portMAX_DELAY);
 }
 
 sensor_t * esp_camera_sensor_get()
@@ -1132,92 +1037,3 @@ sensor_t * esp_camera_sensor_get()
     }
     return &s_state->sensor;
 }
-/*
-esp_err_t esp_camera_save_to_nvs(const char *key) 
-{
-#if ESP_IDF_VERSION_MAJOR > 3
-    nvs_handle_t handle;
-#else
-    nvs_handle handle;
-#endif
-    esp_err_t ret = nvs_open(key,NVS_READWRITE,&handle);
-    
-    if (ret == ESP_OK) {
-        sensor_t *s = esp_camera_sensor_get();
-        if (s != NULL) {
-            ret = nvs_set_blob(handle,CAMERA_SENSOR_NVS_KEY,&s->status,sizeof(camera_status_t));
-            if (ret == ESP_OK) {
-                uint8_t pf = s->pixformat;
-                ret = nvs_set_u8(handle,CAMERA_PIXFORMAT_NVS_KEY,pf);
-            }
-            return ret;
-        } else {
-            return ESP_ERR_CAMERA_NOT_DETECTED; 
-        }
-        nvs_close(handle);
-        return ret;
-    } else {
-        return ret;
-    }
-}
-
-esp_err_t esp_camera_load_from_nvs(const char *key) 
-{
-#if ESP_IDF_VERSION_MAJOR > 3
-    nvs_handle_t handle;
-#else
-    nvs_handle handle;
-#endif
-  uint8_t pf;
-
-  esp_err_t ret = nvs_open(key,NVS_READWRITE,&handle);
-  
-  if (ret == ESP_OK) {
-      sensor_t *s = esp_camera_sensor_get();
-      camera_status_t st;
-      if (s != NULL) {
-        size_t size = sizeof(camera_status_t);
-        ret = nvs_get_blob(handle,CAMERA_SENSOR_NVS_KEY,&st,&size);
-        if (ret == ESP_OK) {
-            s->set_ae_level(s,st.ae_level);
-            s->set_aec2(s,st.aec2);
-            s->set_aec_value(s,st.aec_value);
-            s->set_agc_gain(s,st.agc_gain);
-            s->set_awb_gain(s,st.awb_gain);
-            s->set_bpc(s,st.bpc);
-            s->set_brightness(s,st.brightness);
-            s->set_colorbar(s,st.colorbar);
-            s->set_contrast(s,st.contrast);
-            s->set_dcw(s,st.dcw);
-            s->set_denoise(s,st.denoise);
-            s->set_exposure_ctrl(s,st.aec);
-            s->set_framesize(s,st.framesize);
-            s->set_gain_ctrl(s,st.agc);          
-            s->set_gainceiling(s,st.gainceiling);
-            s->set_hmirror(s,st.hmirror);
-            s->set_lenc(s,st.lenc);
-            s->set_quality(s,st.quality);
-            s->set_raw_gma(s,st.raw_gma);
-            s->set_saturation(s,st.saturation);
-            s->set_sharpness(s,st.sharpness);
-            s->set_special_effect(s,st.special_effect);
-            s->set_vflip(s,st.vflip);
-            s->set_wb_mode(s,st.wb_mode);
-            s->set_whitebal(s,st.awb);
-            s->set_wpc(s,st.wpc);
-        }  
-        ret = nvs_get_u8(handle,CAMERA_PIXFORMAT_NVS_KEY,&pf);
-        if (ret == ESP_OK) {
-          s->set_pixformat(s,pf);
-        }
-      } else {
-          return ESP_ERR_CAMERA_NOT_DETECTED;
-      }
-      nvs_close(handle);
-      return ret;
-  } else {
-      ESP_LOGW(TAG,"Error (%d) opening nvs key \"%s\"",ret,key);
-      return ret;
-  }
-}
-*/
