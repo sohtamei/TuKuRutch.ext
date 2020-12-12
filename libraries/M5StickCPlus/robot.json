@@ -166,8 +166,13 @@ void Send_iic(uint8_t Register, int16_t Speed)
   Wire.endTransmission();
 }
 
+uint8_t roverCInitF = false;
 void setRoverC(int16_t F_L, int16_t F_R, int16_t R_L, int16_t R_R)
 {
+  if(!roverCInitF) {
+    roverCInitF=true;
+    RoverC_Init();
+  }
   Send_iic(0x00, F_L);
   Send_iic(0x01, F_R);
   Send_iic(0x02, R_L);
@@ -251,7 +256,7 @@ if(_getSw(0)) {
 ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
-RoverC_Init();
+//RoverC_Init();
 Serial.begin(115200);
 #ifndef PCMODE
 initWifi(mVersion, true, onConnect);
