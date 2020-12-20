@@ -9,7 +9,7 @@
 #include "QuadCrawlerAI.h"
 
 // ポート定義
-#define BOARD_1ST  // 最初の試作基板
+//#define BOARD_1ST  // 最初の試作基板
 
 #define P_Echo		12	// P_Echo Pin
 #define P_Trig		15	// Trigger Pin
@@ -636,7 +636,7 @@ void quadCrawler_init(void)
 	mcp.pinMode(14, OUTPUT);
 	mcp.pinMode(15, OUTPUT);
 
-	mcp.digitalWrite(PE_LED, LED);
+	mcp.digitalWrite(PE_LED, LOW);
 	mcp.digitalWrite(8, HIGH);
 	mcp.digitalWrite(9, HIGH);
 	mcp.digitalWrite(10, HIGH);
