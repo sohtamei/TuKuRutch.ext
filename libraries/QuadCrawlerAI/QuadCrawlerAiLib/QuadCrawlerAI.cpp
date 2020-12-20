@@ -3,16 +3,30 @@
 #include <stdint.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
+#include "Adafruit_MCP23017.h"
 #include <Wire.h>
 #include <Preferences.h>
 #include "QuadCrawlerAI.h"
 
 // ポート定義
+#define BOARD_1ST  // 最初の試作基板
 
-#define P_Bz		33	// Bzzer Pin
 #define P_Echo		12	// P_Echo Pin
 #define P_Trig		15	// Trigger Pin
-#define P_Motor_EN	4	// Surbo Moter Drive Enable Pin
+
+#ifdef BOARD_1ST
+  #define P_Bz			33	// Bzzer Pin
+  #define P_SW			0
+  #define P_LED			2
+  #define P_Motor_EN	4	// Surbo Moter Drive Enable Pin
+#else
+  #define P_Bz			2	// Bzzer Pin
+  #define PE_SW			1
+  #define PE_LED		0
+  #define PE_Motor_EN	2	// Surbo Moter Drive Enable Pin
+#endif
+
+
 #define P_Neopix	14
 
 #define P_SCL		27
@@ -20,6 +34,8 @@
 
 static Preferences preferencesQC;
 static int8_t calib[8] = {0,0,0,0,0,0,0,0};
+
+Adafruit_MCP23017 mcp;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define SERVO_MIN 90L   // Min pulse length out of 4096 (実測 75)
@@ -311,13 +327,13 @@ void quadCrawler_servoLoop(void)
 	case ServoSet:
 		if(elapsed >= 180*1000UL) {
 			setServoOff();
-			digitalWrite(P_LED, 0);
+			quadCrawler_LED(0);
 			return;
 		}
 		if((elapsed >> 8) & 1)      // 256
-			digitalWrite(P_LED, 1);
+			quadCrawler_LED(1);
 		else
-			digitalWrite(P_LED, 0);
+			quadCrawler_LED(0);
 		break;
 
 	case ServoWalk:
@@ -598,9 +614,38 @@ void quadCrawler_tone(int sound, int ms)
 
 void quadCrawler_init(void)
 {
+	Wire.begin(P_SDA,P_SCL);
+
+  #ifdef BOARD_1ST
+	pinMode(P_LED, OUTPUT);
+	digitalWrite(P_LED, LOW);
 	pinMode(P_Motor_EN, OUTPUT);
 	digitalWrite(P_Motor_EN, HIGH);
+  #else
+    mcp.begin();
+	mcp.pinMode(PE_Motor_EN, OUTPUT);
+	mcp.digitalWrite(PE_Motor_EN, HIGH);
+	mcp.pinMode(PE_LED, OUTPUT);
+	mcp.pinMode(PE_SW, INPUT);
+	mcp.pinMode(8, OUTPUT);
+	mcp.pinMode(9, OUTPUT);
+	mcp.pinMode(10, OUTPUT);
+	mcp.pinMode(11, OUTPUT);
+	mcp.pinMode(12, OUTPUT);
+	mcp.pinMode(13, OUTPUT);
+	mcp.pinMode(14, OUTPUT);
+	mcp.pinMode(15, OUTPUT);
 
+	mcp.digitalWrite(PE_LED, LED);
+	mcp.digitalWrite(8, HIGH);
+	mcp.digitalWrite(9, HIGH);
+	mcp.digitalWrite(10, HIGH);
+	mcp.digitalWrite(11, HIGH);
+	mcp.digitalWrite(12, HIGH);
+	mcp.digitalWrite(13, HIGH);
+	mcp.digitalWrite(14, HIGH);
+	mcp.digitalWrite(15, HIGH);
+  #endif
 	pinMode(P_Echo, INPUT_PULLUP);
 	pinMode(P_Trig, OUTPUT);
 
@@ -616,10 +661,32 @@ void quadCrawler_init(void)
 		memset(calib, 0, sizeof(calib));
 		preferencesQC.putBytes("calib", calib, sizeof(calib));
 	}
-	Wire.begin(P_SDA,P_SCL);
+
 	pwm.begin();
 	pwm.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
+  #ifdef BOARD_1ST
 	digitalWrite(P_Motor_EN, LOW);
+  #else
+	mcp.digitalWrite(PE_Motor_EN, LOW);
+  #endif
 	neutralServo();
 	setTargetLoop(0);
+}
+
+void quadCrawler_LED(uint8_t com)
+{
+  #ifdef BOARD_1ST
+	digitalWrite(P_LED, com);
+  #else
+	mcp.digitalWrite(PE_LED,com); 
+  #endif
+}
+
+int  quadCrawler_SW(void)
+{
+  #ifdef BOARD_1ST
+	return digitalRead(P_SW);
+  #else
+	return mcp.digitalRead(PE_SW);
+  #endif
 }

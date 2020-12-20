@@ -36,7 +36,7 @@
 WebsocketsServer wsServer;
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
+void funcLed(uint8_t onoff) { /*quadCrawler_LED(onoff);*/ }
 analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
 
 void onConnect(String ip)
@@ -49,8 +49,6 @@ void onConnect(String ip)
 	// PCモード/書き込みモード setup処理 (C言語)
 	"setup":"
 Serial.begin(115200);
-pinMode(P_LED, OUTPUT);
-digitalWrite(P_LED, LOW);
 quadCrawler_init();
 M5CameraCar_init();
 quadCrawler_colorWipe(COLOR_PURPLE);
@@ -99,7 +97,7 @@ initWifi(mVersion, false, onConnect);
 		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
 		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
 		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
-//		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"digitalRead(P_SW)==0"}],
+//		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"quadCrawler_SW()==0"}],
 
 		["-"],	// ブロック区切り
 
@@ -112,7 +110,7 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(P_LED,OUTPUT);digitalWrite(P_LED,{0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"quadCrawler_LED({0});"}],
 		// enum
 		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
 		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",				"func":"{0}"}],
@@ -120,6 +118,8 @@ initWifi(mVersion, false, onConnect);
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
 
 		// WiFi設定
+		["-"],
+
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
 		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],

@@ -4,9 +4,7 @@
 #include <stdint.h>
 
 // ポート定義
-#define P_SW	0
 #define P_IRRX	13
-#define P_LED	2
 
 //動作速度定義
 enum {
@@ -98,5 +96,9 @@ void quadCrawler_colorRed(uint8_t id);
 
 void quadCrawler_rainbow(uint8_t wait);         // LEDを７色に光らせる。
 uint8_t quadCrawler_checkServoON(void);
+
+void quadCrawler_LED(uint8_t com);
+
+int  quadCrawler_SW(void);
 
 #endif  // quadCrawler_h

@@ -6,21 +6,21 @@
 #include "TukurutchEsp.h"
 #include "M5CameraCar.h"
 
-static void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
+static void funcLed(uint8_t onoff) { /*quadCrawler_LED(onoff);*/ }
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, funcLed);
 
+static uint8_t connected = false;
 void onConnect(String ip)
 {
 	startCameraServer();
 	Serial.println("connected, ip="+ip);
+	connected = true;
 }
 
 void setup()
 {
 	// 初期化処理
 	Serial.begin(115200);
-	pinMode(P_LED, OUTPUT);
-	digitalWrite(P_LED, LOW);
 	quadCrawler_init();
 	M5CameraCar_init();
 	quadCrawler_colorWipe(COLOR_PURPLE);
@@ -41,7 +41,7 @@ static uint8_t lastSw4 = 1;
 static int detect_sw4(void)
 {
 	int detect = 0;
-	uint8_t sw4 = digitalRead(P_SW);
+	uint8_t sw4 = quadCrawler_SW();
 	if(lastSw4!=sw4 && sw4==0)
 		detect = 1;
 	lastSw4 = sw4;
@@ -52,17 +52,6 @@ void loop()
 {
 	if(originAdj) {
 		loop_originAdj();
-		return;
-	}
-
-	// SW4を押したとき初期姿勢にする (組み立て用)
-	if(detect_sw4()) {
-		int i;
-		quadCrawler_colorWipe(COLOR_RED);
-		for(i = 0; i < 4; i++)
-			quadCrawler_setPose1(i, 0, 0);
-		originAdj = 1;
-		originAdjId = 0;
 		return;
 	}
 
@@ -189,12 +178,23 @@ void loop()
 		// アナログリモコンのJOYSTICK操作のとき速度設定
 		quadCrawler_setSpeed(25000 / remote.xyLevel, remote.x, remote.y);
 	}
-	sendNotifyArduinoMode();
+	if(connected) sendNotifyArduinoMode();
 	quadCrawler_servoLoop();
 
 	uint16_t elapsed = (millis() - sonner_time);
 	if(elapsed >= 100) {
 		sonner_time = millis();
+		// SW4を押したとき初期姿勢にする (組み立て用)
+		if(detect_sw4()) {
+			int i;
+			quadCrawler_colorWipe(COLOR_RED);
+			for(i = 0; i < 4; i++)
+				quadCrawler_setPose1(i, 0, 0);
+			originAdj = 1;
+			originAdjId = 0;
+			return;
+		}
+
 		// 超音波センサで障害物を検出したときブザーを鳴らす (100ms周期)
 		double sonner_val = quadCrawler_getSonner();
 		if (sonner_val < 8){
@@ -211,16 +211,20 @@ void loop()
 
 void loop_originAdj()
 {
-	if(detect_sw4()) {
-		quadCrawler_colorWipe(COLOR_PURPLE);
-		quadCrawler_Walk(quadCrawler_fast, COM_STOP);
-		originAdj = 0;
-		return;
-	} else if(originAdj && !quadCrawler_checkServoON()) {
-		quadCrawler_colorWipe(COLOR_PURPLE);
-		quadCrawler_tone(T_C5, 500);
-		originAdj = 0;
-		return;
+	uint16_t elapsed = (millis() - sonner_time);
+	if(elapsed >= 100) {
+		sonner_time = millis();
+		if(detect_sw4()) {
+			quadCrawler_colorWipe(COLOR_PURPLE);
+			quadCrawler_Walk(quadCrawler_fast, COM_STOP);
+			originAdj = 0;
+			return;
+		} else if(originAdj && !quadCrawler_checkServoON()) {
+			quadCrawler_colorWipe(COLOR_PURPLE);
+			quadCrawler_tone(T_C5, 500);
+			originAdj = 0;
+			return;
+		}
 	}
 
 	remote.checkUpdated();            // リモコンコード受信
