@@ -12,6 +12,7 @@ static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, funcLed);
 static uint8_t connected = false;
 void onConnect(String ip)
 {
+	quadCrawler_LED(true);
 	startCameraServer();
 	Serial.println("connected, ip="+ip);
 	connected = true;

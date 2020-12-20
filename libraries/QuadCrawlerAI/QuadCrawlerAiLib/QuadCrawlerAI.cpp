@@ -65,7 +65,7 @@ enum {
 #define K_D2	( 60)
 
 // crotch
-#define C_Fmin	(-55)	// frontLeg-front
+#define C_Fmin	(-70)	// frontLeg-front
 #define C_Fmax	( 60)	//         -rear
 #define C_Rmin	(-90)	// rearLeg
 #define C_Rmax	( 45)
@@ -108,7 +108,7 @@ static int8_t servoEnd[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
 
 //---------------------------------------------------------
 
-	static const uint8_t channelTbl[8]	= {1,		0,		5,		4,		3,		2,		7,		6};
+	static const uint8_t channelTbl[12]	= {1,		0,		5,		4,		3,		2,		7,		6,	8,9,10,11,};
 
 static void _set_servo(uint8_t id, int16_t deg)
 {
@@ -626,25 +626,8 @@ void quadCrawler_init(void)
 	mcp.pinMode(PE_Motor_EN, OUTPUT);
 	mcp.digitalWrite(PE_Motor_EN, HIGH);
 	mcp.pinMode(PE_LED, OUTPUT);
-	mcp.pinMode(PE_SW, INPUT);
-	mcp.pinMode(8, OUTPUT);
-	mcp.pinMode(9, OUTPUT);
-	mcp.pinMode(10, OUTPUT);
-	mcp.pinMode(11, OUTPUT);
-	mcp.pinMode(12, OUTPUT);
-	mcp.pinMode(13, OUTPUT);
-	mcp.pinMode(14, OUTPUT);
-	mcp.pinMode(15, OUTPUT);
-
 	mcp.digitalWrite(PE_LED, LOW);
-	mcp.digitalWrite(8, HIGH);
-	mcp.digitalWrite(9, HIGH);
-	mcp.digitalWrite(10, HIGH);
-	mcp.digitalWrite(11, HIGH);
-	mcp.digitalWrite(12, HIGH);
-	mcp.digitalWrite(13, HIGH);
-	mcp.digitalWrite(14, HIGH);
-	mcp.digitalWrite(15, HIGH);
+	mcp.pinMode(PE_SW, INPUT);
   #endif
 	pinMode(P_Echo, INPUT_PULLUP);
 	pinMode(P_Trig, OUTPUT);
@@ -688,5 +671,21 @@ int  quadCrawler_SW(void)
 	return digitalRead(P_SW);
   #else
 	return mcp.digitalRead(PE_SW);
+  #endif
+}
+
+void quadCrawler_digitalWrite(uint8_t pin, uint8_t data)
+{
+  #ifndef BOARD_1ST
+	mcp.pinMode(pin+8, OUTPUT);
+	mcp.digitalWrite(pin+8, data);
+  #endif
+}
+
+uint8_t quadCrawler_digitalRead(uint8_t pin)
+{
+  #ifndef BOARD_1ST
+	mcp.pinMode(pin+8, INPUT);
+	return mcp.digitalRead(pin+8);
   #endif
 }

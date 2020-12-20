@@ -41,6 +41,7 @@ analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
 
 void onConnect(String ip)
 {
+  quadCrawler_LED(true);
   wsServer.listen(PORT_WEBSOCKET);
   startCameraServer();
   Serial.println(ip);
@@ -91,13 +92,16 @@ initWifi(mVersion, false, onConnect);
 		["R", "calib up/down %d.leg %d.calibK",			"calibKnee",	"FrontR","get",	{"remote":["B","B",	"S"],"func":"_calibServo({0}*2+0,{1})"}],
 		["R", "calib fw/back %d.leg %d.calibC",			"calibCrotch",	"FrontR","get",	{"remote":["B","B",	"S"],"func":"_calibServo({0}*2+1,{1})"}],
 
-	//	["w", "set PWM %n %n",							"setPWM",			0,0,		{"remote":["B","S"],	"func":"_setPWM({0},{1});"}],
-
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"quadCrawler_colorWipe({0});"}],
-		["w", "LED rainbow %d sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
-		["w", "play tone on note %d.noteJ2 beat %d.beats",	"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
+		["w", "LED rainbow %n sec",						"setRainbow",		5,			{"remote":["B"],		"func":"quadCrawler_rainbow({0});"}],
+		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",		"C4","Half",{"remote":["S","S"],	"func":"quadCrawler_tone({0},{1});"}],
 		["R", "read Sonner",							"getSonner",					{"remote":[			"F"],"func":"quadCrawler_getSonner()"}],
+
 //		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"quadCrawler_SW()==0"}],
+		["R", "get VBAT",								"getVbat",						{"remote":[			"S"],"func":"getAdc1(33,1)*2"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"quadCrawler_digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"],"func":"quadCrawler_digitalRead({0})"}],
+		["w", "set PWM ch %n data %n",					"setPWM",			8,320,		{"remote":["B","S"],	"func":"_setPWM({0},{1});"}],
 
 		["-"],	// ブロック区切り
 
@@ -138,11 +142,12 @@ initWifi(mVersion, false, onConnect);
 		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_down","t_down","h_down","l_down","r_down","t_up_down","l_r_up","all_up_down","neutral",],
 		"color":["off","red","green","blue","yellow","purple","lightblue"],
 		"knee":[-25,0,60,100],
-		"crotchF":[-55,0,60],
+		"crotchF":[-70,0,60],
 		"crotchR":[-90,0,45],
 		"leg":["FrontR","FrontL","RearR","RearL",],
 		"calibC":["forward_C","back_C","get","reset","reset_all",],
 		"calibK":["up_K","down_K","get","reset","reset_all",],
+		"digital":["HIGH","LOW"],
 	},
 	"values":{
 		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
@@ -164,6 +169,7 @@ initWifi(mVersion, false, onConnect);
 		"FrontR":0,"FrontL":2,"RearR":1,"RearL":3,
 		"back_C":0,"forward_C":1,"get":2,"reset":3,"reset_all":4,
 		"down_K":0,"up_K":1,
+		"HIGH":1,"LOW":0,
 	},
 	"translators":{
 		"ja":{

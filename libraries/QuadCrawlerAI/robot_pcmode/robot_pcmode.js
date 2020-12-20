@@ -131,10 +131,7 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'color' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setRainbow', text: {
-    'en': 'LED rainbow [ARG1] sec',
-    'ja': 'LEDレインボー [ARG1] 秒',
-}[this._locale], arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setRainbow', text: 'LED rainbow [ARG1] sec', arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:5 },
 }},
 
@@ -150,6 +147,23 @@ class Scratch3DummyNameBlocks {
     'en': 'read Sonner',
     'ja': '距離取得',
 }[this._locale], arguments: {
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getVbat', text: 'get VBAT', arguments: {
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setDigital', text: 'set digital pin [ARG1] output as [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'digital' },
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'getDigital', text: 'read digital pin [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0 },
+}},
+
+{blockType: BlockType.COMMAND, opcode: 'setPWM', text: 'set PWM ch [ARG1] data [ARG2]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:8 },
+    ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:320 },
 }},
 
 '---',
@@ -289,9 +303,14 @@ color: { acceptReporters: true, items: [
 }[this._locale], value: 6 },
 ]},
 
-crotchF: { acceptReporters: true, items: ['-55','0','60',]},
+crotchF: { acceptReporters: true, items: ['-70','0','60',]},
 
 crotchR: { acceptReporters: true, items: ['-90','0','45',]},
+
+digital: { acceptReporters: true, items: [
+{ text: 'HIGH', value: 1 },
+{ text: 'LOW', value: 0 },
+]},
 
 ircode: { acceptReporters: true, items: [
 { text: 'POWER', value: 69 },
@@ -654,6 +673,10 @@ setColorWipe(args,util) { return this.getTest(arguments.callee.name, args); }
 setRainbow(args,util) { return this.getTest(arguments.callee.name, args); }
 BuzzerJ2(args,util) { return this.getTest(arguments.callee.name, args); }
 getSonner(args,util) { return this.getTest(arguments.callee.name, args); }
+getVbat(args,util) { return this.getTest(arguments.callee.name, args); }
+setDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+getDigital(args,util) { return this.getTest(arguments.callee.name, args); }
+setPWM(args,util) { return this.getTest(arguments.callee.name, args); }
 setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 enumIrcode(args) { return args.ARG1; }
 enumIrcodeA(args) { return args.ARG1; }
