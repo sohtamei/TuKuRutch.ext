@@ -100,7 +100,7 @@ int SCCB_Init(int pin_sda, int pin_scl)
 
 uint8_t SCCB_Probe()
 {
-	return 0x30;
+//	return 0x30;
 #ifdef CONFIG_SCCB_HARDWARE_I2C
     uint8_t slave_addr = 0x0;
     while(slave_addr < 0x7f) {

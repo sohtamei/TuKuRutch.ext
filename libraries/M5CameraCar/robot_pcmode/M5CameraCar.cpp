@@ -29,6 +29,26 @@
 #define PCLK_GPIO_NUM     22
 
 #elif 1
+// M5TimerCam
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    15
+#define XCLK_GPIO_NUM     27
+#define SIOD_GPIO_NUM     25
+#define SIOC_GPIO_NUM     23
+
+#define Y9_GPIO_NUM       19
+#define Y8_GPIO_NUM       36
+#define Y7_GPIO_NUM       18
+#define Y6_GPIO_NUM       39
+#define Y5_GPIO_NUM        5
+#define Y4_GPIO_NUM       34
+#define Y3_GPIO_NUM       35
+#define Y2_GPIO_NUM       32
+#define VSYNC_GPIO_NUM    22
+#define HREF_GPIO_NUM     26
+#define PCLK_GPIO_NUM     21
+
+#else
 // M5camera modelB
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    15
@@ -47,6 +67,7 @@
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     26
 #define PCLK_GPIO_NUM     21
+
 #endif
 
 void M5CameraCar_init(void)
@@ -70,7 +91,7 @@ void M5CameraCar_init(void)
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 10000000;//20000000;
+  config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
   //init with high specs to pre-allocate larger buffers
   if(psramFound()){
@@ -91,6 +112,14 @@ void M5CameraCar_init(void)
   }
 
   sensor_t * s = esp_camera_sensor_get();
+  if (s->id.PID == OV3660_PID) {
+    s->set_vflip(s, 1);//flip it back
+    s->set_brightness(s, 1);//up the blightness just a bit
+    s->set_saturation(s, -2);//lower the saturation
+    s->set_vflip(s, 0);
+    s->set_hmirror(s, 0);
+  } else {
+    s->set_hmirror(s, 1);
+  }
   s->set_framesize(s, FRAMESIZE_HVGA);
-  s->set_hmirror(s, 1);
 }

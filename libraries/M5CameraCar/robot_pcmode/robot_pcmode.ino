@@ -17,7 +17,15 @@ static Preferences preferencesRobot;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-#define P_LED		14
+#if 0
+// M5camera modelB
+  #define P_LED		14
+  #define P_LED_NEG	1
+#else
+// M5TimerCam
+  #define P_LED		2
+  #define P_LED_NEG	0
+#endif
 #define P_SRV0		13
 #define P_SRV1		4
 
@@ -68,7 +76,11 @@ static uint32_t servo_time = 0;
 
 void _setLED(uint8_t onoff)
 {
+    #if P_LED_NEG
       digitalWrite(P_LED, !onoff);
+    #else
+      digitalWrite(P_LED, onoff);
+    #endif
       pinMode(P_LED, OUTPUT);
 }
 

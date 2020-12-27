@@ -43,7 +43,11 @@ typedef enum {
     FRAMESIZE_HD,       // 1280x720
     FRAMESIZE_SXGA,     // 1280x1024
     FRAMESIZE_UXGA,     // 1600x1200
-
+    // 3MP Sensors
+    FRAMESIZE_FHD,      // 1920x1080
+    FRAMESIZE_P_HD,     //  720x1280
+    FRAMESIZE_P_3MP,    //  864x1536
+    FRAMESIZE_QXGA,     // 2048x1536
     FRAMESIZE_INVALID
 } framesize_t;
 

@@ -39,6 +39,9 @@
 #if CONFIG_OV2640_SUPPORT
 #include "ov2640.h"
 #endif
+#if CONFIG_OV3660_SUPPORT
+#include "ov3660.h"
+#endif
 
 typedef enum {
     CAMERA_NONE = 0,
@@ -846,6 +849,14 @@ esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera
     s_state->sensor.slv_addr = slv_addr;
     s_state->sensor.xclk_freq_hz = config->xclk_freq_hz;
 
+#if (CONFIG_OV3660_SUPPORT || CONFIG_OV5640_SUPPORT)
+    if(s_state->sensor.slv_addr == 0x3c){
+        id->PID = SCCB_Read16(s_state->sensor.slv_addr, REG16_CHIDH);
+        id->VER = SCCB_Read16(s_state->sensor.slv_addr, REG16_CHIDL);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+        ESP_LOGD(TAG, "Camera PID=0x%02x VER=0x%02x", id->PID, id->VER);
+    } else {
+#endif
         id->PID = SCCB_Read(s_state->sensor.slv_addr, REG_PID);
         id->VER = SCCB_Read(s_state->sensor.slv_addr, REG_VER);
         id->MIDL = SCCB_Read(s_state->sensor.slv_addr, REG_MIDL);
@@ -854,11 +865,22 @@ esp_err_t camera_probe(const camera_config_t* config, camera_model_t* out_camera
         ESP_LOGD(TAG, "Camera PID=0x%02x VER=0x%02x MIDL=0x%02x MIDH=0x%02x",
                  id->PID, id->VER, id->MIDH, id->MIDL);
 
+#if (CONFIG_OV3660_SUPPORT || CONFIG_OV5640_SUPPORT)
+    }
+#endif
+
+
     switch (id->PID) {
 #if CONFIG_OV2640_SUPPORT
     case OV2640_PID:
         *out_camera_model = CAMERA_OV2640;
         ov2640_init(&s_state->sensor);
+        break;
+#endif
+#if CONFIG_OV3660_SUPPORT
+    case OV3660_PID:
+        *out_camera_model = CAMERA_OV3660;
+        ov3660_init(&s_state->sensor);
         break;
 #endif
     default:
@@ -888,9 +910,24 @@ esp_err_t camera_init(const camera_config_t* config)
     framesize_t frame_size = (framesize_t) config->frame_size;
     pixformat_t pix_format = (pixformat_t) config->pixel_format;
 
+    switch (s_state->sensor.id.PID) {
+#if CONFIG_OV2640_SUPPORT
+        case OV2640_PID:
             if (frame_size > FRAMESIZE_UXGA) {
                 frame_size = FRAMESIZE_UXGA;
             }
+            break;
+#endif
+#if CONFIG_OV3660_SUPPORT
+        case OV3660_PID:
+            if (frame_size > FRAMESIZE_QXGA) {
+                frame_size = FRAMESIZE_QXGA;
+            }
+            break;
+#endif
+        default:
+            return ESP_ERR_CAMERA_NOT_SUPPORTED;
+    }
 
     s_state->width = resolution[frame_size].width;
     s_state->height = resolution[frame_size].height;
@@ -1029,6 +1066,8 @@ esp_err_t esp_camera_init(const camera_config_t* config)
     }
     if (camera_model == CAMERA_OV2640) {
         ESP_LOGI(TAG, "Detected OV2640 camera");
+    } else if (camera_model == CAMERA_OV3660) {
+        ESP_LOGI(TAG, "Detected OV3660 camera");
     } else {
         ESP_LOGI(TAG, "Camera not supported");
         err = ESP_ERR_CAMERA_NOT_SUPPORTED;
