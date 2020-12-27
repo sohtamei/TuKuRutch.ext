@@ -1,24 +1,25 @@
 /* copyright (C) 2020 Sohta. */
 #define mVersion "QuadCrawlerAI1.0"
 
-#include <QuadCrawlerAI.h>
+#include <Arduino.h>
+#include "QuadCrawlerAI.h"
 #include <analogRemote.h>
-#include "TukurutchEsp.h"
+#include <TukurutchEsp.h>
 #include "M5CameraCar.h"
 
-static void funcLed(uint8_t onoff) { /*quadCrawler_LED(onoff);*/ }
-static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, funcLed);
+static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 
-static uint8_t connected = false;
+WebsocketsServer wsServer;
+
 void onConnect(String ip)
 {
 	quadCrawler_LED(true);
+	wsServer.listen(PORT_WEBSOCKET);
 	startCameraServer();
-	Serial.println("connected, ip="+ip);
-	connected = true;
+	Serial.println(ip);
 }
 
-void setup()
+void _setup()
 {
 	// 初期化処理
 	Serial.begin(115200);
@@ -30,7 +31,6 @@ void setup()
 	quadCrawler_tone(T_E4, 300);
 
 	initWifi(mVersion, true, onConnect);
-	Serial.println("Normal: " mVersion);
 }
 
 static uint8_t lastkey = 0;
@@ -49,7 +49,8 @@ static int detect_sw4(void)
 	return detect;
 }
 
-void loop()
+void loop_originAdj();
+void _loop()
 {
 	if(originAdj) {
 		loop_originAdj();
@@ -179,7 +180,6 @@ void loop()
 		// アナログリモコンのJOYSTICK操作のとき速度設定
 		quadCrawler_setSpeed(25000 / remote.xyLevel, remote.x, remote.y);
 	}
-	if(connected) sendNotifyArduinoMode();
 	quadCrawler_servoLoop();
 
 	uint16_t elapsed = (millis() - sonner_time);
@@ -195,7 +195,7 @@ void loop()
 			originAdjId = 0;
 			return;
 		}
-
+/*
 		// 超音波センサで障害物を検出したときブザーを鳴らす (100ms周期)
 		double sonner_val = quadCrawler_getSonner();
 		if (sonner_val < 8){
@@ -206,6 +206,7 @@ void loop()
 				quadCrawler_Walk(quadCrawler_fast, COM_STOP);
 			}
 		}
+*/
 	}
 }
 

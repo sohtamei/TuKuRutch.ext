@@ -9,9 +9,9 @@
 	"productInfoURL": "https://github.com/bit-trade-one/QuadCrawler",
 	"sampleDir"		: "sample/QuadCrawler",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
-	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
+	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex (option)
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"libraryPath"	: "QuadCrawlerAiLib",						// 専用ライブラリ(option)
+	"libraryPath"	: "",										// 専用ライブラリ(option)
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
@@ -27,46 +27,20 @@
 	"header":"
 #define mVersion \"QuadCrawlerAI1.0\"
 
-#include <QuadCrawlerAI.h>
-#include <analogRemote.h>
-#include \"TukurutchEsp.h\"
-#include \"M5CameraCar.h\"
+#include \"QuadCrawlerAI.h\"
+#include <TukurutchEsp.h>
 
+extern WebsocketsServer wsServer;
+void _setup();
+void _loop();
 
-WebsocketsServer wsServer;
-
-#define REMOTE_ENABLE	// for robot_pcmode.ino.template
-void funcLed(uint8_t onoff) { /*quadCrawler_LED(onoff);*/ }
-analogRemote remote(MODE_XYKEYS_MERGE, /*port*/P_IRRX, funcLed);
-
-void onConnect(String ip)
-{
-  quadCrawler_LED(true);
-  wsServer.listen(PORT_WEBSOCKET);
-  startCameraServer();
-  Serial.println(ip);
-}
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
-	"setup":"
-Serial.begin(115200);
-quadCrawler_init();
-M5CameraCar_init();
-quadCrawler_colorWipe(COLOR_PURPLE);
-quadCrawler_tone(T_C5, 100);
-#ifndef PCMODE
-initWifi(mVersion, true, onConnect);
-#else
-initWifi(mVersion, false, onConnect);
-#endif
-",
+	"setup":"_setup();",
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
   loopWebSocket();
-#ifndef PCMODE
-  sendNotifyArduinoMode();
-#endif
-  quadCrawler_servoLoop();
+  _loop();
 ",
 
 	// PCモード/書き込みモード スクラッチブロック定義
@@ -105,19 +79,8 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],	// ブロック区切り
 
-		// robot.js呼び出し
-		["B", "remote pressed",							"checkRemoteKey",				{"custom":"", 			"func":"remote.checkRemoteKey()"}],
-		["B", "ir remote %d.ircode pressed",			"isRemoteKey",		"POWER",	{"custom":"",			"func":"remote.isRemoteKey({0})"}],
-		["B", "analog remote %d.ircodeA pressed",		"isARemoteKey",		"A↑",		{"custom":"",			"func":"remote.isRemoteKey({0})"}],
-		["R", "get remote X",							"getRemoteX",					{"custom":"",			"func":"remote.x"}],
-		["R", "get remote Y",							"getRemoteY",					{"custom":"",			"func":"remote.y"}],
-
-		["-"],
-
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"quadCrawler_LED({0});"}],
 		// enum
-		["r", "%d.ircode .",							"enumIrcode",		"POWER",	{"enum":"",				"func":"{0}"}],
-		["r", "%d.ircodeA .",							"enumIrcodeA",		"A↑",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
 
@@ -135,8 +98,6 @@ initWifi(mVersion, false, onConnect);
 		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
 
 		"onoff":["On","Off"],
-		"ircode":["POWER","MENU","TEST","RETURN","R0","C","↑","↓","←","→","CENTER","R1","R2","R3","R4","R5","R6","R7","R8","R9","B"],
-		"ircodeA":["A CENTER","A U","A R","A L","A D","A↑→","A↑","A←↑","A→","A←","A↓→","A↓","A←↓"],
 
 		"speed":["sslow","slow","typical","fast", "high"],
 		"walkcmd":["stop","fw","cw","ccw","rw","right","left","all_up","all_down","t_down","h_down","l_down","r_down","t_up_down","l_r_up","all_up_down","neutral",],
@@ -160,9 +121,6 @@ initWifi(mVersion, false, onConnect);
 		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
 
 		"On":1,"Off":0,
-		"POWER":0x45,"B":0x46,"MENU":0x47,"TEST":0x44,"RETURN":0x43,"R0":0x16,"C":0x0D,"↑":0x40,"↓":0x19,"←":0x07,"→":0x09,"CENTER":0x15,
-		"R1":0x0C,"R2":0x18,"R3":0x5E,"R4":0x08,"R5":0x1C,"R6":0x5A,"R7":0x42,"R8":0x52,"R9":0x4A,
-		"A CENTER":0x61,"A U":0x62,"A R":0x63,"A L":0x64,"A D":0x65,"A↑→":0x70,"A↑":0x71,"A←↑":0x72,"A→":0x73,"A←":0x74,"A↓→":0x75,"A↓":0x76,"A←↓":0x77,
 		"sslow":2000,"slow":1000,"typical":500,"fast":200,"high":100,
 		"stop":0,"fw":1,"cw":2,"ccw":3,"rw":4,"right":5,"left":6,"all_up":7,"all_down":8,"t_down":9,"h_down":10,"l_down":11,"r_down":12,"t_up_down":13,"l_r_up":14,"all_up_down":15,"neutral":16,
 		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
@@ -182,11 +140,6 @@ initWifi(mVersion, false, onConnect);
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
 
 			"set LED %d.onoff"								:"LEDを %d.onoff",
-			"remote pressed"								:"リモコンボタンが押された",
-			"ir remote %d.ircode pressed"					:"押されたのが %d.ircode のボタン",
-			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
-			"get remote X"									:"アナログXの値",
-			"get remote Y"									:"アナログYの値",
 
 			"walk %d.walkcmd %d.speed"	:"動く %d.walkcmd %d.speed",
 			"FrontR up/down %d.knee fw/back %d.crotchF"		:"右前脚 上下 %d.knee 前後 %d.crotchF",
