@@ -131,7 +131,10 @@ class Scratch3DummyNameBlocks {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:1, menu: 'color' },
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'setRainbow', text: 'LED rainbow [ARG1] sec', arguments: {
+{blockType: BlockType.COMMAND, opcode: 'setRainbow', text: {
+    'en': 'LED rainbow [ARG1] sec',
+    'ja': 'LEDレインボー [ARG1] 秒',
+}[this._locale], arguments: {
     ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:5 },
 }},
 

@@ -150,7 +150,7 @@ void _loop();
 			"calib up/down %d.leg %d.calibK"				:"上下微調整 %d.leg %d.calibK",
 			"calib fw/back %d.leg %d.calibC"				:"前後微調整 %d.leg %d.calibC",
 
-			"LED rainbow %d sec"							: "LEDレインボー %d 秒",
+			"LED rainbow %n sec"							: "LEDレインボー %n 秒",
 			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
 			"read Sonner"									: "距離取得",
 			"SW is pressed"									: "スイッチが押された",

@@ -5,11 +5,11 @@
 #include "QuadCrawlerAI.h"
 #include <analogRemote.h>
 #include <TukurutchEsp.h>
-#include "M5CameraCar.h"
 
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 
 WebsocketsServer wsServer;
+void startCameraServer(void);
 
 void onConnect(String ip)
 {
@@ -24,7 +24,6 @@ void _setup()
 	// 初期化処理
 	Serial.begin(115200);
 	quadCrawler_init();
-	M5CameraCar_init();
 	quadCrawler_colorWipe(COLOR_PURPLE);
 	quadCrawler_tone(T_C4, 300);
 	quadCrawler_tone(T_D4, 300);
