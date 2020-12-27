@@ -1,9 +1,9 @@
 {
-	"name"			: "M5CameraCar",
+	"name"			: "M5TimerCam",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
-	"sort"			: 11,										// メニュー上の表示順序
+	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
@@ -19,13 +19,13 @@
 						"custom_FlashSize=esp32_4M",
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_921600"],
+						"custom_UploadSpeed=esp32_115200"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5CameraCar\"
+#define mVersion \"M5TimerCam\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
