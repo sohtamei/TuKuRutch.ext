@@ -25,13 +25,13 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5TimerCam\"
+#define mVersion \"M5TimerCam1.0\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
-	"setup":"_setup();",
+	"setup":"_setup(mVersion);",
 
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"
@@ -72,6 +72,8 @@
 //		["R", "download calibration %n %n",				"downloadCal",		1,0,		{"remote":["S","S",	"s"],	"func":"_downloadCal({0},{1})"}],
 		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
 
+		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
+		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
 		["-"],
 
 		// WiFi設定

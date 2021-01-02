@@ -25,13 +25,13 @@
 
 	// PCモード/書き込みモード ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5CameraCar\"
+#define mVersion \"M5CameraCar1.0\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
 	// PCモード/書き込みモード setup処理 (C言語)
-	"setup":"_setup();",
+	"setup":"_setup(mVersion);",
 
 	// PCモード/書き込みモード loop処理 (C言語)
 	"loop":"

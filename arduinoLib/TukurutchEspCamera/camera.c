@@ -1075,7 +1075,7 @@ esp_err_t esp_camera_init(const camera_config_t* config)
     }
     err = camera_init(config);
     if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Camera init failed with error 0x%x", err);
+        ESP_LOGE(TAG, "Camera init failed with error 0x%x\n", err);
         return err;
     }
     return ESP_OK;

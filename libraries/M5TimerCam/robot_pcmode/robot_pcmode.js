@@ -132,6 +132,13 @@ class Scratch3DummyNameBlocks {
 }[this._locale], arguments: {
 }},
 
+{blockType: BlockType.COMMAND, opcode: 'setBatteryConnect', text: 'battery connection [ARG1]', arguments: {
+    ARG1: { type: ArgumentType.NUMBER, type2:'B', defaultValue:0, menu: 'onoff' },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getBatteryVoltage', text: 'battery voltage', arguments: {
+}},
+
 
 		];
 		return this._blocks;
@@ -196,6 +203,8 @@ enumDirection(args) { return args.ARG1; }
 setLED(args,util) { return this.getTest(arguments.callee.name, args); }
 downloadCal(args,util) { return this.getTest(arguments.callee.name, args); }
 getCal(args,util) { return this.getTest(arguments.callee.name, args); }
+setBatteryConnect(args,util) { return this.getTest(arguments.callee.name, args); }
+getBatteryVoltage(args,util) { return this.getTest(arguments.callee.name, args); }
 
 
     /**

@@ -1,8 +1,8 @@
-#ifndef M5CameraCar_h
-#define M5CameraCar_h
+#ifndef main_h
+#define main_h
 
 extern WebsocketsServer wsServer;
-void _setup(void);
+void _setup(const char* ver);
 void _loop(void);
 
 void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration);
@@ -15,4 +15,7 @@ void _stopServo(void);
 void _setLED(uint8_t onoff);
 char* _downloadCal(int16_t id, char* base64);
 char* _getCal(void);
-#endif  // M5CameraCar_h
+
+//#define DEVICE_M5CAMERA
+#define DEVICE_M5TIMERCAM
+#endif  // main_h

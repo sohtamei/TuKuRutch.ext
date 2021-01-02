@@ -1,6 +1,4 @@
 /* copyright (C) 2020 Sohta. */
-#define mVersion "M5TimerCam"
-
 #include <Arduino.h>
 #include <stdint.h>
 #include <Wire.h>
@@ -11,7 +9,6 @@
 #include <TukurutchEspCamera.h>
 #include <TukurutchEsp.h>
 #include "main.h"
-
 
 // ポート定義
 
@@ -35,7 +32,7 @@
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
-#elif 1
+#elif defined(DEVICE_M5TIMERCAM)
 // M5TimerCam
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    15
@@ -55,7 +52,7 @@
 #define HREF_GPIO_NUM     26
 #define PCLK_GPIO_NUM     21
 
-#else
+#elif defined(DEVICE_M5CAMERA)
 // M5camera modelB
 #define PWDN_GPIO_NUM     -1
 #define RESET_GPIO_NUM    15
@@ -74,6 +71,26 @@
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     26
 #define PCLK_GPIO_NUM     21
+
+#else
+// ESP32cam
+#define PWDN_GPIO_NUM     -1
+#define RESET_GPIO_NUM    15
+#define XCLK_GPIO_NUM     27
+#define SIOD_GPIO_NUM     25
+#define SIOC_GPIO_NUM     23
+
+#define Y9_GPIO_NUM       19
+#define Y8_GPIO_NUM       36
+#define Y7_GPIO_NUM       18
+#define Y6_GPIO_NUM       39
+#define Y5_GPIO_NUM        5
+#define Y4_GPIO_NUM       34
+#define Y3_GPIO_NUM       35
+#define Y2_GPIO_NUM       17
+#define VSYNC_GPIO_NUM    22
+#define HREF_GPIO_NUM     26
+#define PCLK_GPIO_NUM     21
 #endif
 
 
@@ -82,14 +99,19 @@ static Preferences preferencesRobot;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
-#if 0
+#if defined(DEVICE_M5CAMERA)
 // M5camera modelB
-	#define P_LED		14
-	#define P_LED_NEG	1
-#else
+  #define P_LED			14
+  #define P_LED_NEG		1
+#elif defined(DEVICE_M5TIMERCAM)
 // M5TimerCam
-	#define P_LED		2
-	#define P_LED_NEG	0
+  #include "bmm8563.h"
+  #define P_LED				2
+  #define P_LED_NEG			0
+  #define BAT_OUTPUT_HOLD_PIN	33	// 0-bat power disable
+  #define BAT_ADC_PIN			38
+#else
+  #error
 #endif
 #define P_SRV0		13
 #define P_SRV1		4
@@ -266,7 +288,7 @@ void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
 			pwmR = cal.pwm[CAL1M][-right] + calib4;
 		break;
 	}
-//Serial.printf("%d %d\\n", pwmL, pwmR);
+//Serial.printf("%d %d\n", pwmL, pwmR);
 
 	servo_stt = SERVO_IDLE;
 	if(pwm_last[0] && pwmL && ((pwm_last[0]>=pwm0[0]) != (pwmL>=pwm0[0]))) {
@@ -381,7 +403,7 @@ char* _downloadCal(int16_t id, char* base64)
 		Serial.println();
 		snprintf(strBuf, sizeof(strBuf), "OK:%s", payload.c_str());
 	} else {
-		Serial.printf("[HTTP] GET... failed, error: %s\\n", http.errorToString(httpCode).c_str());
+		Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
 Error:
 		snprintf(strBuf, sizeof(strBuf), "Error");
 	}
@@ -408,6 +430,7 @@ void _setServo(uint8_t idx, int16_t data/*0~180*/)
 	_setPwm(idx, pwmWidth);
 }
 
+static uint8_t connected = false;
 void onConnect(String ip)
 {
 	_setLED(1);
@@ -415,6 +438,7 @@ void onConnect(String ip)
 	wsServer.listen(PORT_WEBSOCKET);
 	startCameraServer();
 	Serial.println(ip);
+	connected = true;
 }
 
 void M5CameraCar_init(void)
@@ -454,7 +478,7 @@ void M5CameraCar_init(void)
 	// camera init
 	esp_err_t err = esp_camera_init(&config);
 	if (err != ESP_OK) {
-		Serial.printf("Camera init failed with error 0x%x", err);
+		Serial.printf("Camera init failed with error 0x%x\n", err);
 		return;
 	}
 
@@ -471,12 +495,17 @@ void M5CameraCar_init(void)
 	s->set_framesize(s, FRAMESIZE_HVGA);
 }
 
-void _setup(void)
+void _setup(const char* ver)
 {
 	_setLED(0);
 
 	Serial.begin(115200);
 
+#if defined(DEVICE_M5TIMERCAM)
+	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT);
+	digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
+	bmm8563_init();
+#endif
 	M5CameraCar_init();
 
 	if(_getSw(0)) {
@@ -499,7 +528,7 @@ void _setup(void)
 	ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 	ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
-	initWifi(mVersion, false, onConnect);
+	initWifi(ver, false, onConnect);
 
 	preferencesRobot.begin("M5CameraCar", false);
 	if(preferencesRobot.getBytes("calib", &cal, sizeof(cal)) < sizeof(cal)) {
@@ -511,6 +540,8 @@ void _setup(void)
 	pwm0[1] = (cal.pwm[CAL1P][PWM0] + cal.pwm[CAL1M][PWM0])/2;
 }
 
+static uint8_t lastStream_state = -1;
+static uint32_t lastStream;
 void _loop(void)
 {
 	if(servo_stt) {
@@ -540,4 +571,28 @@ void _loop(void)
 			}
 		}
 	}
+
+	if(lastStream_state != stream_state) {
+		lastStream_state = stream_state;
+		lastStream = millis();
+		_setLED(connected);
+#if defined(DEVICE_M5TIMERCAM)
+		digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
+#endif
+	} else {
+		int32_t elapsed = ((millis() - lastStream) & 0x7FFFFFFF) / 1000;
+		if(stream_state) {
+			_setLED(elapsed & 1);
+		} else {
+#if defined(DEVICE_M5TIMERCAM)
+			if(elapsed > 120) {
+				Serial.println("disconnect battery");
+				digitalWrite(BAT_OUTPUT_HOLD_PIN,0);
+				lastStream = millis();
+			}
+#endif
+		}
+	}
+
+	delay(40);
 }

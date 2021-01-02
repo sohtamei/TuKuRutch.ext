@@ -702,7 +702,7 @@ void quadCrawler_init(void)
 
 	esp_err_t err = esp_camera_init(&config);
 	if (err != ESP_OK) {
-		Serial.printf("Camera init failed with error 0x%x", err);
+		Serial.printf("Camera init failed with error 0x%x\n", err);
 	} else {
 		sensor_t * s = esp_camera_sensor_get();
 		s->set_framesize(s, FRAMESIZE_HVGA);

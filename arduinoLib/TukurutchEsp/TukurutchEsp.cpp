@@ -191,7 +191,7 @@ void printlnWifi(char* mes)
 }
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
-const struct {uint8_t port; uint8_t ch;} adc1Table[] = {{36, 0}, {39, 3}, {32, 4}, {33, 5}, {34, 6}, {35, 7}};
+const struct {uint8_t port; uint8_t ch;} adc1Table[] = {{36, 0}, {37, 1}, {38, 2}, {39, 3}, {32, 4}, {33, 5}, {34, 6}, {35, 7}};
 esp_adc_cal_characteristics_t adc_chars;
 uint16_t getAdc1(uint8_t port, uint16_t count)
 {
