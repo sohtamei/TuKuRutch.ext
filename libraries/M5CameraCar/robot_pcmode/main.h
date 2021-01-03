@@ -18,4 +18,6 @@ char* _getCal(void);
 
 #define DEVICE_M5CAMERA
 //#define DEVICE_M5TIMERCAM
+//#define DEVICE_ESP32_CAM
+//#define DEVICE_ESP32CAM
 #endif  // main_h
