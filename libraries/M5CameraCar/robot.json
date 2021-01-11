@@ -66,10 +66,7 @@
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 
-// for FW
 		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
-// for scratch3
-//		["R", "download calibration %n %n",				"downloadCal",		1,0,		{"remote":["S","S",	"s"],	"func":"_downloadCal({0},{1})"}],
 		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
 
 		["-"],
