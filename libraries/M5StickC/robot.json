@@ -1,7 +1,7 @@
 {
 	"name"			: "M5StickC",
 	"port"			: 0,										// 変更禁止
-	"boardType"		: "esp32:esp32:m5stick-c",					// package:platform:board
+	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
 	"sort"			: 12,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
@@ -12,13 +12,13 @@
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
-						"custom_DebugLevel=m5stick-c_none",
+						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
 						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=m5stick-c_default",
-						"custom_UploadSpeed=m5stick-c_750000"],
+						"custom_PartitionScheme=esp32_default",
+						"custom_UploadSpeed=esp32_750000"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 

@@ -121,15 +121,15 @@ class Scratch3DummyNameBlocks {
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'printText', text: 'print text [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'printlnText', text: 'print text [ARG1] and return', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'drawString', text: 'draw text [ARG1] ([ARG2] ,[ARG3] ) font=[ARG4]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG4: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2, menu: 'font' },
