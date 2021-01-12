@@ -121,15 +121,15 @@ class Scratch3DummyNameBlocks {
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'printText', text: 'print text [ARG1]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'printlnText', text: 'print text [ARG1] and return', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'drawString', text: 'draw text [ARG1] ([ARG2] ,[ARG3] ) font=[ARG4]', arguments: {
-    ARG1: { type: ArgumentType.NUMBER, type2:'s', defaultValue:'test' },
+    ARG1: { type: ArgumentType.STRING, type2:'s', defaultValue:'test' },
     ARG2: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG3: { type: ArgumentType.NUMBER, type2:'S', defaultValue:0 },
     ARG4: { type: ArgumentType.NUMBER, type2:'B', defaultValue:2, menu: 'font' },
@@ -308,9 +308,9 @@ fillScreen(args,util) { return this.getTest(arguments.callee.name, args); }
     
     setIotIp (args) {
         this._ipadrs = Cast.toString(args.ARG1);
-        document.cookie = 'DummyName_ip=' + this._ipadrs + '; samesite=lax;';
+        document.cookie = 'DummyName_ip=' + this._ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
         if(SupportCamera) {
-          document.cookie = 'Camera_ip=' + this._ipadrs + '; samesite=lax;';
+          document.cookie = 'Camera_ip=' + this._ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
           alert(this._ipadrs + {
             'en': ' has been saved (for Robot & Camera).',
             'ja': 'を保存しました(ロボット & カメラ)',
