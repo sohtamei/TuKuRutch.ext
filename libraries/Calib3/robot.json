@@ -3,7 +3,7 @@
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
-	"sort"			: 10,										// メニュー上の表示順序
+	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "",
 	"productInfoURL": "",
