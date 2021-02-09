@@ -1,7 +1,8 @@
+// DEFINE
+
 const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const Cast = require('../../util/cast');
-const log = require('../../util/log');
 const formatMessage = require('format-message');
 
 
@@ -19,38 +20,42 @@ const menuIconURI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAA
 // eslint-disable-next-line max-len
 const blockIconURI = menuIconURI;
 
-const SupportCamera = false;
-
 /**
  * How long to wait in ms before timing out requests to server.
  * @type {int}
  */
 //const serverTimeoutMs = 10000; // 10 seconds (chosen arbitrarily).
 
-let _resolve = null;
-let _error = null;
-let _sendBuf = null;
-let _alertFlag = false;
-
 /**
- * Class for the DummyName block in Scratch 3.0.
+ * Class for blocks in Scratch 3.0.
  * @constructor
  */
-class Scratch3DummyNameBlocks {
+class Scratch3Blocks {
     constructor (runtime) {
         /**
          * The runtime instantiating this block package.
          * @type {Runtime}
          */
-        this.runtime = runtime;
-        this._ipadrs = '192.168.1.xx';
-        this._ws = null;
+        //this.runtime = runtime;
+        this.ipadrs = '192.168.1.xx';
+        this.ifType = 'WLAN';
+        this.ws = null;
+        this.port = null;
+		this.resolve = null;
+		this.error = null;
+		this.alertFlag = false;
+
 		let cookies_get = document.cookie.split(';');
 		for(let i=0;i<cookies_get.length;i++) {
 			let tmp = cookies_get[i].trim().split('=');
-			if(tmp[0]=='DummyName_ip') {
-				this._ipadrs=tmp[1];
-				console.log('DummyName_ip='+this._ipadrs);
+			switch(tmp[0]) {
+			case extName+'_ip':
+				this.ipadrs=tmp[1];
+				console.log(extName+'_ip='+this.ipadrs);
+				break;
+			case 'if_type':
+				this.ifType=tmp[1];
+				console.log('if_type='+this.ifType);
 				break;
 			}
 		}
@@ -58,11 +63,9 @@ class Scratch3DummyNameBlocks {
 
 	get_blocks() {
 		this._blocks = [
-{blockType: BlockType.COMMAND, opcode: 'setIotIp', text: {
-	'en': 'setup IP address [ARG1]',
-	'ja': 'IPアドレス設定 [ARG1]',
-}[this._locale], arguments: {
-	ARG1: { type: ArgumentType.STRING, defaultValue: this._ipadrs},
+{blockType: BlockType.COMMAND, opcode: 'setIotIp', text: '[ARG1] IP=[ARG2]', arguments: {
+	ARG1: { type: ArgumentType.STRING, defaultValue: this.ifType, menu: 'ifType' },
+	ARG2: { type: ArgumentType.STRING, defaultValue: this.ipadrs},
 }},
 
 // BLOCKS
@@ -72,6 +75,8 @@ class Scratch3DummyNameBlocks {
 
 	get_menus() {
 	  return {
+ifType: { acceptReporters: true, items: ['WLAN','UART',]},
+
 // MENUS
 	  };
 	}
@@ -85,17 +90,17 @@ class Scratch3DummyNameBlocks {
         switch(formatMessage.setup().locale) {
           case 'ja':
           case 'ja-Hira':
-            this._locale = 'ja';
+            this._locale = 1;
             break;
           default:
-            this._locale = 'en';
+            this._locale = 0;
             break;
         }
 
-	//	blocks[0].arguments.ARG1.defaultValue = this._ipadrs;
+	//	blocks[0].arguments.ARG1.defaultValue = this.ipadrs;
         return {
-            id: 'DummyName',
-            name: 'DummyName',
+            id: extName,
+            name: extName,
             blockIconURI: blockIconURI,
             menuIconURI: menuIconURI,
             blocks: this.get_blocks(),
@@ -103,49 +108,36 @@ class Scratch3DummyNameBlocks {
         };
     }
     
-    setIotIp (args) {
-        this._ipadrs = Cast.toString(args.ARG1);
-        document.cookie = 'DummyName_ip=' + this._ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
-        if(SupportCamera) {
-          document.cookie = 'Camera_ip=' + this._ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
-          alert(this._ipadrs + {
-            'en': ' has been saved (for Robot & Camera).',
-            'ja': 'を保存しました(ロボット & カメラ)',
-          }[this._locale]);
+    setIotIp(args) {
+        this.ifType = Cast.toString(args.ARG1);
+        this.ipadrs = Cast.toString(args.ARG2);
+        document.cookie = 'if_type=' + this.ifType + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
+        document.cookie = extName+'_ip=' + this.ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
+
+        if(typeof(SupportCamera) != "undefined" && SupportCamera) {
+          document.cookie = 'Camera_ip=' + this.ipadrs + '; samesite=lax; expires=Tue, 31-Dec-2037 00:00:00 GMT;';
+          alert(this.ifType + "," + this.ipadrs + [
+            ' has been saved (for Robot & Camera).',
+            'を保存しました(ロボット & カメラ)',
+          ][this._locale]);
         } else {
-          alert(this._ipadrs + {
-            'en': ' has been saved.',
-            'ja': 'を保存しました',
-          }[this._locale]);
+          alert(this.ifType + "," + this.ipadrs + [
+            ' has been saved.',
+            'を保存しました',
+          ][this._locale]);
         }
-        console.log(this._ipadrs);
+
+		if(this.port) {
+			this.port.close();
+			this.port = null;
+		}
+		if(this.ws) {
+			this.ws.close();
+			this.ws = null;
+		}
     }
 
-	onmessage(event) {
-		var respUint8 = new Uint8Array(event.data);
-		//for(i=0;i<respUint8.length;i++) console.log(respUint8[i].toString(16));	// debug
-		var tmp = 0;
-		if(respUint8[0] == 0xFF && respUint8[1] == 0x55 && respUint8[2] == respUint8.length-3 && respUint8.length >= 5) {
-			var tmp2 = new DataView(respUint8.buffer);
-			switch(respUint8[3]) {
-			case 1: tmp = tmp2.getUint8(4); break;
-			case 2: tmp = tmp2.getInt16(4, true); break;
-			case 3: tmp = tmp2.getInt32(4, true); break;
-			case 4: tmp = tmp2.getFloat32(4, true); break;
-			case 5: tmp = tmp2.getFloat64(4, true); break;
-			case 6: tmp = String.fromCharCode.apply(null, respUint8.subarray(4)); break;
-		//	case 7: break;		// bytes
-			}
-			console.log(tmp);
-		}
-		const resp = tmp;
-		_resolve(resp);
-		_resolve = null; _error = null;
-		_alertFlag = false;
-		return resp;
-	}
-
-	getTest(opcode,args) {
+	sendRecv(opcode,args) {
 		for(index = 0; index < this._blocks.length; index++) {
 			if(this._blocks[index].opcode == opcode) break;
 		}
@@ -189,60 +181,212 @@ class Scratch3DummyNameBlocks {
 		}
 		cmd.setUint8(2, ofs-3);
 	//	for(i=0;i<ofs;i++) console.log(cmd.getUint8(i).toString(16));
+		//console.log('send: ' + cmdUint8.slice(0,ofs));	// debug
 
-		const tempThis = this;
-		const netsPromise = new Promise(function(resolve, error) {
-			_resolve = resolve;
-			_error = error;
-			//console.log('send: ' + cmdUint8.slice(0,ofs));	// debug
+		if(this.ifType == 'WLAN')
+			return this.sendRecvWs(cmdUint8.slice(0,ofs));
+		else
+			return this.sendRecvUart(cmdUint8.slice(0,ofs));
+	}
 
-			if(tempThis._ws === null) {
-			/*
-				if(tempThis._ipadrs == '192.168.1.xx') {
-					error('');
-					return;
-				}
-			*/
-				_sendBuf = cmdUint8.slice(0,ofs);
+	sendRecvUart(sendBuf) {
+		if(this.port !== null) {
+			return this._sendRecvUart(sendBuf);
+		}
 
-				tempThis._ws = new WebSocket('ws://'+tempThis._ipadrs+':54323');
-				tempThis._ws.binaryType = 'arraybuffer';
+		const _this = this;
+		return navigator.serial.requestPort({}).then(function(result) {
+			_this.port = result;
 
-				tempThis._ws.onopen = function(e) {
-					console.log('open: ' + e);
-					tempThis._ws.send(_sendBuf);
-				}
+			const options = {
+				baudRate: 115200,
+				dataBits: 8,
+				parity: "none",
+				stopBits: 1,
+				flowControl: "none",
 
-				tempThis._ws.onmessage = tempThis.onmessage;
+				// Prior to Chrome 86 these names were used.
+				baudrate: 115200,
+				databits: 8,
+				stopbits: 1,
+				rtscts: false,
+			};
+			return _this.port.open(options);
+		}).then(function() {
+			const writer = _this.port.writable.getWriter();
+			var tmp = new Uint8Array([0x00,0xff,0x55,0x01,0xfe]);
+			writer.write(tmp);
+			writer.releaseLock();
 
-				tempThis._ws.onclose = function(event) {
-					if (event.wasClean) {
-						console.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
-					} else {
-						console.log('close: Connection died');
+			const reader = _this.port.readable.getReader();
+			let count = 0;
+			let buf = new Uint8Array(256);
+
+			var promise = (function loop() {
+				return reader.read().then(function(result) {
+				//	console.log(result.value);
+					for(var i = 0; i < result.value.length; i++) {
+						buf[count++] = result.value[i];
+						if(result.value[i] == 0x0a) {
+							reader.releaseLock();
+						//	reader = undefined;
+							return;
+						}
 					}
-					tempThis._ws = null;
-					if(_error !== null) _error('');
-				};
+					loop();
+				});
+			})();
 
-				tempThis._ws.onerror = function(error) {
-					console.log('[error] '+error.message);
-					tempThis._ws.close();
-					tempThis._ws = null;
-					if(_error !== null) _error('');
-					if(!_alertFlag) alert('cannot connect to ' + tempThis._ipadrs);
-					_alertFlag = true;
-				};
-				return;
-			} else {
-				tempThis._ws.send(cmdUint8.slice(0,ofs));
-			}
+			return promise.then(function(){
+				var tmp = String.fromCharCode.apply(null, buf.slice(0,count));
+				console.log(tmp);
+				return _this._sendRecvUart(sendBuf);
+			});
+		}).catch(function(err) {
+			_this.port = null;
+			console.log(err);
+			return "error";
 		});
+	}
 
-		netsPromise.then(result => result);
-		netsPromise.catch(result => result);
-		return netsPromise;
+	_sendRecvUart(sendBuf) {
+		if(this.port.writable == null) {
+			console.warn(`unable to find writable port`);
+			return;
+		}
+
+		const writer = this.port.writable.getWriter();
+		writer.write(sendBuf);
+		writer.releaseLock();
+
+		const reader = this.port.readable.getReader();
+		let count = 0;
+		let size = 3;
+		let buf = new Uint8Array(256);
+
+		var promise = (function loop() {
+			return reader.read().then(function(result) {
+			//	console.log(result.value);	// debug
+				for(var i = 0; i < result.value.length; i++) {
+					switch(count) {
+					case 0:
+						if(result.value[i] == 0xFF) {
+							count++;
+						}
+						break;
+					case 1:
+						if(result.value[i] == 0x55) {
+							count++;
+						} else {
+							count = 0;
+						}
+						break;
+					case 2:
+						size = 3 + result.value[i];
+						count++;
+						break;
+					default:
+						buf[count-3] = result.value[i];
+						count++;
+						break;
+					}
+				}
+				if(count < size) {
+					loop();
+				} else {
+					reader.releaseLock();
+				//	reader = undefined;
+				}
+			});
+		})();
+
+		return promise.then(function(){
+			var tmp = 0;
+			if(size >= 4) {
+				var tmp2 = new DataView(buf.buffer);
+				switch(buf[0]) {
+				case 1: tmp = tmp2.getUint8(1); break;
+				case 2: tmp = tmp2.getInt16(1, true); break;
+				case 3: tmp = tmp2.getInt32(1, true); break;
+				case 4: tmp = tmp2.getFloat32(1, true); break;
+				case 5: tmp = tmp2.getFloat64(1, true); break;
+				case 6: tmp = String.fromCharCode.apply(null, buf.subarray(1)); break;
+			//	case 7: break;		// bytes
+				}
+			}
+			return tmp;
+		});
+	}
+
+	sendRecvWs(sendBuf) {
+		const _this = this;
+		return new Promise(function(resolve, error) {
+			_this.resolve = resolve;
+			_this.error = error;
+
+			if(_this.ws !== null) {
+				_this.ws.send(sendBuf);
+				return;
+			}
+		/*
+			if(_this.ipadrs == '192.168.1.xx') {
+				error('');
+				return;
+			}
+		*/
+			_this.ws = new WebSocket('ws://'+_this.ipadrs+':54323');
+			_this.ws.binaryType = 'arraybuffer';
+
+			_this.ws.onopen = function(e) {
+				console.log('open: ' + e);
+				_this.ws.send(sendBuf);
+			}
+
+			_this.ws.onmessage = function(event) {
+				var respUint8 = new Uint8Array(event.data);
+				//for(i=0;i<respUint8.length;i++) console.log(respUint8[i].toString(16));	// debug
+				var tmp = 0;
+				if(respUint8[0] == 0xFF && respUint8[1] == 0x55 && respUint8[2] == respUint8.length-3 && respUint8.length >= 5) {
+					var tmp2 = new DataView(respUint8.buffer);
+					switch(respUint8[3]) {
+					case 1: tmp = tmp2.getUint8(4); break;
+					case 2: tmp = tmp2.getInt16(4, true); break;
+					case 3: tmp = tmp2.getInt32(4, true); break;
+					case 4: tmp = tmp2.getFloat32(4, true); break;
+					case 5: tmp = tmp2.getFloat64(4, true); break;
+					case 6: tmp = String.fromCharCode.apply(null, respUint8.subarray(4)); break;
+				//	case 7: break;		// bytes
+					}
+				//	console.log(tmp);	// debug
+				}
+				_this.resolve(tmp);
+				_this.resolve = null;
+				_this.error = null;
+				_this.alertFlag = false;
+				return tmp;
+			}
+
+			_this.ws.onclose = function(event) {
+				if (event.wasClean) {
+					console.log(`close: Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+				} else {
+					console.log('close: Connection died');
+				}
+				_this.ws = null;
+				if(_this.error !== null) _this.error('');
+			};
+
+			_this.ws.onerror = function(error) {
+				console.log('[error] '+error.message);
+				_this.ws.close();
+				_this.ws = null;
+				if(_this.error !== null) _this.error('');
+				if(!_this.alertFlag) alert('cannot connect to ' + _this.ipadrs);
+				_this.alertFlag = true;
+			};
+			return;
+		});
 	}
 
 }
-module.exports = Scratch3DummyNameBlocks;
+module.exports = Scratch3Blocks;
