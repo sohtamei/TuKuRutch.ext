@@ -202,7 +202,6 @@ void onConnect(String ip)
   wsServer.listen(PORT_WEBSOCKET);
 }
 
-
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
 #endif
@@ -268,7 +267,6 @@ initWifi(mVersion, true, onConnect);
 #else
 initWifi(mVersion, false, onConnect);
 #endif
-
 _Serial.println("PC mode: " mVersion);
 }
 
@@ -466,7 +464,6 @@ if(_index >= sizeof(buffer)) {
 #endif
   M5.update();  // update button and speaker
 //delay(50);
-
 }
 
 #ifdef ENABLE_WEBSOCKET
