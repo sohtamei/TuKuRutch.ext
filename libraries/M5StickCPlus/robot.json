@@ -11,7 +11,6 @@
 	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"scratch3ext"	: "M5Series",								// scratch3 ext名[,SupportCamera]
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
@@ -20,6 +19,15 @@
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_750000"],
+
+	"scratch3ext"	: "M5Series",								// scratch3 ext名[,SupportCamera]
+	"scratch3burn"	: [
+			{"name":"M5StickC", "type":"esp32", "baudrate":115200, "binPath":"M5StickC"},
+			{"name":"M5StickCPlus", "type":"esp32", "baudrate":115200, "binPath":"M5StickCPlus"},
+			{"name":"M5Stack", "type":"esp32", "baudrate":230400, "binPath":"M5Stack"},
+			{"name":"Duke32AIO", "type":"esp32", "baudrate":230400, "binPath":"Duke32AIO"},
+			{"name":"M5Atom", "type":"esp32", "baudrate":115200, "binPath":"M5Atom"},
+	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
