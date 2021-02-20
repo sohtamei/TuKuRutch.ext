@@ -67,7 +67,6 @@ void onConnect(String ip)
       wsServer.listen(PORT_WEBSOCKET);
 }
 
-
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
 #endif
@@ -128,7 +127,6 @@ void setup()
     #else
     initWifi(mVersion, false, onConnect);
     #endif
-    
     _Serial.println("PC mode: " mVersion);
 }
 
@@ -156,6 +154,19 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'s',},
   {'s','S','S','B',},
   {'S',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
   {},
   {},
   {},
@@ -243,9 +254,9 @@ static void parseData()
         case 14: M5.Lcd.println(getString(0));; callOK(); break;
         case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
         case 16: M5.Lcd.fillScreen(getShort(0)); M5.Lcd.setCursor(0,0);; callOK(); break;
-        case 18: sendString((statusWifi())); break;
-        case 19: sendString((scanWifi())); break;
-        case 20: sendByte((connectWifi(getString(0),getString(1)))); break;
+        case 31: sendString((statusWifi())); break;
+        case 32: sendString((scanWifi())); break;
+        case 33: sendByte((connectWifi(getString(0),getString(1)))); break;
         case 0xFE:  // firmware name
         _println("PC mode: " mVersion);
         break;
@@ -306,7 +317,6 @@ void loop()
     #endif
       M5.update();  // update button and speaker
     //delay(50);
-    
 }
 
 #ifdef ENABLE_WEBSOCKET

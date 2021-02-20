@@ -25,8 +25,8 @@
 			{"name":"M5StickC", "type":"esp32", "baudrate":115200, "binPath":"M5StickC"},
 			{"name":"M5StickCPlus", "type":"esp32", "baudrate":115200, "binPath":"M5StickCPlus"},
 			{"name":"M5Stack", "type":"esp32", "baudrate":230400, "binPath":"M5Stack"},
-			{"name":"Duke32AIO", "type":"esp32", "baudrate":230400, "binPath":"Duke32AIO"},
 			{"name":"M5Atom", "type":"esp32", "baudrate":115200, "binPath":"M5Atom"},
+		//	{"name":"Duke32AIO", "type":"esp32", "baudrate":230400, "binPath":"Duke32AIO"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

@@ -217,6 +217,14 @@ initWifi(mVersion, false, onConnect);
 
 		["-"],
 
+		["-"],//["w", "--- RoverC ---",							"tagRover",						{"enum":"",					"func":"0"}],
+		["-"],//["w", "FL %n FR %n RL %n RR %n",				"setRoverC",	0,0,0,0,		{"remote":["S","S","S","S"],"func":"setRoverC({0},{1},{2},{3});"}],
+		["-"],//["w", "x %n y %n role %n",						"setRoverC_XYR",0,0,0,			{"remote":["S","S","S"],	"func":"setRoverC_XYR({0},{1},{2});"}],
+		["-"],//["w", "dir %d.roverDir speed %n",				"moveRoverC",	"UP",100,		{"remote":["B","B"],		"func":"moveRoverC({0},{1});"}],
+		["-"],//["R", "%d.roverDir .",							"enumRoverDir","UP",			{"enum":"",					"func":"{0}"}],
+
+		["-"],
+
 		// WiFi設定
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
 		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],

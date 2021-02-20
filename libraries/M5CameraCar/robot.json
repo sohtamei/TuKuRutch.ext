@@ -20,12 +20,6 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
 
-	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
-	"scratch3burn"	: [
-			{"name":"M5CameraCar", "type":"esp32", "baudrate":230400, "binPath":"M5CameraCar"},
-			{"name":"M5TimerCam", "type":"esp32", "baudrate":115200, "binPath":"M5TimerCam"},
-	],
-
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// PCモード/書き込みモード ヘッダ (C言語)
@@ -74,6 +68,8 @@
 		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
 		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
 
+		["-"],//["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
+		["-"],//["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
 		["-"],
 
 		// WiFi設定

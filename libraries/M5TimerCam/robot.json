@@ -20,6 +20,12 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_1500000"],
 
+	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
+	"scratch3burn"	: [
+			{"name":"M5CameraCar", "type":"esp32", "baudrate":230400, "binPath":"M5CameraCar"},
+			{"name":"M5TimerCam", "type":"esp32", "baudrate":115200, "binPath":"M5TimerCam"},
+	],
+
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// PCモード/書き込みモード ヘッダ (C言語)
