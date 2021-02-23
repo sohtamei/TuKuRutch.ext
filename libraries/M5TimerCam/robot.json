@@ -23,7 +23,7 @@
 	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
 			{"name":"M5CameraCar", "type":"esp32", "baudrate":230400, "binPath":"M5CameraCar"},
-			{"name":"M5TimerCam", "type":"esp32", "baudrate":115200, "binPath":"M5TimerCam"},
+			{"name":"M5TimerCam", "type":"esp32", "baudrate":230400, "binPath":"M5TimerCam"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

@@ -22,10 +22,10 @@
 
 	"scratch3ext"	: "M5Series",								// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
-			{"name":"M5StickC", "type":"esp32", "baudrate":115200, "binPath":"M5StickC"},
-			{"name":"M5StickCPlus", "type":"esp32", "baudrate":115200, "binPath":"M5StickCPlus"},
+			{"name":"M5StickC", "type":"esp32", "baudrate":230400, "binPath":"M5StickC"},
+			{"name":"M5StickCPlus", "type":"esp32", "baudrate":230400, "binPath":"M5StickCPlus"},
 			{"name":"M5Stack", "type":"esp32", "baudrate":230400, "binPath":"M5Stack"},
-			{"name":"M5Atom", "type":"esp32", "baudrate":115200, "binPath":"M5Atom"},
+			{"name":"M5Atom", "type":"esp32", "baudrate":230400, "binPath":"M5Atom"},
 		//	{"name":"Duke32AIO", "type":"esp32", "baudrate":230400, "binPath":"Duke32AIO"},
 	],
 
