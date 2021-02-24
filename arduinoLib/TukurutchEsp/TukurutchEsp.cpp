@@ -112,12 +112,12 @@ int readWifi(void)
 {
 	if(WiFi.status() != WL_CONNECTED) {
 		switch(connection_status) {
-			case CONNECTION_TCP:
-			case CONNECTION_WIFI:
+		case CONNECTION_TCP:
+		case CONNECTION_WIFI:
 			WiFi.disconnect();
 			connection_status = CONNECTION_NONE;
 			break;
-			case CONNECTION_CONNECTING:
+		case CONNECTION_CONNECTING:
 			if(millis() - connection_start > 8000) {
 				WiFi.disconnect();
 				connection_status = CONNECTION_NONE;
@@ -137,22 +137,22 @@ int readWifi(void)
 	}
 
 	switch(connection_status) {
-		case CONNECTION_NONE:
-		case CONNECTION_CONNECTING:
+	case CONNECTION_NONE:
+	case CONNECTION_CONNECTING:
 		server.begin();
 		if(_connectedCB) _connectedCB(WiFi.localIP().toString());
 		DPRINT(WiFi.localIP());
 		connection_status = CONNECTION_WIFI;
-	  
-		case CONNECTION_WIFI:
+
+	case CONNECTION_WIFI:
 		client = server.available();
 		if(!client) {
 			return -1;
 		}
 		DPRINT("connected");
 		connection_status = CONNECTION_TCP;
-	
-		case CONNECTION_TCP:
+
+	case CONNECTION_TCP:
 		if(!client.connected()) {
 			DPRINT("disconnected");
 			client.stop();
