@@ -102,11 +102,6 @@
 		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
 		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
 		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
-/*
-		["w", "i2c init scl %n sda %n",					"initI2C",		0,26,			{"remote":["B","B"],		"func":"Wire.begin({0},{1},100);"}],
-		["w", "i2c write %n %s",						"setI2C",		0,"",			{"remote":["S","b"],
-																						"func":"Wire.beginTransmission({0}); Wire.write({1}); Wire.endTransmission();"}],
-*/
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],
