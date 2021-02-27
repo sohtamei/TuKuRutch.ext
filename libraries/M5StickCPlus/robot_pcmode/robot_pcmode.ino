@@ -5,6 +5,7 @@
 #include "TukurutchEsp.h"
 #include "main.h"
 
+#include <Wire.h>
 #ifdef __AVR_ATmega328P__
 #include <avr/wdt.h>
 #endif
@@ -193,7 +194,11 @@ static void parseData()
         case 31: sendString((statusWifi())); break;
         case 32: sendString((scanWifi())); break;
         case 33: sendByte((connectWifi(getString(0),getString(1)))); break;
+        #ifdef __AVR_ATmega328P__
+          case 0x81: Wire.begin(); callOK(); break;
+        #else
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+        #endif
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
           case 0x84: sendWireRead(getByte(0),getByte(1)); break;
