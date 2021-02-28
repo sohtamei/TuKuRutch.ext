@@ -5,7 +5,7 @@
 
 #undef ESP_ERROR_CHECK
 #define ESP_ERROR_CHECK(x)   do { esp_err_t rc = (x); if (rc != ESP_OK) { ESP_LOGE("err", "esp_err_t = %d, line = %d", rc, __LINE__); } } while(0);
-#define I2C_NUM 1
+#define I2C_NUM 0
 
 void i2c_init() {
 	i2c_config_t conf;
@@ -17,6 +17,10 @@ void i2c_init() {
 	conf.master.clk_speed = 100000;
 	ESP_ERROR_CHECK(i2c_param_config(I2C_NUM, &conf));
 	ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM, I2C_MODE_MASTER, 0, 0, 0));
+}
+
+void i2c_close() {
+	ESP_ERROR_CHECK(i2c_driver_delete(I2C_NUM));
 }
 
 void i2c_write(uint8_t slave_addr, uint8_t addr, uint8_t* buf, uint8_t len) {
@@ -73,6 +77,10 @@ void bmm8563_init() {
     i2c_write_byte(0x51, 0x00, 0x00);
     i2c_write_byte(0x51, 0x01, 0x00);
     i2c_write_byte(0x51, 0x0D, 0x00);
+}
+
+void bmm8563_close() {
+    i2c_close();
 }
 
 void bmm8563_setTime(rtc_date_t* data) {
