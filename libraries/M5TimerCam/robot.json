@@ -3,7 +3,7 @@
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
-	"sort"			: 50,										// メニュー上の表示順序
+	"sort"			: 12,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",

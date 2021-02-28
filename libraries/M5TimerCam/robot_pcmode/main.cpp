@@ -182,7 +182,7 @@ void _setLED(uint8_t onoff)
 #endif
 	pinMode(P_LED, OUTPUT);
 }
-
+/*
 uint8_t _getSw(uint8_t idx)
 {
 	int ret = 0;
@@ -191,20 +191,12 @@ uint8_t _getSw(uint8_t idx)
 
 	digitalWrite(P_SRV0, 1); delay(5);
 	if(digitalRead(P_SRV1) == 1) {
-
-		digitalWrite(P_SRV0, 0); delay(5);
-		if(digitalRead(P_SRV1) == 0) {
-
-			digitalWrite(P_SRV0, 1); delay(5);
-			if(digitalRead(P_SRV1) == 1) {
-				ret = 1;
-			}
-		}
+		ret = 1;
 	}
 	pinMode(P_SRV0, INPUT);
 	return ret;
 }
-
+*/
 static uint16_t pwm_last[2];
 static uint16_t pwm_req[2];
 static uint16_t pwm_duration = 0;
@@ -529,7 +521,7 @@ void _setup(const char* ver)
 	bmm8563_init();
 #endif
 	M5CameraCar_init();
-
+/*
 	if(_getSw(0)) {
 		_setLED(1);
 		delay(100);
@@ -545,7 +537,7 @@ void _setup(const char* ver)
 		}
 		Serial.println("SmartConfig received.");
 	}
-
+*/
 	// ServoCar
 	ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 	ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
