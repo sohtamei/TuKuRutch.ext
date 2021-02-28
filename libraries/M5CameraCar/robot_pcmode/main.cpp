@@ -519,6 +519,7 @@ void _setup(const char* ver)
 	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT);
 	digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
 	bmm8563_init();
+	bmm8563_close();
 #endif
 	M5CameraCar_init();
 /*
