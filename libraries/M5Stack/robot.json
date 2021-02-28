@@ -104,7 +104,7 @@ if(_getSw(0)) {
   WiFi.mode(WIFI_STA);
   WiFi.beginSmartConfig();
   while (!WiFi.smartConfigDone()) {
-    delay(2000);
+    delay(1000);
     _setLED(1);
     _tone(T_C5, 100);
     _setLED(0);
