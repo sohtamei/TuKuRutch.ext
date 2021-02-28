@@ -185,13 +185,23 @@ void _setLED(uint8_t onoff)
 
 uint8_t _getSw(uint8_t idx)
 {
-	int ret;
-	pinMode(4, INPUT_PULLDOWN);
-	digitalWrite(13, 1);
-	pinMode(13, OUTPUT);
-	delay(5);
-	ret = digitalRead(4);
-	pinMode(13, INPUT);
+	int ret = 0;
+	pinMode(P_SRV1, INPUT_PULLDOWN);
+	pinMode(P_SRV0, OUTPUT);
+
+	digitalWrite(P_SRV0, 1); delay(5);
+	if(digitalRead(P_SRV1) == 1) {
+
+		digitalWrite(P_SRV0, 0); delay(5);
+		if(digitalRead(P_SRV1) == 0) {
+
+			digitalWrite(P_SRV0, 1); delay(5);
+			if(digitalRead(P_SRV1) == 1) {
+				ret = 1;
+			}
+		}
+	}
+	pinMode(P_SRV0, INPUT);
 	return ret;
 }
 
