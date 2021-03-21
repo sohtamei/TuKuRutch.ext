@@ -117,7 +117,7 @@ void _setCar(uint8_t direction, uint8_t speed)
 		_setServo(1, speed * dir_table[direction].R, 1);
 	}
 }
-
+/*
 // Rover C
 
 static void RoverC_Init(void)    
@@ -184,7 +184,7 @@ void moveRoverC(uint8_t dir, uint8_t speed)
 	if(dir >= sizeof(rdir_table)/sizeof(rdir_table[0])) return;
 	setRoverC_XYR(speed*rdir_table[dir].x, speed*rdir_table[dir].y, speed*rdir_table[dir].r);
 }
-
+*/
 static void onConnect(String ip)
 {
 	M5.Lcd.fillScreen(BLACK);

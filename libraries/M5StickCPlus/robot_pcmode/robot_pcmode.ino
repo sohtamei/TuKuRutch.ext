@@ -70,9 +70,9 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B','B',},
   {},
   {},
-  {'S','S','S','S',},
-  {'S','S','S',},
-  {'B','B',},
+  {},
+  {},
+  {},
   {},
   {},
   {},
@@ -188,9 +188,6 @@ static void parseData()
         case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
         case 21: _setCar(0,0);; callOK(); break;
         case 23: _setServo(getByte(0),getByte(1),0);; callOK(); break;
-        case 26: setRoverC(getShort(0),getShort(1),getShort(2),getShort(3));; callOK(); break;
-        case 27: setRoverC_XYR(getShort(0),getShort(1),getShort(2));; callOK(); break;
-        case 28: moveRoverC(getByte(0),getByte(1));; callOK(); break;
         case 31: sendString((statusWifi())); break;
         case 32: sendString((scanWifi())); break;
         case 33: sendByte((connectWifi(getString(0),getString(1)))); break;
@@ -242,7 +239,7 @@ void loop()
                   break;
                 case 2:
                   if(c != 0x55) 
-                  _index = 0;
+                    _index = 0;
                   break;
                 case 3:
                   _packetLen = 3+c;

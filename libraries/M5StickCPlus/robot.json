@@ -121,7 +121,7 @@
 		"servoch"	:[0,1],
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
-		"roverDir"	:["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
+	//	"roverDir"	:["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
