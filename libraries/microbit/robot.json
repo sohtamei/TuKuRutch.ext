@@ -1,5 +1,5 @@
 {
-	"name"			: "microbit",
+	"name"			: "microbitV1",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "sandeepmistry:nRF5:BBCmicrobit",						// package:platform:board
 
@@ -7,9 +7,7 @@
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"prefs"			: ["custom_softdevice=BBCmicrobit_s130"],
-
-	"scratch3ext"	: "microbit",								// scratch3 ext名[,SupportCamera]
+	"prefs"			: ["custom_softdevice=BBCmicrobit_s110"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -41,43 +39,10 @@
 		["-"],
 		["w", "display text %s",						"displayText",		"text",		{"remote":["s"],		"func":"_displayText({0});"}],
 		["w", "display LED %n",							"displayLed",		0xFFFFFFFF,	{"remote":["L"],		"func":"_displayLed({0});"}],
-	//	["R", "get Data",								"getData",						{"remote":[		"b"],	"func":"_getData()"}],
-		["w", "get Data",								"getData",						{"remote":[],			"func":"_getData()"}],
+		["R", "get Data",								"getData",						{"remote":[		"b"],	"func":"_getData()"}],
 	],
 	"menus": {
-		"digital":["HIGH","LOW"],
-		"onoff":["On","Off"],
-		"button":["buttonA","buttonB","buttonC"],
-		"color":["BLACK","NAVY","DARKGREEN","DARKCYAN","MAROON","PURPLE","OLIVE","LIGHTGREY","DARKGREY","BLUE","GREEN","CYAN","RED","MAGENTA","YELLOW","WHITE","ORANGE","GREENYELLOW","PINK"],
-		"imu":["GyroX","GyroY","GyroZ","AccelX","AccelY","AccelZ","Pitch","Roll","Yaw","Temp"],
-
-		"font":["Ascii8","Ascii16","Ascii26","Num48","7Seg48","Num75"],
-
-		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
-		"servoch"	:[0,1],
-		"speed"		:[100,50,0,-50,-100],
-		"angle"		:[0,90,180],
-	//	"roverDir"	:["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
 	},
 	"values":{
-		"HIGH":1,"LOW":0,
-		"On":1,"Off":0,
-		"buttonA":0,"buttonB":1,"buttonC":2,
-		"BLACK":0x0000,"NAVY":0x000F,"DARKGREEN":0x03E0,"DARKCYAN":0x03EF,"MAROON":0x7800,"PURPLE":0x780F,"OLIVE":0x7BE0,"LIGHTGREY":0xC618,"DARKGREY":0x7BEF,"BLUE":0x001F,"GREEN":0x07E0,"CYAN":0x07FF,"RED":0xF800,"MAGENTA":0xF81F,"YELLOW":0xFFE0,"WHITE":0xFFFF,"ORANGE":0xFD20,"GREENYELLOW":0xAFE5,"PINK":0xF81F,
-		"GyroX":0,"GyroY":1,"GyroZ":2,"AccelX":3,"AccelY":4,"AccelZ":5,"Pitch":6,"Roll":7,"Yaw":8,"Temp":9,
-
-		"Ascii8":1,"Ascii16":2,"Ascii26":4,"Num48":6,"7Seg48":7,"Num75":8,
-
-		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
-
-		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,"calibration":7,
-		"STOP":0,"UP_R":1,"UP":2,"UP_L":3,"RIGHT":4,"LEFT":5,"DOWN_R":6,"DOWN":7,"DOWN_L":8,"ROLL_R":9,"ROLL_L":10,
 	},
-	"translators":{
-		"ja":{
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read analog pin %n average %n times"			:"アナログピン %n の %n 回平均",
-		}
-	}
 }
