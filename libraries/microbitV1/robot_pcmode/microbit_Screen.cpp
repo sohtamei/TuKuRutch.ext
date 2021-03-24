@@ -27,12 +27,12 @@ typedef struct {
   uint8_t r;
 } LED_POINT;
 
-//#if defined(
-#define physColNum  9
-#define physRowNum  3
-
 static uint8_t curPhysRow = 0;
 static uint8_t curLEDs[rowCount] = {0};
+
+#if defined(NRF51_SERIES)
+#define physColNum  9
+#define physRowNum  3
 
 static const uint8_t physCols[physColNum] = {3, 4, 10, 23, 24, 25, 9, 7, 6};
 static const uint8_t physRows[physRowNum] = {26, 27, 28};
@@ -42,6 +42,16 @@ static const LED_POINT Phys2Logi[physRowNum][physColNum] =
   {{0,0},{2,0},{4,0},{4,3},{3,3},{2,3},{1,3},{0,3},{1,2}},
   {{4,2},{0,2},{2,2},{1,0},{3,0},{3,4},{1,4},{0xFF,0xFF},{0xFF,0xFF}},
   {{2,4},{4,4},{0,4},{0,1},{1,1},{2,1},{3,1},{4,1},{3,2}},
+};
+#elif defined(NRF52_SERIES)
+#define physColNum  5
+#define physRowNum  5
+
+static const uint8_t physCols[physColNum] = {4, 7, 3, 6, 10};
+static const uint8_t physRows[physRowNum] = {21,22,23,24,25};
+
+static const LED_POINT Phys2Logi[physRowNum][physColNum] =
+{
 };
 #endif
 
