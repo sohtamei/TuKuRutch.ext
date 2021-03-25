@@ -3,17 +3,24 @@
 #include <stdint.h>
 #include <Wire.h>
 #include "main.h"
+
 //#include <Adafruit_Microbit.h>
+//Adafruit_Microbit_Matrix microbit;
+
 #include "microbit_Screen.h"
-
-#include <LSM303AGR_ACC_Sensor.h>
-//nclude <LSM303AGR_MAG_Sensor.h>
-
 microbit_Screen SCREEN;
 
-//Adafruit_Microbit_Matrix microbit;
-LSM303AGR_ACC_Sensor Acc(&Wire);
+// microbit V1.5
+#include <LSM303AGR_ACC_Sensor.h>
+LSM303AGR_ACC_Sensor AccNew(&Wire);
+
+//nclude <LSM303AGR_MAG_Sensor.h>
 //LSM303AGR_MAG_Sensor Mag(&Wire);
+
+// microbit V1.3
+#include "MMA8653.h"
+MMA8653 AccOld;
+
 
 #define PI  (3.141592653589793)
 
@@ -47,6 +54,17 @@ enum {
 	EVENT_SHAKEN	= (1<<6),
 };
 
+enum {
+	BOARDTYPE_NONE = 0,
+	BOARDTYPE_OLD,
+	BOARDTYPE_NEW,
+};
+static uint8_t boardType = 0;
+#define I2C_ACCEL_OLD	0x1D
+#define I2C_ACCEL_NEW	0x19
+#define I2C_MAG_OLD		0x0e
+#define I2C_MAG_NEW		0x1e
+
 static void irq_buttonA(void) { eventFlag |= EVENT_BUTTONA; }
 static void irq_buttonB(void) { eventFlag |= EVENT_BUTTONB; }
 static const uint8_t InitLeds[5] = {B00000,B01010,B00000,B10001,B01110};
@@ -57,11 +75,28 @@ void _setup(const char* ver)
 //	microbit.begin();
 	SCREEN.begin();
 	Wire.begin();
-	Acc.begin();
-	Acc.Enable();
-//	Acc.EnableTemperatureSensor();
-//	Mag.begin();
-//	Mag.Enable();
+
+	int ret;
+	Wire.beginTransmission(I2C_ACCEL_NEW);
+	ret = Wire.endTransmission();
+	if(!ret) {
+		boardType = BOARDTYPE_NEW;
+		AccNew.begin();
+		AccNew.Enable();
+	//	AccNew.EnableTemperatureSensor();
+	//	Mag.begin();
+	//	Mag.Enable();
+	} else {
+		Wire.beginTransmission(I2C_ACCEL_OLD);
+		ret = Wire.endTransmission();
+		if(!ret) {
+			boardType = BOARDTYPE_OLD;
+			AccOld.begin(false, 2);		// highres, scale=2G
+		} else {
+			boardType = BOARDTYPE_NONE;
+		}
+	}
+//	Serial.println(boardType);
 
 	pinMode(0, INPUT_PULLUP);
 	pinMode(1, INPUT_PULLUP);
@@ -78,7 +113,25 @@ static int16_t tiltX = 0;
 static int16_t tiltY = 0;
 static int32_t lastAccel[3] = {0};
 
-uint8_t led_count = 0;
+static void _getAccel(int32_t accel[3])
+{
+	switch(boardType) {
+	case BOARDTYPE_NEW:
+		AccNew.GetAxes(accel);
+	//	float temp;				// C
+	//	AccNew.GetTemperature(&temp);
+	//	int32_t mag[3];			// mGauss
+	//	Mag.GetAxes(mag);
+		break;
+	case BOARDTYPE_OLD:
+		AccOld.update();
+		accel[0] = AccOld.getX();
+		accel[1] = AccOld.getY();
+		accel[2] = AccOld.getZ();
+		break;
+	}
+}
+
 void _loop(void)
 {
 	int i;
@@ -88,8 +141,8 @@ void _loop(void)
 	curStatus |= ((digitalRead(2)<<2)|(digitalRead(1)<<1)|(digitalRead(0)<<0)) ^ B111;
 
 	// accel
-	int32_t accel[3];		// mg
-	Acc.GetAxes(accel);
+	int32_t accel[3] = {0};		// mg
+	_getAccel(accel);
 	tiltX =  atan2(accel[0], -accel[2]) * (180.0 * 10.0 / PI);
 	tiltY = -atan2(accel[1], -accel[2]) * (180.0 * 10.0 / PI);
 
@@ -108,10 +161,6 @@ int ret = snprintf(buf,64,"%5ld %5ld %5ld %4ld %5ld %5ld ", accel[0], accel[1], 
 for(i=0;i<12;i++) buf[ret+i] = (curStatus & (1<<(11-i))) ? '1': '0';
 Serial.println(buf);
 #endif
-//	float temp;				// C
-//	Acc.GetTemperature(&temp);
-//	int32_t mag[3];			// mGauss
-//	Mag.GetAxes(mag);
 
 	for(i = 0; i < 10; i++) {
 		SCREEN.loopScreen();
@@ -122,7 +171,6 @@ Serial.println(buf);
 void _displayText(char* text)
 {
 	SCREEN.showString(text);  
-
 //	microbit.print(text);
 //	microbit.clear();
 }
@@ -137,7 +185,17 @@ void _displayLed(uint32_t bitmap)
 	SCREEN.show(ledBuf);
 }
 
-void _getData(void)
+int _getTilt(uint8_t xy)
+{
+	int32_t accel[3] = {0};		// mg
+	_getAccel(accel);
+	if(xy == 1)
+		return -atan2(accel[1], -accel[2]) * (180.0 * 10.0 / PI);	// tiltY
+	else
+		return  atan2(accel[0], -accel[2]) * (180.0 * 10.0 / PI);	// tiltX
+}
+
+void _getSendData(void)
 {
 	uint8_t buf[8]={0};
 

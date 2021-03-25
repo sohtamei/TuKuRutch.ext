@@ -28,23 +28,23 @@
 
 	// C言語記述注意 : " を使うときは \" とすること
 
-	// PCモード/書き込みモード ヘッダ (C言語)
+	// ヘッダ (C言語)
 	"header":"
 #define mVersion \"M5TimerCam1.0\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
-	// PCモード/書き込みモード setup処理 (C言語)
+	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
 
-	// PCモード/書き込みモード loop処理 (C言語)
+	// loop処理 (C言語)
 	"loop":"
   loopWebSocket();
   _loop();
 ",
 
-	// PCモード/書き込みモード スクラッチブロック定義
+	// スクラッチブロック定義
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum

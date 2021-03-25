@@ -8,7 +8,8 @@ void _loop(void);
 
 void _displayText(char* text);
 void _displayLed(uint32_t bitmap);
-void _getData(void);
+void _getSendData(void);
+int _getTilt(uint8_t xy);
 
 void sendBin(uint8_t* buf, uint8_t num);
 

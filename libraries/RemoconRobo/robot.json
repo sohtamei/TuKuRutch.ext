@@ -15,7 +15,7 @@
 
 	// C言語記述注意 : " を使うときは \" とすること
 
-	// PCモード/書き込みモード ヘッダ (C言語)
+	// ヘッダ (C言語)
 	"header":"
 #define mVersion \"RemoconRobo1.1\"
 
@@ -31,7 +31,7 @@ uint8_t initMP3 = 0;        // for playMP3
 Servo srvClass[3];          // for setServo
 const uint8_t srvPin[3] = {3,9,10};
 ",
-	// PCモード/書き込みモード setup処理 (C言語)
+	// setup処理 (C言語)
 	"setup":"
 pinMode(13, OUTPUT);
 digitalWrite(13, LOW);
@@ -39,10 +39,10 @@ remoconRobo_init();
 remoconRobo_tone(500, 50);
 Serial.begin(115200);
 ",
-	// PCモード/書き込みモード loop処理 (C言語)
+	// loop処理 (C言語)
 	"loop":"",
 
-	// PCモード/書き込みモード スクラッチブロック定義
+	// スクラッチブロック定義
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum

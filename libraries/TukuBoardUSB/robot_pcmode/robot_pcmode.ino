@@ -158,14 +158,23 @@ int16_t _read(void)
       return -1;
 }
 
-#define CMD_MIN  0x81
-#define CMD_MAX  0x84
 static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','B'},		// 0x81:wire_begin     (SDA, SCL)
   {'B','b'},		// 0x82:wire_write     (adrs, [DATA])          ret:0-OK
   {'B','b','B'},	// 0x83:wire_writeRead (adrs, [DATA], readNum) ret:[DATA]-OK, NULL-ERROR
   {'B','B'},		// 0x84:wire_read      (adrs, readNum)         ret:[DATA]-OK, NULL-ERROR
+  {},				// 0x85:wire_scan      ()                      ret:[LIST]
+    
+  {'B','B'},		// 0x86:digiWrite      (port, data)
+  {'B'},			// 0x87:digiRead       (port)                  ret:level
+  {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
+//  {'B','S'},		// 0x89:set_pwm        (port, data)
+      // neoPixcel
+      // BEEP
+      // LCD
 };
+#define CMD_MIN   0x81
+#define CMD_MAX  (0x81 + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
 
 static void sendWireRead(int adrs, int num)
 {
@@ -177,6 +186,39 @@ static void sendWireRead(int adrs, int num)
               buffer[i] = Wire.read();
             sendBin(buffer, num);
       }
+}
+
+static void sendWireScan(void)
+{
+      int num = 0;
+      int i;
+      for(i = 0; i < 127; i++) {
+            Wire.beginTransmission(i);
+            int ret = Wire.endTransmission();
+            if(!ret) buffer[num++] = i;
+      }
+      sendBin(buffer, num);
+}
+
+static int _analogRead(uint8_t port, uint16_t count)
+{
+    #if defined(ESP32)
+      return getAdc1(port,count);break;
+    #else
+      if(count == 0) count = 1;
+      int i;
+      uint32_t sum = 0;
+      for(i = 0; i < count; i++)
+        sum += analogRead(port);
+    
+     #if defined(__AVR_ATmega328P__)
+      return ((sum / count) * 625UL) / 128;	// 1024->5000
+     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      return ((sum / count) * 825UL) / 256;	// 1024->3300
+     #else
+      return ((sum / count) * 825UL) / 256;	// 1024->3300
+     #endif
+    #endif
 }
 
 static void parseData()
@@ -214,7 +256,7 @@ static void parseData()
         case 2: _tone(getShort(0),getShort(1));; callOK(); break;
         case 3: sendShort((_getAnalog(getByte(0),getShort(1)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        #ifdef __AVR_ATmega328P__
+        #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: Wire.begin(); callOK(); break;
         #else
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
@@ -222,6 +264,12 @@ static void parseData()
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
           case 0x84: sendWireRead(getByte(0),getByte(1)); break;
+          case 0x85: sendWireScan(); break;
+        
+          case 0x86: pinMode(getByte(0),OUTPUT); digitalWrite(getByte(0),getByte(1)); callOK(); break;
+          case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
+          case 0x88: sendShort(_analogRead(getByte(0),getByte(1)));break;
+          case 0x89: break;
         
           case 0xFE:  // firmware name
             _println("PC mode: " mVersion "\r\n");
@@ -262,7 +310,7 @@ void loop()
                   break;
                 case 2:
                   if(c != 0x55) 
-                  _index = 0;
+                    _index = 0;
                   break;
                 case 3:
                   _packetLen = 3+c;
@@ -466,7 +514,7 @@ static void sendString(String s)
       _write(buffer, dp-buffer);
 }
 
-static void sendBin(uint8_t* buf, uint8_t num)
+void sendBin(uint8_t* buf, uint8_t num)
 {
       memmove(buffer+5, buf, num);
       uint8_t* dp = buffer;

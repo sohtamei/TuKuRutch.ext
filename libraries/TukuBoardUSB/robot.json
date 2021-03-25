@@ -14,7 +14,7 @@
 
 	// C言語記述注意 : " を使うときは \" とすること
 
-	// PCモード/書き込みモード ヘッダ (C言語)
+	// ヘッダ (C言語)
 	"header":"
 #define mVersion \"TukuBoardUSB1.0\"
 
@@ -80,7 +80,7 @@ void _tone(int sound, int ms) {
   delay(ms);
 }
 ",
-	// PCモード/書き込みモード setup処理 (C言語)
+	// setup処理 (C言語)
 	"setup":"
 _setLED(1,0);
 pinMode(P_GND, OUTPUT);
@@ -90,10 +90,10 @@ pinMode(P_BUZZER, OUTPUT);
 _tone(T_C5, 100);
 Serial.begin(115200);
 ",
-	// PCモード/書き込みモード loop処理 (C言語)
+	// loop処理 (C言語)
 	"loop":"",
 
-	// PCモード/書き込みモード スクラッチブロック定義
+	// スクラッチブロック定義
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
 	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
