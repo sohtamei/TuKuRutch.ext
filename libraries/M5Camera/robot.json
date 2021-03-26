@@ -1,5 +1,5 @@
 {
-	"name"			: "M5CameraCar",
+	"name"			: "M5Camera",
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
@@ -24,7 +24,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5CameraCar1.0\"
+#define mVersion \"M5Camera1.0\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"

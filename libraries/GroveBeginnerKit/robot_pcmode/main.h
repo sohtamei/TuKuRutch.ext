@@ -25,7 +25,9 @@ extern BMP280 bmp280;
 void _setup(const char* ver);
 void _loop(void);
 
-void _tone(int sound, int ms);
 float _getAccel(uint8_t xyz);
+
+// robot_pcmode.ino
+void _tone(uint8_t port, int16_t freq, int16_t ms);
 
 #endif  // main_h

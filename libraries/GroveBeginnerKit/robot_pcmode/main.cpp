@@ -28,16 +28,11 @@ enum {
 	T_C5=523, T_D5=587, T_E5=659, T_F5=698,
 };
 
-void _tone(int sound, int ms) {
-	tone(P_BUZZER, sound, ms);
-	delay(ms);
-}
-
 void _setup(const char* ver)
 {
 	pinMode(P_BUZZER, OUTPUT);
 
-	_tone(T_C5, 100);
+	_tone(P_BUZZER, T_C5, 100);
 	Serial.begin(115200);
 
 	u8x8.setBusClock(100000);  // If you breakout other modules, please enable this line

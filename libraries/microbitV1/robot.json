@@ -13,6 +13,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
+#define mVersion \"microbit 1.0\"
 #include \"main.h\"
 ",
 	// setup処理 (C言語)

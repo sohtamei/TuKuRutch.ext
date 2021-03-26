@@ -2,10 +2,65 @@
 
 #define PCMODE
 
-#define mVersion "TukuBoard1.0"
+#define mVersion "uno1.0"
 
-#include "TukurutchEsp.h"
-#include "main.h"
+#include <Arduino.h>
+
+#define P_GND		A1
+#define P_BUZZER	12
+
+#define numof(a) (sizeof(a)/sizeof((a)[0]))
+
+enum {
+      T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
+      T_C5=523, T_D5=587, T_E5=659, T_F5=698,
+};
+
+struct port {uint8_t sig; uint8_t gnd;};
+
+const uint8_t sensorTable[4] = {A2, A3, A4, A5};
+uint16_t _getAnalog(uint8_t idx, uint16_t count)
+{
+      if(!idx || idx > numof(sensorTable)) return 0;
+      idx--;
+    
+      if(count == 0) count = 1;
+      count *= 100;
+      uint32_t sum = 0;
+      for(int i = 0; i < count; i++)
+        sum += analogRead(sensorTable[idx]);
+      sum = ((sum / count) * 625UL) / 128;  // 1024->5000
+      return sum;
+}
+
+const struct port ledTable[6] = {{13,0}, {2,3}, {4,5}, {6,7}, {8,9}, {10,11}};
+void _setLED(uint8_t idx, uint8_t onoff)
+{
+      if(!idx || idx > numof(ledTable)) return;
+      idx--;
+    
+      digitalWrite(ledTable[idx].sig, onoff);
+      pinMode(ledTable[idx].sig, OUTPUT);
+      if(ledTable[idx].gnd) {
+            digitalWrite(ledTable[idx].gnd, LOW);
+            pinMode(ledTable[idx].gnd, OUTPUT);
+      }
+}
+
+const struct port swTable[3] = {{2,4},{5,7},{8,10}};
+uint8_t _getSw(uint8_t idx)
+{
+      if(!idx || idx > numof(swTable)) return 0;
+      idx--;
+    
+      pinMode(swTable[idx].sig, INPUT_PULLUP);
+      if(swTable[idx].gnd) {
+            digitalWrite(swTable[idx].gnd, LOW);
+            pinMode(swTable[idx].gnd, OUTPUT);
+      }
+      return digitalRead(swTable[idx].sig) ? 0: 1;
+}
+
 
 #include <Wire.h>
 #ifdef __AVR_ATmega328P__
@@ -30,13 +85,25 @@ enum {
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
+#define LEDC_BUZZER  8
+
 void setup()
 {
-    #ifdef __AVR_ATmega328P__
+    #if defined(__AVR_ATmega328P__)
       MCUSR = 0;
       wdt_disable();
+    #elif defined(ESP32)
+      ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
     #endif
-    _setup(mVersion);  _Serial.println("PC mode: " mVersion);
+    
+    _setLED(1,0);
+    pinMode(P_GND, OUTPUT);
+    digitalWrite(P_GND, LOW);
+    pinMode(P_BUZZER, OUTPUT);
+    
+    _tone(P_BUZZER, T_C5, 100);
+    Serial.begin(115200);
+      _Serial.println("PC mode: " mVersion);
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
@@ -51,10 +118,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'S','S',},
   {'B','S',},
   {'B',},
-  {},
-  {},
-  {},
-  {'s','s',},
 };
 
 uint8_t wifi_uart = 0;
@@ -95,14 +158,22 @@ int16_t _read(void)
       return -1;
 }
 
-#define CMD_MIN  0x81
-#define CMD_MAX  0x84
 static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','B'},		// 0x81:wire_begin     (SDA, SCL)
   {'B','b'},		// 0x82:wire_write     (adrs, [DATA])          ret:0-OK
   {'B','b','B'},	// 0x83:wire_writeRead (adrs, [DATA], readNum) ret:[DATA]-OK, NULL-ERROR
   {'B','B'},		// 0x84:wire_read      (adrs, readNum)         ret:[DATA]-OK, NULL-ERROR
+  {},				// 0x85:wire_scan      ()                      ret:[LIST]
+    
+  {'B','B'},		// 0x86:digiWrite      (port, data)
+  {'B'},			// 0x87:digiRead       (port)                  ret:level
+  {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
+  {'B','S','S'},	// 0x89:tone           (port,freq,ms)
+//  {'B','S'},		// 0x90:set_pwm        (port, data)
+      // neoPixcel
 };
+#define CMD_MIN   0x81
+#define CMD_MAX  (0x81 + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
 
 static void sendWireRead(int adrs, int num)
 {
@@ -114,6 +185,52 @@ static void sendWireRead(int adrs, int num)
               buffer[i] = Wire.read();
             sendBin(buffer, num);
       }
+}
+
+static void sendWireScan(void)
+{
+      int num = 0;
+      int i;
+      for(i = 0; i < 127; i++) {
+            Wire.beginTransmission(i);
+            int ret = Wire.endTransmission();
+            if(!ret) buffer[num++] = i;
+      }
+      sendBin(buffer, num);
+}
+
+static int _analogRead(uint8_t port, uint16_t count)
+{
+    #if defined(ESP32)
+      return getAdc1(port,count);break;
+    #else
+      if(count == 0) count = 1;
+      int i;
+      uint32_t sum = 0;
+      for(i = 0; i < count; i++)
+        sum += analogRead(port);
+    
+     #if defined(__AVR_ATmega328P__)
+      return ((sum / count) * 625UL) / 128;	// 1024->5000
+     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      return ((sum / count) * 825UL) / 256;	// 1024->3300
+     #else
+      return ((sum / count) * 825UL) / 256;	// 1024->3300
+     #endif
+    #endif
+}
+
+void _tone(uint8_t port, int16_t freq, int16_t ms)
+{
+    #if defined(ESP32)
+      ledcAttachPin(port, LEDC_BUZZER);
+      ledcWriteTone(LEDC_BUZZER, freq);
+      delay(ms);
+      ledcWriteTone(LEDC_BUZZER, 0);
+    #else
+      tone(port, freq, ms);
+      delay(ms);
+    #endif
 }
 
 static void parseData()
@@ -148,13 +265,10 @@ static void parseData()
     
       switch(cmd){
         case 1: _setLED(getByte(0),getByte(1));; callOK(); break;
-        case 2: _tone(getShort(0),getShort(1));; callOK(); break;
-        case 3: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+        case 2: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
+        case 3: sendShort((_getAnalog(getByte(0),getShort(1)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        case 6: sendString((statusWifi())); break;
-        case 7: sendString((scanWifi())); break;
-        case 8: sendByte((connectWifi(getString(0),getString(1)))); break;
-        #ifdef __AVR_ATmega328P__
+        #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: Wire.begin(); callOK(); break;
         #else
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
@@ -162,6 +276,12 @@ static void parseData()
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
           case 0x84: sendWireRead(getByte(0),getByte(1)); break;
+          case 0x85: sendWireScan(); break;
+        
+          case 0x86: pinMode(getByte(0),OUTPUT); digitalWrite(getByte(0),getByte(1)); callOK(); break;
+          case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
+          case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
+          case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
         
           case 0xFE:  // firmware name
             _println("PC mode: " mVersion "\r\n");
@@ -202,7 +322,7 @@ void loop()
                   break;
                 case 2:
                   if(c != 0x55) 
-                  _index = 0;
+                    _index = 0;
                   break;
                 case 3:
                   _packetLen = 3+c;
@@ -216,9 +336,6 @@ void loop()
                   _index = 0;
             }
       }
-    
-      loopWebSocket();
-      _loop();
 }
 
 #ifdef ENABLE_WEBSOCKET
@@ -409,7 +526,7 @@ static void sendString(String s)
       _write(buffer, dp-buffer);
 }
 
-static void sendBin(uint8_t* buf, uint8_t num)
+void sendBin(uint8_t* buf, uint8_t num)
 {
       memmove(buffer+5, buf, num);
       uint8_t* dp = buffer;

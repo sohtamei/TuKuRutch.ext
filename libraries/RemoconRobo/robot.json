@@ -3,7 +3,7 @@
 	"port"			: 0,										// 変更禁止
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
-	"sort"			: 1,										// メニュー上の表示順序
+	"sort"			: 50,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
 	"productInfoURL": "https://bit-trade-one.co.jp/adkrbt/",
