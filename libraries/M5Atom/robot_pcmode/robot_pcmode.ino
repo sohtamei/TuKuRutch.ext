@@ -131,7 +131,7 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','B'},		// 0x84:wire_read      (adrs, readNum)         ret:[DATA]-OK, NULL-ERROR
   {},				// 0x85:wire_scan      ()                      ret:[LIST]
     
-  {'B','B'},		// 0x86:digiWrite      (port, data)
+  {'b'},			// 0x86:digiWrite      (LIST[port,data])
   {'B'},			// 0x87:digiRead       (port)                  ret:level
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
@@ -165,6 +165,15 @@ static void sendWireScan(void)
       sendBin(buffer, num);
 }
 
+static void digiWrite(uint8_t* buf, int num)
+{
+      int i;
+      for(i = 0; i < num; i+= 2) {
+            pinMode(buf[i+0], OUTPUT);
+            digitalWrite(buf[i+0], buf[i+1]);
+      }
+}
+
 static int _analogRead(uint8_t port, uint16_t count)
 {
     #if defined(ESP32)
@@ -193,6 +202,8 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
       ledcWriteTone(LEDC_BUZZER, freq);
       delay(ms);
       ledcWriteTone(LEDC_BUZZER, 0);
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      ;
     #else
       tone(port, freq, ms);
       delay(ms);
@@ -253,7 +264,7 @@ static void parseData()
           case 0x84: sendWireRead(getByte(0),getByte(1)); break;
           case 0x85: sendWireScan(); break;
         
-          case 0x86: pinMode(getByte(0),OUTPUT); digitalWrite(getByte(0),getByte(1)); callOK(); break;
+          case 0x86: digiWrite(getBufLen(0)); callOK(); break;
           case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;

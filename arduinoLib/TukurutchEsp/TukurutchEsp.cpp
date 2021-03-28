@@ -46,7 +46,7 @@ void initWifi(const char* ver, int _waitWifi, void(*connectedCB)(String localIP)
 //	preferences.getBytes("sta.pswd", g_pass, sizeof(g_pass));
 	Serial.print("Connecting to ");  Serial.println(g_ssid+4);
 
-	//WiFi.mode(WIFI_STA);
+	WiFi.mode(WIFI_STA);
 	if(g_ssid[4]) {
 		WiFi.begin();
 		connection_status = CONNECTION_CONNECTING;

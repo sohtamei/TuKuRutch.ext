@@ -20,7 +20,7 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
 
-	"scratch3ext"	: "TukuBoard",								// scratch3 ext名[,SupportCamera]
+	"scratch3ext"	: "uno",									// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
 			{"name":"generic_ESP32", "type":"esp32", "baudrate":230400, "binPath":"uno32"},
 	],
