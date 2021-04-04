@@ -67,15 +67,6 @@
 
 		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
 		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
-
-		["-"],//["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
-		["-"],//["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
-		["-"],
-
-		// WiFi設定
-		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
-		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
-		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],

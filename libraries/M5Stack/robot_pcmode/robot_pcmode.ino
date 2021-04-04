@@ -160,23 +160,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'s',},
   {'s','S','S','B',},
   {'S',},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {'s','s',},
 };
 
 uint8_t wifi_uart = 0;
@@ -217,6 +200,7 @@ int16_t _read(void)
       return -1;
 }
 
+// sync with scratch-vm/src/extensions/scratch3_tukurutch/comlib.js
 static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','B'},		// 0x81:wire_begin     (SDA, SCL)
   {'B','b'},		// 0x82:wire_write     (adrs, [DATA])          ret:0-OK
@@ -232,7 +216,20 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
       // neoPixcel
 };
 #define CMD_MIN   0x81
-#define CMD_MAX  (0x81 + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
+#define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
+
+// sync with scratch-vm/src/extensions/scratch3_tukurutch/comlib.js,
+//           mBlock/src/extensions/ExtensionManager.as
+static const char ArgTypesTbl3[][ARG_NUM] = {
+  {},				// 0xFB:statusWifi     ()                      ret:status SSID ip
+  {},				// 0xFC:scanWifi       ()                      ret:SSID1 SSID2 SSID3 ..
+  {'s','s'},		// 0xFD:connectWifi    (ssid,pass)             ret:status
+    
+  {},				// 0xFE:getFwName      ()                      ret:FwName
+  {},				// 0xFF:reset          ()                      ret:
+};
+#define CMD3_MIN   0xFB
+#define CMD3_MAX  (CMD3_MIN + sizeof(ArgTypesTbl3)/sizeof(ArgTypesTbl3[0]) - 1)
 
 static void sendWireRead(int adrs, int num)
 {
@@ -309,8 +306,12 @@ static void parseData()
       const char *ArgTypes = NULL;
       if(cmd < ITEM_NUM) {
              ArgTypes = ArgTypesTbl[cmd];
+        
       } else if(cmd >= CMD_MIN && cmd <= CMD_MAX) {
              ArgTypes = ArgTypesTbl2[cmd-CMD_MIN];
+        
+      } else if(cmd >= CMD3_MIN && cmd <= CMD3_MAX) {
+             ArgTypes = ArgTypesTbl3[cmd-CMD3_MIN];
       }
     
       uint8_t i;
@@ -348,9 +349,6 @@ static void parseData()
         case 14: M5.Lcd.println(getString(0));; callOK(); break;
         case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
         case 16: M5.Lcd.fillScreen(getShort(0)); M5.Lcd.setCursor(0,0);; callOK(); break;
-        case 31: sendString((statusWifi())); break;
-        case 32: sendString((scanWifi())); break;
-        case 33: sendByte((connectWifi(getString(0),getString(1)))); break;
         #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: Wire.begin(); callOK(); break;
         #else
@@ -365,7 +363,12 @@ static void parseData()
           case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
-        
+        #if defined(ESP32)
+          // WiFi設定
+          case 0xFB: sendString(statusWifi()); break;
+          case 0xFC: sendString(scanWifi()); break;
+          case 0xFD: sendByte(connectWifi(getString(0),getString(1))); break;
+        #endif
           case 0xFE:  // firmware name
             _println("PC mode: " mVersion "\r\n");
             break;

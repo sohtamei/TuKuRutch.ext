@@ -77,22 +77,6 @@
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
-	//	["w", "stop servo %d.servoch",					"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
-
-		["-"],
-
-		["-"],//["w", "--- RoverC ---",							"tagRover",						{"enum":"",					"func":"0"}],
-		["-"],//["w", "FL %n FR %n RL %n RR %n",				"setRoverC",	0,0,0,0,		{"remote":["S","S","S","S"],"func":"setRoverC({0},{1},{2},{3});"}],
-		["-"],//["w", "x %n y %n role %n",						"setRoverC_XYR",0,0,0,			{"remote":["S","S","S"],	"func":"setRoverC_XYR({0},{1},{2});"}],
-		["-"],//["w", "dir %d.roverDir speed %n",				"moveRoverC",	"UP",100,		{"remote":["B","B"],		"func":"moveRoverC({0},{1});"}],
-		["-"],//["R", "%d.roverDir .",							"enumRoverDir","UP",			{"enum":"",					"func":"{0}"}],
-
-		["-"],
-
-		// WiFi設定
-		["R", "status WIFI",							"statusWifi",					{"remote":[			"s"],"func":"statusWifi()"}],
-		["R", "scan WIFI",								"scanWifi",						{"remote":[			"s"],"func":"scanWifi()"}],
-		["R", "connect WIFI %s %s",						"connectWifi","ssid","pass",	{"remote":["s","s",	"B"],"func":"connectWifi({0},{1})"}],
 	],
 	"menus": {
 		"digital":["HIGH","LOW"],
@@ -112,7 +96,6 @@
 		"servoch"	:[0,1],
 		"speed"		:[100,50,0,-50,-100],
 		"angle"		:[0,90,180],
-		"roverDir"	:["STOP","UP_R","UP","UP_L","RIGHT","LEFT","DOWN_R","DOWN","DOWN_L","ROLL_R","ROLL_L"],
 	},
 	"values":{
 		"HIGH":1,"LOW":0,
