@@ -57,6 +57,7 @@ static esp_err_t capture_handler(httpd_req_t *req){
         return res;
 }
 
+uint8_t stream_state = false;
 static esp_err_t stream_handler(httpd_req_t *req){
     camera_fb_t * fb = NULL;
     esp_err_t res = ESP_OK;
@@ -78,6 +79,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
 
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
+    stream_state = true;
     while(true){
         fb = esp_camera_fb_get();
         if (!fb) {
@@ -115,6 +117,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
         last_frame = fr_end;
     }
 
+    stream_state = false;
     last_frame = 0;
     return res;
 }
@@ -252,6 +255,9 @@ static esp_err_t index_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
     httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
     sensor_t * s = esp_camera_sensor_get();
+    if (s->id.PID == OV3660_PID) {
+        return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
+    }
     return httpd_resp_send(req, (const char *)index_ov2640_html_gz, index_ov2640_html_gz_len);
 }
 

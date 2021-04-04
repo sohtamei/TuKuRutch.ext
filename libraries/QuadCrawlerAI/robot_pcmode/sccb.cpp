@@ -6,6 +6,7 @@
  * SCCB (I2C like) driver.
  *
  */
+#define CONFIG_SCCB_HARDWARE_I2C_PORT1  1
 #if 1		// 0 for M5camera
 #include <Wire.h>
 #include "sccb.h"
@@ -30,10 +31,30 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
   return Wire.read();
 }
 
+uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
+{
+  Wire.beginTransmission(slv_addr);
+  Wire.write(reg>>8);
+  Wire.write(reg&0xFF);
+  Wire.endTransmission(false);
+  Wire.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
+  return Wire.read();
+}
+
 uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
 {
   Wire.beginTransmission(slv_addr);
   Wire.write(reg);
+  Wire.write(data);
+  Wire.endTransmission();
+  return 0;
+}
+
+uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
+{
+  Wire.beginTransmission(slv_addr);
+  Wire.write(reg>>8);
+  Wire.write(reg&0xFF);
   Wire.write(data);
   Wire.endTransmission();
   return 0;
@@ -100,7 +121,7 @@ int SCCB_Init(int pin_sda, int pin_scl)
 
 uint8_t SCCB_Probe()
 {
-	return 0x30;
+//	return 0x30;
 #ifdef CONFIG_SCCB_HARDWARE_I2C
     uint8_t slave_addr = 0x0;
     while(slave_addr < 0x7f) {

@@ -7,7 +7,6 @@
 
 // ポート定義
 
-#define ROVER_ADDRESS	0X38
 #define P_LED			10
 
 WebsocketsServer wsServer;
@@ -118,73 +117,6 @@ void _setCar(uint8_t direction, uint8_t speed)
 	}
 }
 
-// Rover C
-
-static void RoverC_Init(void)    
-{
-	Wire.begin(0,26,100);		//sda 0, scl 26
-}
-
-static void Send_iic(uint8_t Register, int16_t Speed)
-{
-	if(Speed >  100) Speed =  100;
-	if(Speed < -100) Speed = -100;
-	Wire.beginTransmission(ROVER_ADDRESS);
-	Wire.write(Register);
-	Wire.write(Speed);
-	Wire.endTransmission();
-}
-
-uint8_t roverCInitF = false;
-void setRoverC(int16_t F_L, int16_t F_R, int16_t R_L, int16_t R_R)
-{
-	if(!roverCInitF) {
-		roverCInitF=true;
-		RoverC_Init();
-	}
-	Send_iic(0x00, F_L);
-	Send_iic(0x01, F_R);
-	Send_iic(0x02, R_L);
-	Send_iic(0x03, R_R);
-}
-
-void setRoverC_XYR(int16_t x, int16_t y, int16_t role)
-{
-	int16_t left = y+x;
-	int16_t right = y-x;
-	int16_t invK = 100;
-
-	if(abs(left) > 100) invK = abs(left);
-	else if(abs(right) > 100) invK = abs(right);
-
-	if(invK != 100) {
-		left  = (left*100)/invK;
-		right = (right*100)/invK;
-	}
-	setRoverC(left+role, right-role, right+role, left-role);
-}
-
-struct { int8_t x; int8_t y; int8_t r; } const rdir_table[] = {
-//  X  Y  R
-  { 0, 0, 0},  // STOP
-  { 1, 1, 0},  // UP_R
-  { 0, 1, 0},  // UP
-  {-1, 1, 0},  // UP_L
-  { 1, 0, 0},  // RIGHT
-  {-1, 0, 0},  // LEFT
-  { 1,-1, 0},  // DOWN_R
-  { 0,-1, 0},  // DOWN
-  {-1,-1, 0},  // DOWN_L
-  { 0, 0, 1},  // ROLL_R
-  { 0, 0,-1},  // ROLL_L
-};
-
-void moveRoverC(uint8_t dir, uint8_t speed)
-{
-	if(dir >= sizeof(rdir_table)/sizeof(rdir_table[0])) return;
-	setRoverC_XYR(speed*rdir_table[dir].x, speed*rdir_table[dir].y, speed*rdir_table[dir].r);
-}
-
 static void onConnect(String ip)
 {
 	M5.Lcd.fillScreen(BLACK);
@@ -229,7 +161,6 @@ void _setup(const char* ver)
 
 void _loop(void)
 {
-//	loopWebSocket();
 	M5.update();  // update button and speaker
 //	delay(50);
 }

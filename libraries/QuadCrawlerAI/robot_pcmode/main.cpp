@@ -5,11 +5,11 @@
 #include "QuadCrawlerAI.h"
 #include <analogRemote.h>
 #include <TukurutchEsp.h>
+#include "TukurutchEspCamera.h"
 
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 
 WebsocketsServer wsServer;
-void startCameraServer(void);
 
 void onConnect(String ip)
 {
