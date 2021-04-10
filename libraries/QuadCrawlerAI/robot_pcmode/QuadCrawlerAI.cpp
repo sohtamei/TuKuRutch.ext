@@ -7,7 +7,8 @@
 #include <Wire.h>
 #include <Preferences.h>
 #include "QuadCrawlerAI.h"
-#include "esp_camera.h"
+#include "TukurutchEspCamera.h"
+//#include "esp_camera.h"
 
 // ポート定義
 //#define BOARD_1ST  // 最初の試作基板
