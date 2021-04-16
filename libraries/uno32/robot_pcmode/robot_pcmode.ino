@@ -74,7 +74,7 @@ void _write(uint8_t* dp, int count)
         _Serial.write(dp, count);
 }
 
-void _println(char* mes)
+void _println(const char* mes)
 {
       _write((uint8_t*)mes, strlen(mes));
 }

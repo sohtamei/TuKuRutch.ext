@@ -22,7 +22,8 @@
 
 	"scratch3ext"	: "uno",									// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
-			{"name":"generic_ESP32", "type":"esp32", "baudrate":230400, "binPath":"uno32"},
+			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
+			{"name":"generic_ESP32", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

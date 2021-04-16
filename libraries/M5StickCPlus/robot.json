@@ -22,10 +22,10 @@
 
 	"scratch3ext"	: "M5Series",								// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
-			{"name":"M5StickC", "type":"esp32", "baudrate":230400, "binPath":"M5StickC"},
-			{"name":"M5StickCPlus", "type":"esp32", "baudrate":230400, "binPath":"M5StickCPlus"},
-			{"name":"M5Stack", "type":"esp32", "baudrate":230400, "binPath":"M5Stack"},
-			{"name":"M5Atom", "type":"esp32", "baudrate":230400, "binPath":"M5Atom"},
+			{"name":"M5StickC", "type":"esp32", "baudrate":750000, "binPath":"M5StickC"},
+			{"name":"M5StickCPlus", "type":"esp32", "baudrate":750000, "binPath":"M5StickCPlus"},
+			{"name":"M5Stack", "type":"esp32", "baudrate":921600, "binPath":"M5Stack"},
+			{"name":"M5Atom", "type":"esp32", "baudrate":1500000, "binPath":"M5Atom"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
