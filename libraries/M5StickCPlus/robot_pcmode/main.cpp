@@ -154,7 +154,6 @@ void _setup(const char* ver)
 	ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 	ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
 
-	//RoverC_Init();
 	Serial.begin(115200);
 	initWifi(ver, false, onConnect);
 }

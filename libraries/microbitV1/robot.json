@@ -39,7 +39,7 @@
 
 		["-"],
 		["w", "display text %s",						"displayText",		"text",		{"remote":["s"],		"func":"_displayText({0});"}],
-		["w", "display LED %n",							"displayLed",		0xFFFFFFFF,	{"remote":["L"],		"func":"_displayLed({0});"}],
+		["w", "display LED %n",							"displayLed",		0x01FFFFFF,	{"remote":["L"],		"func":"_displayLed({0});"}],
 		["R", "get Data",								"getData",						{"remote":[		"b"],	"func":"_getSendData()"}],
 		["R", "get Tilt xy %n",							"getTilt",			0,			{"remote":["B",	"S"],	"func":"_getTilt({0})"}],
 	],

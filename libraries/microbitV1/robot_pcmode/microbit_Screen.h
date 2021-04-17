@@ -26,10 +26,11 @@
 class microbit_Screen {
   private:
     void showData(const uint8_t *DataArray);
-  public:
     void begin();
-    void show(const uint8_t *DataArray);
     void clearScreen();
+  public:
+    void disable();
+    void show(const uint8_t *DataArray);
     void showString(const String text, const uint32_t interval = 150);
     void loopScreen();
 };

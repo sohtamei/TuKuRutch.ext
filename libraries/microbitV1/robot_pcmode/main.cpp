@@ -4,9 +4,6 @@
 #include <Wire.h>
 #include "main.h"
 
-//#include <Adafruit_Microbit.h>
-//Adafruit_Microbit_Matrix microbit;
-
 #include "microbit_Screen.h"
 microbit_Screen SCREEN;
 
@@ -21,8 +18,6 @@ LSM303AGR_ACC_Sensor AccNew(&Wire);
 #include "MMA8653.h"
 MMA8653 AccOld;
 
-
-#define PI  (3.141592653589793)
 
 /*
 #define PIN_A0               (0)
@@ -72,8 +67,6 @@ static const uint8_t InitLeds[5] = {B00000,B01010,B00000,B10001,B01110};
 void _setup(const char* ver)
 {
 	Serial.begin(115200);
-//	microbit.begin();
-	SCREEN.begin();
 	Wire.begin();
 
 	int ret;
@@ -171,18 +164,19 @@ Serial.println(buf);
 void _displayText(char* text)
 {
 	SCREEN.showString(text);  
-//	microbit.print(text);
-//	microbit.clear();
 }
 
 void _displayLed(uint32_t bitmap)
 {
-	uint8_t ledBuf[5];
-	int i;
-	for(i = 0; i < 5; i++)
-		ledBuf[i] = (bitmap>>i*5) & 0x1F;
-//	microbit.show(ledBuf);
-	SCREEN.show(ledBuf);
+	if(!bitmap) {
+		SCREEN.disable();
+	} else {
+		uint8_t ledBuf[5];
+		int i;
+		for(i = 0; i < 5; i++)
+			ledBuf[i] = (bitmap>>i*5) & 0x1F;
+		SCREEN.show(ledBuf);
+	}
 }
 
 int _getTilt(uint8_t xy)

@@ -27,6 +27,7 @@ typedef struct {
   uint8_t r;
 } LED_POINT;
 
+static uint8_t enabled = 0;
 static uint8_t curPhysRow = 0;
 static uint8_t curLEDs[rowCount] = {0};
 
@@ -184,11 +185,17 @@ void microbit_Screen::showData(const uint8_t *DataArray)
 
 void microbit_Screen::show(const uint8_t *DataArray)
 {
+	if(!enabled) {
+		enabled = 1;
+		begin();
+	}
 	memcpy(curLEDs, DataArray, rowCount);
 }
 
 void microbit_Screen::loopScreen(void)
 {
+	if(!enabled) return;
+
 	digitalWrite(physRows[curPhysRow], LOW);
 	curPhysRow++;
 	if(curPhysRow >= physRowNum) curPhysRow = 0;
@@ -213,6 +220,14 @@ void microbit_Screen::begin()
   curPhysRow = 0;
 }
 
+void microbit_Screen::disable()
+{
+  uint8_t i;
+  for (i = 0; i < physColNum; i++)  pinMode(physCols[i], INPUT);
+  for (i = 0; i < physRowNum; i++)  pinMode(physRows[i], INPUT);
+  enabled = 0;
+}
+
 void microbit_Screen::clearScreen() {
   uint8_t i;
   for (i = 0; i < physColNum; i++)  digitalWrite(physCols[i], HIGH);
@@ -221,6 +236,10 @@ void microbit_Screen::clearScreen() {
 }
 
 void microbit_Screen::showString(const String text, const uint32_t interval) {
+  if(!enabled) {
+    enabled = 1;
+    begin();
+  }
   clearScreen();
 
   String dStr;
