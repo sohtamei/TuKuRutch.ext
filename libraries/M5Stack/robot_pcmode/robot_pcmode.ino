@@ -4,68 +4,8 @@
 
 #define mVersion "M5STACK 1.0"
 
-#define M5STACK_MPU6886 
-// #define M5STACK_MPU9250 
-#include <M5Stack.h>
 #include "TukurutchEsp.h"
-
-
-WebsocketsServer wsServer;
-
-#define numof(a) (sizeof(a)/sizeof((a)[0]))
-
-void _setLED(uint8_t onoff)
-{;}
-
-uint8_t _getSw(uint8_t button)
-{
-      switch(button) {
-          case 0: return M5.BtnA.isPressed();
-          case 1: return M5.BtnB.isPressed();
-          case 2: return M5.BtnC.isPressed();
-      }
-      return 0;
-}
-
-float getIMU(uint8_t index)
-{
-  float data[3] = {0};
-      if(index < 3) {
-            M5.IMU.getGyroData(data+0,data+1,data+2);
-            return data[index-0];
-      } else if(index < 6) {
-            M5.IMU.getAccelData(data+0,data+1,data+2);
-            return data[index-3];
-      } else if(index < 9) {
-            //M5.IMU.getAhrsData(data+0,data+1,data+2);
-            return data[index-6];
-      } else {
-            M5.IMU.getTempData(data+0);
-            return data[0];
-      }
-}
-
-void _tone(int sound, int ms)
-{
-      M5.Speaker.tone(sound, ms);
-      delay(ms);
-      M5.Speaker.mute();
-}
-
-void _beep(void)
-{
-      M5.Speaker.beep();
-      delay(100);
-      M5.Speaker.mute();
-}
-
-void onConnect(String ip)
-{
-      M5.Lcd.fillScreen(BLACK);
-      M5.Lcd.setCursor(0,0);
-      M5.Lcd.println(ip);
-      wsServer.listen(PORT_WEBSOCKET);
-}
+#include "main.h"
 
 #include <Wire.h>
 #ifdef __AVR_ATmega328P__
@@ -90,7 +30,9 @@ enum {
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
-#define LEDC_BUZZER  8
+#define LEDC_BUZZER  15
+#define LEDC_PWM_START 1
+#define LEDC_PWM_END   14
 
 void setup()
 {
@@ -100,39 +42,7 @@ void setup()
     #elif defined(ESP32)
       ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
     #endif
-    
-    M5.begin(true, true, true); // init lcd, sd card, serial
-    M5.Power.begin();    // use battery
-    M5.IMU.Init();
-    
-    M5.Lcd.fillScreen(BLACK);
-    M5.Lcd.setTextSize(2);
-    
-    M5.Lcd.setCursor(0, 0);
-    if(_getSw(0)) {
-          M5.Lcd.println("ESP SmartConfig");
-          WiFi.mode(WIFI_STA);
-          WiFi.beginSmartConfig();
-          while (!WiFi.smartConfigDone()) {
-                delay(1000);
-                _setLED(1);
-                _tone(T_C5, 100);
-                _setLED(0);
-          }
-    } else {
-          #ifdef PCMODE
-            M5.Lcd.println("PC mode: " mVersion);
-          #else
-            M5.Lcd.println("Arduino mode: " mVersion);
-          #endif
-    }
-    
-    Serial.begin(115200);
-    #ifndef PCMODE
-    initWifi(mVersion, true, onConnect);
-    #else
-    initWifi(mVersion, false, onConnect);
-    #endif
+    _setup(mVersion);
       _Serial.println("PC mode: " mVersion);
 }
 
@@ -150,9 +60,9 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'S','S',},
   {},
   {'B',},
-  {'B','B',},
-  {'B',},
-  {'B','S',},
+  {},
+  {},
+  {},
   {},
   {'S','B',},
   {'S','S',},
@@ -160,6 +70,240 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'s',},
   {'s','S','S','B',},
   {'S',},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
+  {},
 };
 
 uint8_t wifi_uart = 0;
@@ -179,7 +323,7 @@ void _write(uint8_t* dp, int count)
         _Serial.write(dp, count);
 }
 
-void _println(char* mes)
+void _println(const char* mes)
 {
       _write((uint8_t*)mes, strlen(mes));
 }
@@ -212,7 +356,7 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B'},			// 0x87:digiRead       (port)                  ret:level
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
-//  {'B','S'},		// 0x90:set_pwm        (port, data)
+  {'b'},			// 0x8a:setPwms        (LIST[port,data])
       // neoPixcel
 };
 #define CMD_MIN   0x81
@@ -300,6 +444,41 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
     #endif
 }
 
+#if defined(__AVR_ATmega328P__)
+// 3,5,6,9,10,11  8bit
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
+
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+// 5と11除く、8bit、3chまで
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
+
+#elif defined(ESP32)
+static uint8_t ledc2port[LEDC_PWM_END+1] = {0};
+static void _setPwm(uint8_t port, uint16_t data)
+{
+      int i;
+      for(i = LEDC_PWM_START; i <= LEDC_PWM_END; i++) {
+            if(ledc2port[i] == port+1) {
+                  ledcWrite(i, data);
+                  return;
+            } else if(ledc2port[i] == 0) {
+                  ledc2port[i] = port+1;
+                  ledcSetup(i, 50/*Hz*/, 12/*bit*/);
+                  ledcAttachPin(port, i);
+                  ledcWrite(i, data);
+                  return;
+            }
+      }
+}
+#endif
+
+static void _setPwms(uint8_t* buf, int num)
+{
+      int i;
+      for(i = 0; i < num; i += 3)
+        _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
+}
+
 static void parseData()
 {
       uint8_t cmd = buffer[3];
@@ -337,12 +516,9 @@ static void parseData()
       switch(cmd){
         case 2: _setLED(getByte(0));; callOK(); break;
         case 3: sendFloat((getIMU(getByte(0)))); break;
-        case 4: _tone(getShort(0),getShort(1));; callOK(); break;
-        case 5: _beep();; callOK(); break;
+        case 4: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
+        case 5: _tone(P_BUZZER,1000,100); callOK(); break;
         case 6: sendByte((_getSw(getByte(0)))); break;
-        case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
         case 11: M5.Lcd.setTextColor(getShort(0));M5.Lcd.setTextSize(getByte(1));; callOK(); break;
         case 12: M5.Lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
         case 13: M5.Lcd.print(getString(0));; callOK(); break;
@@ -363,6 +539,7 @@ static void parseData()
           case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
+          case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;
@@ -389,6 +566,7 @@ static void parseData()
           #define CMD_CHECKREMOTEKEY  0x80
           case CMD_CHECKREMOTEKEY: sendRemote(); break;
         #endif
+          default: callOK(); break;
       }
 }
 
@@ -424,11 +602,8 @@ void loop()
       }
     
       loopWebSocket();
-    #ifndef PCMODE
-      sendNotifyArduinoMode();
-    #endif
-      M5.update();  // update button and speaker
-    //delay(50);
+      _loop();
+    
 }
 
 #ifdef ENABLE_WEBSOCKET

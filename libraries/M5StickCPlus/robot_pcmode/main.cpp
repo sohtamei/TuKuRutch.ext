@@ -4,9 +4,6 @@
 #include <TukurutchEsp.h>
 #include "main.h"
 
-// ポート定義
-
-#define P_LED			10
 
 WebsocketsServer wsServer;
 
@@ -46,26 +43,6 @@ float getIMU(uint8_t index)
 	}
 }
 
-void _tone(int sound, int ms)
-{
-#ifdef _M5StickCPlus
-	M5.Beep.tone(sound, ms);
-	delay(ms);
-	M5.Beep.mute();
-#else
-	delay(ms);
-#endif
-}
-
-void _beep(void)
-{
-#ifdef _M5StickCPlus
-	M5.Beep.beep();
-	delay(100);
-	M5.Beep.mute();
-#endif
-}
-
 static void onConnect(String ip)
 {
 	M5.Lcd.fillScreen(BLACK);
@@ -91,7 +68,7 @@ void _setup(const char* ver)
 		while (!WiFi.smartConfigDone()) {
 			delay(1000);
 			_setLED(1);
-			_tone(T_C5, 100);
+			_tone(P_BUZZER, T_C5, 100);
 			_setLED(0);
 		}
 	} else {

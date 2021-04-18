@@ -10,8 +10,6 @@ WebsocketsServer wsServer;
 
 #define P_GND		4
 
-#define P_BUZZER		19
-#define LEDC_BUZZER		8
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -52,19 +50,12 @@ uint8_t _getSw(uint8_t idx)
 	return digitalRead(swTable[idx].sig) ? 0: 1;
 }
 
-void _tone(int sound, int ms)
-{
-	ledcWriteTone(LEDC_BUZZER, sound);
-	delay(ms);
-	ledcWriteTone(LEDC_BUZZER, 0);
-}
-
 void onConnect(String ip)
 {
 	_setLED(1,1);
-	_tone(T_C4, 250);
-	_tone(T_D4, 250);
-	_tone(T_E4, 250);
+	_tone(P_BUZZER, T_C4, 250);
+	_tone(P_BUZZER, T_D4, 250);
+	_tone(P_BUZZER, T_E4, 250);
 
 	wsServer.listen(PORT_WEBSOCKET);
 	Serial.println(ip);
@@ -76,21 +67,19 @@ void _setup(const char* ver)
 	_setLED(1,0);
 	pinMode(P_GND, OUTPUT);
 	digitalWrite(P_GND, LOW);
-	ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
-	ledcAttachPin(P_BUZZER, LEDC_BUZZER);
 
-	_tone(T_C5, 100);
+	_tone(P_BUZZER, T_C5, 100);
 	Serial.begin(115200);
 	if(_getSw(1)) {
 		delay(100);
-		_tone(T_C5, 100);
+		_tone(P_BUZZER, T_C5, 100);
 		Serial.println("Waiting for SmartConfig.");
 		WiFi.mode(WIFI_STA);
 		WiFi.beginSmartConfig();
 		while (!WiFi.smartConfigDone()) {
 			delay(1000);
 			_setLED(1,1);
-			_tone(T_C5, 100);
+			_tone(P_BUZZER, T_C5, 100);
 			_setLED(1,0);
 		}
 		Serial.println("SmartConfig received.");

@@ -59,9 +59,9 @@
 
 		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
 
-//		["w", "play tone %d.noteJ1 beat %d.beats",			"BuzzerJ1",		  "C2","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
-		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
-//		["w", "play tone %d.noteJ3 beat %d.beats",			"BuzzerJ3",		  "C6","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
+//		["w", "play tone %d.noteJ1 beat %d.beats",			"BuzzerJ1",		  "C2","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
+		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
+//		["w", "play tone %d.noteJ3 beat %d.beats",			"BuzzerJ3",		  "C6","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
 
 		["R", "Sensor %d.sensor average %n times",			"getAnalogAve",		1,4,		{"remote":["B","S",	"S"],"func":"_getAdc1({0},{1})"}],
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],

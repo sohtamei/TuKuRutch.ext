@@ -39,20 +39,6 @@ float getIMU(uint8_t index)
   }
 }
 
-void _tone(int sound, int ms)
-{
-  M5.Speaker.tone(sound, ms);
-  delay(ms);
-  M5.Speaker.mute();
-}
-
-void _beep(void)
-{
-  M5.Speaker.beep();
-  delay(100);
-  M5.Speaker.mute();
-}
-
 static void onConnect(String ip)
 {
   M5.Lcd.fillScreen(BLACK);
@@ -78,7 +64,7 @@ void _setup(const char* ver)
 	  while (!WiFi.smartConfigDone()) {
 	    delay(1000);
 	    _setLED(1);
-	    _tone(T_C5, 100);
+	    _tone(P_BUZZER, T_C5, 100);
 	    _setLED(0);
 	  }
 	} else {

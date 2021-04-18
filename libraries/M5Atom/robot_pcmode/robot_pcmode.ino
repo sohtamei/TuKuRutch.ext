@@ -30,7 +30,9 @@ enum {
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
-#define LEDC_BUZZER  8
+#define LEDC_BUZZER  15
+#define LEDC_PWM_START 1
+#define LEDC_PWM_END   14
 
 void setup()
 {
@@ -40,7 +42,8 @@ void setup()
     #elif defined(ESP32)
       ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
     #endif
-    _setup(mVersion);  _Serial.println("PC mode: " mVersion);
+    _setup(mVersion);
+      _Serial.println("PC mode: " mVersion);
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
@@ -57,23 +60,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
-  {'B','B',},
-  {'B',},
-  {'B','S',},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {},
-  {'B','B',},
-  {'B','S',},
-  {},
-  {},
-  {'B','B',},
 };
 
 uint8_t wifi_uart = 0;
@@ -93,7 +79,7 @@ void _write(uint8_t* dp, int count)
         _Serial.write(dp, count);
 }
 
-void _println(char* mes)
+void _println(const char* mes)
 {
       _write((uint8_t*)mes, strlen(mes));
 }
@@ -126,7 +112,7 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B'},			// 0x87:digiRead       (port)                  ret:level
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
-//  {'B','S'},		// 0x90:set_pwm        (port, data)
+  {'b'},			// 0x8a:setPwms        (LIST[port,data])
       // neoPixcel
 };
 #define CMD_MIN   0x81
@@ -214,6 +200,41 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
     #endif
 }
 
+#if defined(__AVR_ATmega328P__)
+// 3,5,6,9,10,11  8bit
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
+
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+// 5と11除く、8bit、3chまで
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
+
+#elif defined(ESP32)
+static uint8_t ledc2port[LEDC_PWM_END+1] = {0};
+static void _setPwm(uint8_t port, uint16_t data)
+{
+      int i;
+      for(i = LEDC_PWM_START; i <= LEDC_PWM_END; i++) {
+            if(ledc2port[i] == port+1) {
+                  ledcWrite(i, data);
+                  return;
+            } else if(ledc2port[i] == 0) {
+                  ledc2port[i] = port+1;
+                  ledcSetup(i, 50/*Hz*/, 12/*bit*/);
+                  ledcAttachPin(port, i);
+                  ledcWrite(i, data);
+                  return;
+            }
+      }
+}
+#endif
+
+static void _setPwms(uint8_t* buf, int num)
+{
+      int i;
+      for(i = 0; i < num; i += 3)
+        _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
+}
+
 static void parseData()
 {
       uint8_t cmd = buffer[3];
@@ -252,13 +273,6 @@ static void parseData()
         case 2: _setLED(getByte(0));; callOK(); break;
         case 3: sendFloat((getIMU(getByte(0)))); break;
         case 6: sendByte((_getSw(getByte(0)))); break;
-        case 7: pinMode(getByte(0),OUTPUT);digitalWrite(getByte(0),getByte(1));; callOK(); break;
-        case 8: sendByte((pinMode(getByte(0),INPUT),digitalRead(getByte(0)))); break;
-        case 9: sendShort((getAdc1(getByte(0),getShort(1)))); break;
-        case 19: _setCar(getByte(0),getByte(1));; callOK(); break;
-        case 20: _setServo(getByte(0),getShort(1),1);; callOK(); break;
-        case 21: _setCar(0,0);; callOK(); break;
-        case 23: _setServo(getByte(0),getByte(1),0);; callOK(); break;
         #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: Wire.begin(); callOK(); break;
         #else
@@ -273,6 +287,7 @@ static void parseData()
           case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
+          case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;
@@ -299,6 +314,7 @@ static void parseData()
           #define CMD_CHECKREMOTEKEY  0x80
           case CMD_CHECKREMOTEKEY: sendRemote(); break;
         #endif
+          default: callOK(); break;
       }
 }
 
@@ -335,6 +351,7 @@ void loop()
     
       loopWebSocket();
       _loop();
+    
 }
 
 #ifdef ENABLE_WEBSOCKET
