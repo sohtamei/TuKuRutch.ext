@@ -26,112 +26,16 @@
 	"header":"
 #define mVersion \"M5STACK 1.0\"
 
-#define M5STACK_MPU6886 
-// #define M5STACK_MPU9250 
-#include <M5Stack.h>
 #include \"TukurutchEsp.h\"
-
-
-WebsocketsServer wsServer;
-
-#define numof(a) (sizeof(a)/sizeof((a)[0]))
-
-void _setLED(uint8_t onoff)
-{;}
-
-uint8_t _getSw(uint8_t button)
-{
-  switch(button) {
-  case 0: return M5.BtnA.isPressed();
-  case 1: return M5.BtnB.isPressed();
-  case 2: return M5.BtnC.isPressed();
-  }
-  return 0;
-}
-
-float getIMU(uint8_t index)
-{
-  float data[3] = {0};
-  if(index < 3) {
-    M5.IMU.getGyroData(data+0,data+1,data+2);
-    return data[index-0];
-  } else if(index < 6) {
-    M5.IMU.getAccelData(data+0,data+1,data+2);
-    return data[index-3];
-  } else if(index < 9) {
-    //M5.IMU.getAhrsData(data+0,data+1,data+2);
-    return data[index-6];
-  } else {
-    M5.IMU.getTempData(data+0);
-    return data[0];
-  }
-}
-
-void _tone(int sound, int ms)
-{
-  M5.Speaker.tone(sound, ms);
-  delay(ms);
-  M5.Speaker.mute();
-}
-
-void _beep(void)
-{
-  M5.Speaker.beep();
-  delay(100);
-  M5.Speaker.mute();
-}
-
-void onConnect(String ip)
-{
-  M5.Lcd.fillScreen(BLACK);
-  M5.Lcd.setCursor(0,0);
-  M5.Lcd.println(ip);
-  wsServer.listen(PORT_WEBSOCKET);
-}
+#include \"main.h\"
 ",
 	// setup処理 (C言語)
-	"setup":"
-M5.begin(true, true, true); // init lcd, sd card, serial
-M5.Power.begin();    // use battery
-M5.IMU.Init();
+	"setup":"_setup(mVersion);",
 
-M5.Lcd.fillScreen(BLACK);
-M5.Lcd.setTextSize(2);
-
-M5.Lcd.setCursor(0, 0);
-if(_getSw(0)) {
-  M5.Lcd.println(\"ESP SmartConfig\");
-  WiFi.mode(WIFI_STA);
-  WiFi.beginSmartConfig();
-  while (!WiFi.smartConfigDone()) {
-    delay(1000);
-    _setLED(1);
-    _tone(T_C5, 100);
-    _setLED(0);
-  }
-} else {
-  #ifdef PCMODE
-    M5.Lcd.println(\"PC mode: \" mVersion);
-  #else
-    M5.Lcd.println(\"Arduino mode: \" mVersion);
-  #endif
-}
-
-Serial.begin(115200);
-#ifndef PCMODE
-initWifi(mVersion, true, onConnect);
-#else
-initWifi(mVersion, false, onConnect);
-#endif
-",
 	// loop処理 (C言語)
 	"loop":"
   loopWebSocket();
-#ifndef PCMODE
-  sendNotifyArduinoMode();
-#endif
-  M5.update();  // update button and speaker
-//delay(50);
+  _loop();
 ",
 
 	// スクラッチブロック定義
@@ -154,10 +58,9 @@ initWifi(mVersion, false, onConnect);
 		["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
 		["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
-		["w", "set digital pin %n output as %d.digital","setDigital",		26,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		26,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["R", "read analog pin %n average %n times",	"getAnalog",		36,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
-
+		["-"],
+		["-"],
+		["-"],
 		["-"],
 
 		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
@@ -168,7 +71,6 @@ initWifi(mVersion, false, onConnect);
 		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0}); M5.Lcd.setCursor(0,0);"}],
 	],
 	"menus": {
-		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
 		"button":["buttonA","buttonB","buttonC"],
 		"color":["BLACK","NAVY","DARKGREEN","DARKCYAN","MAROON","PURPLE","OLIVE","LIGHTGREY","DARKGREY","BLUE","GREEN","CYAN","RED","MAGENTA","YELLOW","WHITE","ORANGE","GREENYELLOW","PINK"],
@@ -182,7 +84,6 @@ initWifi(mVersion, false, onConnect);
 		"beats":["Half","Quarter","Eighth","Whole","Double"],
 	},
 	"values":{
-		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 		"buttonA":0,"buttonB":1,"buttonC":2,
 		"BLACK":0x0000,"NAVY":0x000F,"DARKGREEN":0x03E0,"DARKCYAN":0x03EF,"MAROON":0x7800,"PURPLE":0x780F,"OLIVE":0x7BE0,"LIGHTGREY":0xC618,"DARKGREY":0x7BEF,"BLUE":0x001F,"GREEN":0x07E0,"CYAN":0x07FF,"RED":0xF800,"MAGENTA":0xF81F,"YELLOW":0xFFE0,"WHITE":0xFFFF,"ORANGE":0xFD20,"GREENYELLOW":0xAFE5,"PINK":0xF81F,
@@ -202,9 +103,6 @@ initWifi(mVersion, false, onConnect);
 	},
 	"translators":{
 		"ja":{
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read analog pin %n average %n times"			:"アナログピン %n の %n 回平均",
 		}
 	}
 }

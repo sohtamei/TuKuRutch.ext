@@ -26,7 +26,8 @@ RSP_BUF     = 7,
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
-#define LEDC_BUZZER  8
+#define LEDC_BUZZER  15
+#define LEDC_PWM_NUM 15
 
 void setup()
 {
@@ -37,6 +38,7 @@ void setup()
   ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
 #endif
 // SETUP
+
   _Serial.println("PC mode: " mVersion);
 }
 
@@ -197,7 +199,7 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
   #define _setPwm(port, data) analogWrite(port, (data)>>4)
 
 #elif defined(ESP32)
-static uint8_t ledc2port[16] = {0};
+static uint8_t ledc2port[LEDC_PWM_NUM] = {0};
 static void _setPwm(uint8_t port, uint16_t data)
 {
   int i;
@@ -335,6 +337,7 @@ void loop()
     }
   }
 // LOOP
+
 }
 
 #ifdef ENABLE_WEBSOCKET

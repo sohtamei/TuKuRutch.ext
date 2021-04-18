@@ -59,52 +59,19 @@
 		["-"],//["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
 		["-"],//["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
-		["w", "set digital pin %n output as %d.digital","setDigital",		22,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		22,			{"remote":["B",		"B"], "func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["R", "read analog pin %n average %n times",	"getAnalog",		33,4,		{"remote":["B","S",	"S"], "func":"getAdc1({0},{1})"}],
-
-		["-"],
-
-		["-"],//["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"M5.Lcd.setTextColor({0});M5.Lcd.setTextSize({1});"}],
-		["-"],//["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"M5.Lcd.setCursor({0},{1});"}],
-		["-"],//["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"M5.Lcd.print({0});"}],
-		["-"],//["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"M5.Lcd.println({0});"}],
-		["-"],//["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"M5.Lcd.drawString({0},{1},{2},{3});"}],
-		["-"],//["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"M5.Lcd.fillScreen({0}); M5.Lcd.setCursor(0,0);"}],
-
-		["-"],
-
-		["w", "--- ServoCar ---",						"tagServo",						{"enum":"",					"func":"0"}],
-		["w", "%d.direction at speed %n",				"setCar",  "run forward",100,	{"remote":["B","B"],	"func":"_setCar({0},{1});"}],
-		["w", "set motor %d.servoch speed %d.speed",	"setMotor",			0,100,		{"remote":["B","S"],	"func":"_setServo({0},{1},1);"}],
-		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
-		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
-		["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
 	],
 	"menus": {
-		"digital":["HIGH","LOW"],
 		"onoff":["On","Off"],
 		"button":["buttonA","buttonB","buttonC"],
 		"imu":["GyroX","GyroY","GyroZ","AccelX","AccelY","AccelZ","Pitch","Roll","Yaw","Temp"],
-
-		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
-		"servoch"	:[0,1],
-		"speed"		:[100,50,0,-50,-100],
-		"angle"		:[0,90,180],
 	},
 	"values":{
-		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 		"buttonA":0,"buttonB":1,"buttonC":2,
 		"GyroX":0,"GyroY":1,"GyroZ":2,"AccelX":3,"AccelY":4,"AccelZ":5,"Pitch":6,"Roll":7,"Yaw":8,"Temp":9,
-
-		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,"calibration":7,
 	},
 	"translators":{
 		"ja":{
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read analog pin %n average %n times"			:"アナログピン %n の %n 回平均",
 		}
 	}
 }
