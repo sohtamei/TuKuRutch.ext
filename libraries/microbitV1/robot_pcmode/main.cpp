@@ -69,6 +69,18 @@ void _setup(const char* ver)
 	Serial.begin(115200);
 	Wire.begin();
 
+	pinMode(0, INPUT_PULLUP);
+	pinMode(1, INPUT_PULLUP);
+	pinMode(2, INPUT_PULLUP);
+	pinMode(PIN_BUTTON_A, INPUT);
+	pinMode(PIN_BUTTON_B, INPUT);
+
+	attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_A), irq_buttonA, FALLING);
+	attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_B), irq_buttonB, FALLING);
+	SCREEN.show(InitLeds);
+
+	delay(300);		// for i2c error
+
 	int ret;
 	Wire.beginTransmission(I2C_ACCEL_NEW);
 	ret = Wire.endTransmission();
@@ -86,20 +98,10 @@ void _setup(const char* ver)
 			boardType = BOARDTYPE_OLD;
 			AccOld.begin(false, 2);		// highres, scale=2G
 		} else {
-			boardType = BOARDTYPE_NONE;
+			boardType = BOARDTYPE_NEW;//NONE;
 		}
 	}
 //	Serial.println(boardType);
-
-	pinMode(0, INPUT_PULLUP);
-	pinMode(1, INPUT_PULLUP);
-	pinMode(2, INPUT_PULLUP);
-	pinMode(PIN_BUTTON_A, INPUT);
-	pinMode(PIN_BUTTON_B, INPUT);
-
-	attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_A), irq_buttonA, FALLING);
-	attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_B), irq_buttonB, FALLING);
-	SCREEN.show(InitLeds);
 }
 
 static int16_t tiltX = 0;
