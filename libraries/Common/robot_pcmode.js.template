@@ -64,7 +64,7 @@ class Scratch3Blocks {
     'burn [ARG1]',
     '[ARG1]書き込み',
 ][this._locale], arguments: {
-	ARG1: { type: ArgumentType.NUMBER, defaultValue: 0, menu: 'flashList' },
+	ARG1: { type: ArgumentType.STRING, defaultValue:'0', menu: 'flashList' },
 }},
 
 {blockType: BlockType.COMMAND, opcode: 'connectWifi', text: ['connect','接続'][this._locale]+' ssid[ARG1] pass[ARG2]', arguments: {
