@@ -11,8 +11,6 @@
 
 char g_ssid[4+32+1] = {0};		// length(4)+SSID
 
-WiFiServer server(PORT);
-WiFiClient client;
 AsyncUDP udp;
 Preferences preferences;
 char strBuf[256];
@@ -21,7 +19,6 @@ enum {
     CONNECTION_NONE = 0,
     CONNECTION_CONNECTING,
     CONNECTION_WIFI,
-    CONNECTION_TCP,
 };
 uint8_t connection_status = CONNECTION_NONE;
 uint32_t connection_start = 0;
@@ -112,7 +109,6 @@ int readWifi(void)
 {
 	if(WiFi.status() != WL_CONNECTED) {
 		switch(connection_status) {
-		case CONNECTION_TCP:
 		case CONNECTION_WIFI:
 			WiFi.disconnect();
 			connection_status = CONNECTION_NONE;
@@ -139,55 +135,14 @@ int readWifi(void)
 	switch(connection_status) {
 	case CONNECTION_NONE:
 	case CONNECTION_CONNECTING:
-		server.begin();
 		if(_connectedCB) _connectedCB(WiFi.localIP().toString());
 		DPRINT(WiFi.localIP());
 		connection_status = CONNECTION_WIFI;
 
 	case CONNECTION_WIFI:
-		client = server.available();
-		if(!client) {
-			return -1;
-		}
-		DPRINT("connected");
-		connection_status = CONNECTION_TCP;
-
-	case CONNECTION_TCP:
-		if(!client.connected()) {
-			DPRINT("disconnected");
-			client.stop();
-			connection_status = CONNECTION_WIFI;
-			return -1;
-		}
-		if(client.available()<=0) {
-			return -1;
-		}
-		return client.read();
+		;
 	}
-}
-
-void sendNotifyArduinoMode(void)
-{
-	uint32_t cur = millis();
-	if(cur - last_udp > 2000) {
-		last_udp = cur;
-	  //  udp.broadcastTo(mVersion, PORT);
-		uint32_t adrs = WiFi.localIP();
-		uint32_t subnet = WiFi.subnetMask();
-		char buf[32] = {0};
-		snprintf(buf, sizeof(buf)-1, "%s(ArduinoMode)", mVersion);
-		udp.writeTo((uint8_t*)buf, strlen(buf), IPAddress(adrs|~subnet), PORT);
-	}
-}
-
-void writeWifi(uint8_t* dp, int count)
-{
-	client.write(dp, count);
-}
-
-void printlnWifi(char* mes)
-{
-	client.println(mes);
+	return -1;
 }
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))

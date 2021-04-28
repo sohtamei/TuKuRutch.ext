@@ -3,8 +3,6 @@
 
 #include <ArduinoWebsockets.h>
 using namespace websockets;
-#define ENABLE_WEBSOCKET
-
 #define PORT_WEBSOCKET 54323
 
 extern char strBuf[256];
@@ -20,9 +18,6 @@ char* statusWifi(void);
 char* scanWifi(void);
 
 int readWifi(void);
-void writeWifi(uint8_t* dp, int count);
-void printlnWifi(char* mes);
-void sendNotifyArduinoMode(void);
 
 uint16_t getAdc1(uint8_t port, uint16_t count);
 #endif // TUKURUTCH_ESP
