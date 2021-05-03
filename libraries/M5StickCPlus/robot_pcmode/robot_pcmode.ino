@@ -6,8 +6,14 @@
 #include "main.h"
 
 #include <Wire.h>
-#ifdef __AVR_ATmega328P__
-#include <avr/wdt.h>
+
+#if defined(__AVR_ATmega328P__)
+  #include <avr/wdt.h>
+
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+  #include <SPI.h>
+  #include <BLEPeripheral.h>
+  static BLEPeripheral blePeripheral = BLEPeripheral();
 #endif
 
 #if defined(_SAMD21_)
@@ -39,6 +45,8 @@ void setup()
       wdt_disable();
     #elif defined(ESP32)
       ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      _bleSetup();
     #endif
     _setup(mVersion);
       _Serial.println("PC mode: " mVersion);
@@ -70,18 +78,22 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'S',},
 };
 
-uint8_t wifi_uart = 0;
+enum {
+        MODE_UART = 0,
+        MODE_WS,
+        MODE_BLE,
+};
+uint8_t comMode = MODE_UART;
 
 void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
-      if(wifi_uart == 1) {
-            writeWifi(dp, count);
-            //_Serial.print("\n"); for(int i=0; i<count; i++) _Serial.printf("%02X",dp[i]); _Serial.print("\n");   // for debug
-        #ifdef ENABLE_WEBSOCKET
-      } else if(wifi_uart == 2) {
+      if(comMode == MODE_WS) {
             _packetLen = count;
-        #endif
+      } else
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      if(comMode == MODE_BLE) {
+            _packetLen = count;
       } else
     #endif
         _Serial.write(dp, count);
@@ -90,22 +102,6 @@ void _write(uint8_t* dp, int count)
 void _println(const char* mes)
 {
       _write((uint8_t*)mes, strlen(mes));
-}
-
-int16_t _read(void)
-{
-      if(_Serial.available()>0) {
-            wifi_uart = 0;
-            return _Serial.read();
-      }
-    #if defined(ESP32)
-      int ret = readWifi();
-      if(ret != -1) {
-            wifi_uart = 1;
-            return ret;
-      }
-    #endif
-      return -1;
 }
 
 // sync with scratch-vm/src/extensions/scratch3_tukurutch/comlib.js
@@ -334,11 +330,20 @@ static void parseData()
       }
 }
 
+int16_t _readUart(void)
+{
+      if(_Serial.available()>0) {
+            comMode = MODE_UART;
+            return _Serial.read();
+      }
+      return -1;
+}
+
 static uint8_t _index = 0;
 void loop()
 {
       int16_t c;
-      while((c=_read()) >= 0) {
+      while((c=_readUart()) >= 0) {
             //_Serial.printf("%02x",c);  // for debug
             buffer[_index++] = c;
             
@@ -365,12 +370,18 @@ void loop()
             }
       }
     
+    #if defined(ESP32)
+      readWifi();
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      blePeripheral.poll();
+    #endif
+    
       loopWebSocket();
       _loop();
     
 }
 
-#ifdef ENABLE_WEBSOCKET
+#if defined(ESP32)
 uint8_t connected = 0;
 static WebsocketsClient _client;
 
@@ -390,7 +401,7 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 void onMessageCallback(WebsocketsMessage msg) {
       _packetLen = msg.length();
       memcpy(buffer, msg.c_str(), _packetLen);
-      wifi_uart = 2;
+      comMode = MODE_WS;
       parseData();
       _client.sendBinary((char*)buffer, _packetLen);
 }
@@ -409,6 +420,59 @@ static void loopWebSocket(void)
       _client.poll();
       return;
 }
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+static BLEDescriptor _nameDesc = BLEDescriptor("2901", mVersion);
+static BLEService        _service = BLEService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+static BLECharacteristic _rxChar  = BLECharacteristic("6E400002-B5A3-F393-E0A9-E50E24DCCA9E", BLEWrite|BLEWriteWithoutResponse, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
+  // write/writeWoResp, both OK
+static BLECharacteristic _txChar  = BLECharacteristic("6E400003-B5A3-F393-E0A9-E50E24DCCA9E", BLENotify|BLERead, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
+
+void _bleSetup() {
+      blePeripheral.setLocalName(mVersion);
+    
+      blePeripheral.addAttribute(_service);
+      blePeripheral.addAttribute(_nameDesc);
+      blePeripheral.setAdvertisedServiceUuid(_service.uuid());
+    
+      blePeripheral.addAttribute(_txChar);
+      blePeripheral.addAttribute(_rxChar);
+      _rxChar.setEventHandler(BLEWritten, _bleWritten);
+    
+      blePeripheral.setEventHandler(BLEConnected, _bleConnected);
+      blePeripheral.setEventHandler(BLEDisconnected, _bleDisconnected);
+    
+      blePeripheral.begin();
+}
+
+static void _bleConnected(BLECentral& central) {
+      Serial.println(F("Connected"));
+}
+
+static void _bleDisconnected(BLECentral& central) {
+      Serial.println(F("Disconnected"));
+}
+
+static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
+      //Serial.print(F("R:")); _dump(_rxChar.value(), _rxChar.valueLength());
+      _packetLen =_rxChar.valueLength();
+      memcpy(buffer, _rxChar.value(), _packetLen);
+      comMode = MODE_BLE;
+      parseData();
+      //Serial.print(F("W:")); _dump((uint8_t*)buffer, _packetLen);
+      _txChar.setValue((uint8_t*)buffer, _packetLen);
+}
+/*
+static void _dump(const uint8_t* buf, int size)
+{
+      int i;
+      char tmp[4];
+      for(i = 0; i < size; i++) {
+            snprintf(tmp, sizeof(tmp), "%02x", buf[i]);
+            Serial.print(tmp);
+      }
+      Serial.println();
+}
+*/
 #endif
 
 union floatConv { 

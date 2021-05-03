@@ -20,7 +20,7 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_1500000"],
 
-	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
+	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
 			{"name":"M5Camera", "type":"esp32", "baudrate":921600, "binPath":"M5Camera"},
 			{"name":"M5TimerCam", "type":"esp32", "baudrate":1500000, "binPath":"M5TimerCam"},
@@ -56,55 +56,23 @@
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
-
-		["w", "%d.direction at speed %d.speed calib %n duration %n",
-														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],
-		["w", "set motor left %d.speed right %d.speed calib %n duration %n",
-														"setMotor",			4,4,0,0,	{"remote":["S","S","S","S"],"func":"_setMotor({0},{1},{2},{3});"}],
-	//	["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],		"func":"_setServo({0},{1});"}],
-	//	["w", "set motor %d.servoch pwm %d.pwm",		"setPwm",			0,0,		{"remote":["B","S"],		"func":"_setPwm({0},{1});"}],
-		["w", "set servo %d.servoch %n",				"setServo",			0,90,		{"remote":["B","B"],		"func":"_setServo({0},{1});"}],
-		["w", "set motor %d.servoch pwm %n",			"setPwm",			0,307,		{"remote":["B","S"],		"func":"_setPwm({0},{1});"}],
-		["w", "stop",									"stopCar",						{"remote":[],				"func":"_stopServo();"}],
-
-		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
-
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
-
-		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
-		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
-
+		["-"],
 		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
 		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
+		["-"],
+		["-"],
+		["-"],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],
-		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
-		"servoch"	:[0,1],
-		"speed"		:[4,2,1,0,-1,-2,-4],
-	//	"angle"		:[0,90,180],
-	//	"pwm"		:[471,307,143,0],
-	//	"calib"		:[50,25,0,-25,-50],
-	// scratch3.0でmenu表示と数値入力が両立しない
 	},
 	"values":{
 		"On":1,"Off":0,
-		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,"calibration":7,
 	},
 	"translators":{
 		"ja":{
-			"stop":"ストップ", "run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回", "calibration":"原点調整",
-			"%d.direction at speed %d.speed calib %n duration %n"			:"%d.direction 向きに %d.speed の速さで動かす(補正 %n , %n ms)",
-			"set motor left %d.speed right %d.speed calib %n duration %n"	:"左 %d.speed 右 %d.speed で動かす(補正 %n , %n ms)",
-			"set servo %d.servoch %n"											:"サーボ %d.servoch の角度を %n にする",
-			"set motor %d.servoch pwm %n"										:"サーボ %d.servoch にPWM %n を設定",
-
-			"download calibration %n %s"					:"補正データダウンロード ID=%n データ%s",
-			"download calibration %n %n"					:"補正データダウンロード ID=%n データ%n",
-			"get cal"										:"補正データ表示",
-
 			"set LED %d.onoff"								:"LED %d.onoff",
-			"SW %d.sw"										:"スイッチ %d.sw",
 		}
 	}
 }

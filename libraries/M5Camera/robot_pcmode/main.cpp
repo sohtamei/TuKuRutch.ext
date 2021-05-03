@@ -207,21 +207,7 @@ void _setLED(uint8_t onoff)
 #endif
 	pinMode(P_LED, OUTPUT);
 }
-/*
-uint8_t _getSw(uint8_t idx)
-{
-	int ret = 0;
-	pinMode(P_SRV1, INPUT_PULLDOWN);
-	pinMode(P_SRV0, OUTPUT);
 
-	digitalWrite(P_SRV0, 1); delay(5);
-	if(digitalRead(P_SRV1) == 1) {
-		ret = 1;
-	}
-	pinMode(P_SRV0, INPUT);
-	return ret;
-}
-*/
 static uint16_t pwm_last[2];
 static uint16_t pwm_req[2];
 static uint16_t pwm_duration = 0;
@@ -230,7 +216,7 @@ static uint16_t pwm_duration = 0;
 #define PWM_NEUTRAL 307
 #define PWM_MAX     471
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,P_SRV0},{9,P_SRV1}};
-void _setPwm(uint8_t idx, int16_t data)
+void _setPwm2(uint8_t idx, int16_t data)
 {
 	ledcAttachPin(servoTable[idx].port, servoTable[idx].ledc);
 	ledcWrite(servoTable[idx].ledc, data);
@@ -242,7 +228,7 @@ static const uint16_t maxOffsetTbl[] = {164,83,70,63,58,54,51,48,45,43,41,40,38,
 int16_t limitOffset(int16_t offset)
 {
 		 if(offset >= (int) numof(maxOffsetTbl)) offset =   numof(maxOffsetTbl)-1;
-	else if(offset <= (int)-numof(maxOffsetTbl)) offset = -(numof(maxOffsetTbl)-1);
+	else if(offset <= (int)-numof(maxOffsetTbl)) offset = -((int)numof(maxOffsetTbl)-1);
 	return offset;
 }
 
@@ -331,17 +317,17 @@ void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
 
 	servo_stt = SERVO_IDLE;
 	if(pwm_last[0] && pwmL && ((pwm_last[0]>=pwm0[0]) != (pwmL>=pwm0[0]))) {
-		_setPwm(0, 0);
+		_setPwm2(0, 0);
 		servo_stt = SERVO_REV_REQ;
 	} else {
-		_setPwm(0, pwmL);
+		_setPwm2(0, pwmL);
 	}
 
 	if(pwm_last[1] && pwmR && ((pwm_last[1]>=pwm0[1]) != (pwmR>=pwm0[1]))) {
-		_setPwm(1, 0);
+		_setPwm2(1, 0);
 		servo_stt = SERVO_REV_REQ;
 	} else {
-		_setPwm(1, pwmR);
+		_setPwm2(1, pwmR);
 	}
 
 	if(servo_stt == SERVO_REV_REQ) {
@@ -363,8 +349,8 @@ void _stopServo(void)
 {
 	servo_stt = SERVO_IDLE;
 	servo_time = 0;
-	_setPwm(0, 0);
-	_setPwm(1, 0);
+	_setPwm2(0, 0);
+	_setPwm2(1, 0);
 }
 
 enum {
@@ -393,8 +379,8 @@ struct { int16_t L; int16_t R;} static const dir_table[7] = {
 void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration)
 {
 	if(direction >= CMD_CALIBRATION) {
-		_setPwm(0, PWM_NEUTRAL);
-		_setPwm(1, PWM_NEUTRAL);
+		_setPwm2(0, PWM_NEUTRAL);
+		_setPwm2(1, PWM_NEUTRAL);
 	} else {
 		_setMotor(speed*dir_table[direction].L, speed*dir_table[direction].R, calib, duration);
 	}
@@ -466,7 +452,7 @@ void _setServo(uint8_t idx, int16_t data/*0~180*/)
 	else if(data > 180) data = 180;
 
 	uint16_t pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
-	_setPwm(idx, pwmWidth);
+	_setPwm2(idx, pwmWidth);
 }
 
 static uint8_t connected = false;
@@ -547,23 +533,7 @@ void _setup(const char* ver)
 	bmm8563_close();
 #endif
 	M5CameraCar_init();
-/*
-	if(_getSw(0)) {
-		_setLED(1);
-		delay(100);
-		_setLED(0);
-		Serial.println("Waiting for SmartConfig.");
-		WiFi.mode(WIFI_STA);
-		WiFi.beginSmartConfig();
-		while (!WiFi.smartConfigDone()) {
-			delay(1000);
-			_setLED(1);
-			delay(100);
-			_setLED(0);
-		}
-		Serial.println("SmartConfig received.");
-	}
-*/
+
 	// ServoCar
 	ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);
 	ledcSetup(servoTable[1].ledc, 50/*Hz*/, 12/*bit*/);
@@ -596,8 +566,8 @@ void _loop(void)
 					servo_stt = SERVO_IDLE;
 					servo_time = 0;
 				}
-				_setPwm(0, pwm_req[0]);
-				_setPwm(1, pwm_req[1]);
+				_setPwm2(0, pwm_req[0]);
+				_setPwm2(1, pwm_req[1]);
 				break;
 
 			case SERVO_STOP_REQ:
@@ -605,8 +575,8 @@ void _loop(void)
 			default:
 				servo_stt = SERVO_IDLE;
 				servo_time = 0;
-				_setPwm(0, 0);
-				_setPwm(1, 0);
+				_setPwm2(0, 0);
+				_setPwm2(1, 0);
 				break;
 			}
 		}

@@ -20,6 +20,11 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
 
+	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
+	"scratch3burn"	: [
+			{"name":"M5Camera", "type":"esp32", "baudrate":921600, "binPath":"M5Camera"},
+	],
+
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
@@ -55,10 +60,8 @@
 														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],
 		["w", "set motor left %d.speed right %d.speed calib %n duration %n",
 														"setMotor",			4,4,0,0,	{"remote":["S","S","S","S"],"func":"_setMotor({0},{1},{2},{3});"}],
-	//	["w", "set servo %d.servoch %d.angle",			"setServo",			0,90,		{"remote":["B","B"],		"func":"_setServo({0},{1});"}],
-	//	["w", "set motor %d.servoch pwm %d.pwm",		"setPwm",			0,0,		{"remote":["B","S"],		"func":"_setPwm({0},{1});"}],
 		["w", "set servo %d.servoch %n",				"setServo",			0,90,		{"remote":["B","B"],		"func":"_setServo({0},{1});"}],
-		["w", "set motor %d.servoch pwm %n",			"setPwm",			0,307,		{"remote":["B","S"],		"func":"_setPwm({0},{1});"}],
+		["w", "set motor %d.servoch pwm %n",			"setPwm",			0,307,		{"remote":["B","S"],		"func":"_setPwm2({0},{1});"}],
 		["w", "stop",									"stopCar",						{"remote":[],				"func":"_stopServo();"}],
 
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
@@ -73,10 +76,6 @@
 		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
 		"servoch"	:[0,1],
 		"speed"		:[4,2,1,0,-1,-2,-4],
-	//	"angle"		:[0,90,180],
-	//	"pwm"		:[471,307,143,0],
-	//	"calib"		:[50,25,0,-25,-50],
-	// scratch3.0でmenu表示と数値入力が両立しない
 	},
 	"values":{
 		"On":1,"Off":0,

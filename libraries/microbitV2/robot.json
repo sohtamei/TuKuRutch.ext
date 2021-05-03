@@ -1,19 +1,19 @@
 {
-	"name"			: "microbitV1",
+	"name"			: "microbitV2",
 	"port"			: 0,										// 変更禁止
-	"boardType"		: "sandeepmistry:nRF5:BBCmicrobit",			// package:platform:board
+	"boardType"		: "sandeepmistry:nRF5:BBCmicrobitV2",		// package:platform:board
 
 	"sort"			: 12,										// メニュー上の表示順序
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"prefs"			: ["custom_softdevice=BBCmicrobit_s110"],
+	"prefs"			: ["custom_softdevice=BBCmicrobitV2_none"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"microbit 1.0\"
+#define mVersion \"microbitV2 1.0\"
 #include \"main.h\"
 ",
 	// setup処理 (C言語)
