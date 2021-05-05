@@ -10,8 +10,7 @@
 #if defined(__AVR_ATmega328P__)
   #include <avr/wdt.h>
 
-#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-  #include <SPI.h>
+#elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
   #include <BLEPeripheral.h>
   static BLEPeripheral blePeripheral = BLEPeripheral();
 #endif
@@ -45,7 +44,7 @@ void setup()
       wdt_disable();
     #elif defined(ESP32)
       ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
-    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
       _bleSetup();
     #endif
     _setup(mVersion);
@@ -91,7 +90,7 @@ void _write(uint8_t* dp, int count)
       if(comMode == MODE_WS) {
             _packetLen = count;
       } else
-    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
       if(comMode == MODE_BLE) {
             _packetLen = count;
       } else
@@ -372,7 +371,7 @@ void loop()
     
     #if defined(ESP32)
       readWifi();
-    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
       blePeripheral.poll();
     #endif
     
@@ -420,7 +419,7 @@ static void loopWebSocket(void)
       _client.poll();
       return;
 }
-#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+#elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
 static BLEDescriptor _nameDesc = BLEDescriptor("2901", mVersion);
 static BLEService        _service = BLEService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
 static BLECharacteristic _rxChar  = BLECharacteristic("6E400002-B5A3-F393-E0A9-E50E24DCCA9E", BLEWrite|BLEWriteWithoutResponse, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
