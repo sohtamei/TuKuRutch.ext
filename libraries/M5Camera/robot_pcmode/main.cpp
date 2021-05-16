@@ -442,19 +442,6 @@ char* _getCal(void)
 	return strBuf;
 }
 
-void _setServo(uint8_t idx, int16_t data/*0~180*/)
-{
-	if(idx >= numof(servoTable)) return;
-
-	#define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
-	#define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
-	if(data < 0) data = 0;
-	else if(data > 180) data = 180;
-
-	uint16_t pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
-	_setPwm2(idx, pwmWidth);
-}
-
 static uint8_t connected = false;
 void onConnect(String ip)
 {
