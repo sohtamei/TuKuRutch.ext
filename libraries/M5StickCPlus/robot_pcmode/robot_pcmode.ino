@@ -34,7 +34,7 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
 #define LEDC_BUZZER  15
-#define LEDC_PWM_START 1
+#define LEDC_PWM_START 2
 #define LEDC_PWM_END   14
 
 void setup()

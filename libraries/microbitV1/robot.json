@@ -42,6 +42,11 @@
 		["w", "display LED %n",							"displayLed",		0x01FFFFFF,	{"remote":["L"],		"func":"_displayLed({0});"}],
 		["R", "get Data",								"getData",						{"remote":[		"b"],	"func":"_getSendData()"}],
 		["R", "get Tilt xy %n",							"getTilt",			0,			{"remote":["B",	"S"],	"func":"_getTilt({0})"}],
+
+		["w", "Radio enable group %n freq %n power %n",	"RadioEnable",		1,7,6,		{"remote":["B","B","B"],"func":"_RadioEnable({0},{1},{2});"}],
+		["w", "Radio send %s",							"RadioSend",		"230100010071c1000065bd2d350100000000000000000000000000000000000000000000",
+																						{"remote":["b"],		"func":"_RadioSend({0});"}],
+		["R", "Radio recv",								"RadioRecv",					{"remote":[		"b"],	"func":"_RadioRecv()"}],
 	],
 	"menus": {
 	},

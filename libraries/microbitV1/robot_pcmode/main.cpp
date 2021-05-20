@@ -7,6 +7,9 @@
 #include "microbit_Screen.h"
 microbit_Screen SCREEN;
 
+#include "NRF51_Radio_library.h"
+NRF51_Radio MicrobitRadio = NRF51_Radio();
+
 // microbit V1.5
 #if 1
 #include <LSM303AGR_ACC_Sensor.h>
@@ -65,6 +68,8 @@ static uint8_t boardType = 0;
 #define I2C_ACCEL_NEW	0x19
 #define I2C_MAG_OLD		0x0e
 #define I2C_MAG_NEW		0x1e
+
+static uint8_t radioEnabled = false;
 
 static void irq_buttonA(void) { eventFlag |= EVENT_BUTTONA; }
 static void irq_buttonB(void) { eventFlag |= EVENT_BUTTONB; }
@@ -207,12 +212,12 @@ void _getSendData(void)
 	if(sumAccel >=  400) eventFlag |= EVENT_MOVED;
 	if(sumAccel >= 2000) eventFlag |= EVENT_SHAKEN;
 	memcpy(lastAccel, accel, sizeof(lastAccel));
-#if 0
-char buf[100] = {0};
-int ret = snprintf(buf,64,"%5ld %5ld %5ld %4ld %5ld %5ld ", accel[0], accel[1], accel[2], tiltX/10, tiltY/10, sumAccel);
-Serial.println(buf);
-#endif
-	uint8_t buf[8]={0};
+  #if 0
+	char buf[100] = {0};
+	int ret = snprintf(buf,64,"%5ld %5ld %5ld %4ld %5ld %5ld ", accel[0], accel[1], accel[2], tiltX/10, tiltY/10, sumAccel);
+	Serial.println(buf);
+  #endif
+	uint8_t buf[8+36]={0};
 	buf[0] = eventFlag;
 	buf[1] = eventFlag>>8;
 	buf[2] = (digitalRead(PIN_BUTTON_A)^1) | ((digitalRead(PIN_BUTTON_B)^1)<<1);
@@ -221,7 +226,49 @@ Serial.println(buf);
 	buf[5] = tiltX>>8;
 	buf[6] = tiltY;
 	buf[7] = tiltY>>8;
-	sendBin(buf,8);
-
 	eventFlag = 0;
+
+	int size = 8;
+	if(radioEnabled) {
+		FrameBuffer* recvFrame = MicrobitRadio.recv();
+		if(recvFrame) {
+			if(recvFrame->length > 36-1)
+				recvFrame->length = 36-1;
+			memcpy(buf+8, (uint8_t*)recvFrame, recvFrame->length+1);
+			size += recvFrame->length+1;
+			delete recvFrame;
+		}
+	}
+	sendBin(buf,size);
+}
+
+void _RadioEnable(int group, int freq, int power)
+{
+	if(!radioEnabled) bleStop();
+	radioEnabled = true;
+
+	MicrobitRadio.setGroup(group);			// 0~255
+	MicrobitRadio.enable();
+	MicrobitRadio.setFrequencyBand(freq);	// 0~83. (2400+freq)MHz.
+	MicrobitRadio.setTransmitPower(power);	// 0~7
+}
+
+void _RadioSend(uint8_t* buf, int size)
+{
+	if(!radioEnabled) return;
+	FrameBuffer sendFrame = {0};
+	memcpy(&sendFrame, buf, size);
+	MicrobitRadio.send(&sendFrame);
+}
+
+void _RadioRecv(void)
+{
+	FrameBuffer* recvFrame = MicrobitRadio.recv();
+	if(recvFrame == NULL) {
+		callOK();
+		return;
+	}
+
+	sendBin((uint8_t*)recvFrame, recvFrame->length+1);
+	delete recvFrame;
 }

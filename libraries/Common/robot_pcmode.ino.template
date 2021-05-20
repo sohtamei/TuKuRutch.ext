@@ -311,6 +311,7 @@ int16_t _readUart(void)
   return -1;
 }
 
+static uint8_t blePeri_enable = false;
 static uint8_t _index = 0;
 void loop()
 {
@@ -345,7 +346,7 @@ void loop()
 #if defined(ESP32)
   readWifi();
 #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
-  blePeripheral.poll();
+  if(blePeri_enable) blePeripheral.poll();
 #endif
 // LOOP
 
@@ -397,7 +398,12 @@ static BLECharacteristic _rxChar  = BLECharacteristic("6E400002-B5A3-F393-E0A9-E
   // write/writeWoResp, both OK
 static BLECharacteristic _txChar  = BLECharacteristic("6E400003-B5A3-F393-E0A9-E50E24DCCA9E", BLENotify|BLERead, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
 
-void _bleSetup() {
+void bleStop() {
+    if(blePeri_enable) blePeripheral.end();
+    blePeri_enable = false;
+}
+
+static void _bleSetup() {
   blePeripheral.setLocalName(mVersion);
 
   blePeripheral.addAttribute(_service);
@@ -412,6 +418,7 @@ void _bleSetup() {
   blePeripheral.setEventHandler(BLEDisconnected, _bleDisconnected);
 
   blePeripheral.begin();
+  blePeri_enable = true;
 }
 
 static void _bleConnected(BLECentral& central) {
@@ -498,7 +505,7 @@ char* getString(uint8_t n)
   return (char*)buffer+x;
 }
 
-static void callOK()
+/*static*/ void callOK()
 {
   uint8_t* dp = buffer;
   *dp++ = 0xff;
