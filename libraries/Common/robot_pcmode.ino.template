@@ -155,6 +155,7 @@ static int _analogRead(uint8_t port, uint16_t count)
 #if defined(ESP32)
   return getAdc1(port,count);
 #else
+  pinMode(port, INPUT);
   if(count == 0) count = 1;
   int i;
   uint32_t sum = 0;
