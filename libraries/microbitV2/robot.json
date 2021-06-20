@@ -7,7 +7,7 @@
 	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者	"javascriptURL"	: "robot.js",
 	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-	"prefs"			: ["custom_softdevice=BBCmicrobitV2_none"],
+	"prefs"			: ["custom_softdevice=BBCmicrobitV2_s113"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 

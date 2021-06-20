@@ -10,7 +10,7 @@ microbit_Screen SCREEN;
 // microbit V1.5
 #if 1
 #include <LSM303AGR_ACC_Sensor.h>
-LSM303AGR_ACC_Sensor AccNew(&Wire);
+LSM303AGR_ACC_Sensor AccNew(&Wire1);
 #else
 #include <Adafruit_LSM303_Accel.h>
 #include <Adafruit_Sensor.h>
@@ -20,7 +20,7 @@ Adafruit_LSM303_Accel_Unified AccNew = Adafruit_LSM303_Accel_Unified(54321);
 #endif
 
 //nclude <LSM303AGR_MAG_Sensor.h>
-//LSM303AGR_MAG_Sensor Mag(&Wire);
+//LSM303AGR_MAG_Sensor Mag(&Wire1);
 
 // microbit V1.3
 #include "MMA8653.h"
@@ -75,6 +75,7 @@ void _setup(const char* ver)
 	// BLE beginすると200cycle程度でエラー。UART RX 1byte受信割り込みがBLE割り込みでoverflowし、
 	// エラー状態のままになってしまうものと推察。
 	Serial.begin(19200);// 115200);
+	Wire1.begin();
 	Wire.begin();
 
 	pinMode(0, INPUT_PULLUP);
@@ -90,8 +91,8 @@ void _setup(const char* ver)
 	delay(300);		// for i2c error
 
 	int ret;
-	Wire.beginTransmission(I2C_ACCEL_NEW);
-	ret = Wire.endTransmission();
+	Wire1.beginTransmission(I2C_ACCEL_NEW);
+	ret = Wire1.endTransmission();
 	if(!ret) {
 		boardType = BOARDTYPE_NEW;
 	#if 1
@@ -109,8 +110,8 @@ void _setup(const char* ver)
 		}
 	#endif
 	} else {
-		Wire.beginTransmission(I2C_ACCEL_OLD);
-		ret = Wire.endTransmission();
+		Wire1.beginTransmission(I2C_ACCEL_OLD);
+		ret = Wire1.endTransmission();
 		if(!ret) {
 			boardType = BOARDTYPE_OLD;
 			AccOld.begin(false, 2);		// highres, scale=2G
