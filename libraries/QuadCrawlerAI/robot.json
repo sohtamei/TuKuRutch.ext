@@ -37,6 +37,7 @@
 extern WebsocketsServer wsServer;
 void _setup();
 void _loop();
+void _respLidar();
 
 ",
 	// setup処理 (C言語)
@@ -84,6 +85,7 @@ void _loop();
 		["-"],	// ブロック区切り
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"quadCrawler_LED({0});"}],
+		["R", "get Lidar",								"getLidar",						{"remote":[		"b"],	"func":"_respLidar()"}],
 		// enum
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
