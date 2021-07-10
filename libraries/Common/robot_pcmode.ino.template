@@ -52,7 +52,8 @@ void setup()
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
-static uint8_t _packetLen = 4;
+static uint8_t* _packet_dp = buffer;
+static uint16_t _packetLen = 4;
 
 #define ARG_NUM  16
 #define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
@@ -72,10 +73,12 @@ void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
   if(comMode == MODE_WS) {
+    _packet_dp = dp;
     _packetLen = count;
   } else
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   if(comMode == MODE_BLE) {
+    _packet_dp = dp;
     _packetLen = count;
   } else
 #endif
@@ -376,7 +379,7 @@ void onMessageCallback(WebsocketsMessage msg) {
   memcpy(buffer, msg.c_str(), _packetLen);
   comMode = MODE_WS;
   parseData();
-  _client.sendBinary((char*)buffer, _packetLen);
+  _client.sendBinary((char*)_packet_dp, _packetLen);
 }
 
 static void loopWebSocket(void)
@@ -438,7 +441,7 @@ static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
   comMode = MODE_BLE;
   parseData();
   //Serial.print(F("W:")); _dump((uint8_t*)buffer, _packetLen);
-  _txChar.setValue((uint8_t*)buffer, _packetLen);
+  _txChar.setValue((uint8_t*)_packet_dp, _packetLen);
 }
 /*
 static void _dump(const uint8_t* buf, int size)

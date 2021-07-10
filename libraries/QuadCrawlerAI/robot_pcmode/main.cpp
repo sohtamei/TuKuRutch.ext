@@ -27,7 +27,7 @@ static struct __attribute__((packed)) _packet {	// 47bytes
 } packet;
 static uint8_t packetIndex = 0;
 
-#define ROTATE_MAX 450
+#define ROTATE_MAX 550
 static struct __attribute__((packed)) _point {
 	uint16_t distance;
 	uint8_t conficence;
