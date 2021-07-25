@@ -1,6 +1,6 @@
 // DEFINE
 
-/**/
+//*
 const ArgumentType = require('../../extension-support/argument-type');
 const BlockType = require('../../extension-support/block-type');
 const formatMessage = require('format-message');
@@ -136,6 +136,6 @@ flashList: { acceptReporters: true, items: this.flashItems },
 		return 0;
 	}
 }
-/**/
+//*
 module.exports = Scratch3Blocks;
 //*/
