@@ -1,13 +1,9 @@
 {
     // マイコン拡張定義	
-	"name"			: "uno32",
+	"name"			: "esp32",
 
 	// for Scratch3
-	"scratch3ext"	: "uno",									// ext名[,SupportCamera]
-	"scratch3burn"	: [											// binary定義
-			{"name":"generic_ESP32", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
-			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
-	],
+	"scratch3ext"	: "esp32",									// ext名[,SupportCamera]
 
 	// for Arduino IDE
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
@@ -24,8 +20,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"uno32 1.0\"  // マイコン拡張名＋version
-
+#define mVersion \"esp32 1.0\"  // マイコン拡張名＋version
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
@@ -50,59 +45,54 @@
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",								"runArduino",					{}],	// 変更禁止
 
-		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
-		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
-		["R", "Sensor %d.sensor average %n times",			"getAnalogAve",		1,4,		{"remote":["B","S",	"S"],"func":"_getAdc1({0},{1})"}],
-		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
+		["w", "set port %n output as %d.digital",			"setDigital",		2,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "play tone on port %n %d.noteJ2 beat %d.beats","BuzzerJ2",	19,"C4","Half",	{"remote":["B","S","S"],"func":"_tone({0},{1},{2});"}],
+		["B", "read port %n",								"getDigital",		26,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT_PULLUP),digitalRead({0})"}],
+		["R", "read analog port %n average %n times",		"getAnalog",		35,4,		{"remote":["B","S",	"S"],"func":"_analogRead({0},{1})"}],
+		
+		["R", "scan I2C",									"scanI2C",						{"remote":[			"b"],"func":"Wire.begin(21,22), sendWireScan()"}],
+		["w", "send I2C data %s",							"sendI2C",			"5C001700",
+			{"remote":["b"],		"func":"Wire.begin(21,22); Wire.beginTransmission(0x44); Wire.write({0}); Wire.endTransmission(false);"}],
+		["R", "receive I2C %n bytes",						"recvI2C",			6,			{"remote":["B",		"b"],"func":"Wire.begin(21,22), sendWireRead(0x44,{0})"}],
+			
+		["w", "ソニーTV2 %s",								"SoTV2",			"5C0017002E001800170018002F001700180017002F00180018001800170018002E00180018001700180017001800180018004F035C0017002E001800170018002F001700180017002F00180018001800170018002E0018001800170018001700180018001800",
+			{"remote":["b"],		"func":"sendRemote({0});"}],
+			
 	],
 
 	// メニュー定義
 	"menus": {
-		"noteJ2":["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",],
+		"noteJ2"	:["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",],
 		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
-
+		"digital"	:["HIGH","LOW"],
 		"onoff"		:["On","Off"],
-		"led"		:[1,2,3,4,5,6],
-		"sensor"	:[1,2,3,4],
-		"sw"		:[1,2,3],
 	},
 
     // ラベル定義
 	"values":{
-		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
-		"C3":131,"D3":147,"E3":165,"F3":175,"G3":196,"A3":220,"B3":247,
 		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
 		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
-		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
-		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
-		"C8":4186,"D8":4699,
 		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
-
+		"HIGH":1,"LOW":0,
 		"On":1,"Off":0,
 	},
 
 	// 翻訳定義
 	"translators":{
 		"ja":{
-			"C2":"ド2", "D2":"レ2", "E2":"ミ2", "F2":"ファ2", "G2":"ソ2", "A2":"ラ2", "B2":"シ2",
-			"C3":"ド3", "D3":"レ3", "E3":"ミ3", "F3":"ファ3", "G3":"ソ3", "A3":"ラ3", "B3":"シ3", 
 			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
 			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
-			"C6":"ド6", "D6":"レ6", "E6":"ミ6", "F6":"ファ6", "G6":"ソ6", "A6":"ラ6", "B6":"シ6",
-			"C7":"ド7", "D7":"レ7", "E7":"ミ7", "F7":"ファ7", "G7":"ソ7", "A7":"ラ7", "B7":"シ7", "C8":"ド8", "D8":"レ8", 
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
 
-			"set LED %d.led %d.onoff"				:"LED %d.led を %d.onoff",
-			"play tone %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
-			"play tone %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
-			"play tone %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
-			"Sensor %d.sensor average %n times"		:"センサ %d.sensor の %n 回平均",
-			"SW %d.sw"								:"スイッチ %d.sw",
+			"set port %n output as %d.digital"				:"ポート %n の出力を %d.digital にする",
+			"play tone on port %n %d.noteJ2 beat %d.beats"	:"ポート %n で %d.noteJ2 を %d.beats 鳴らす",
+			"read port %n"									:"ポート %n",
+			"read analog port %n average %n times"			:"アナログポート %n の %n 回平均",
 		}
 	},
 
 	"port"			: 0,
-	"sort"			: 10,
+	"sort"			: 50,
 	"extensionAuthor": "",
 	"helpURL"		: "",
 	"productInfoURL": "",
