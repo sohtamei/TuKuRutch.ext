@@ -66,9 +66,6 @@ static const char ArgTypesTbl[][ARG_NUM] = {
   {'B','S','S',},
   {'B',},
   {'B','S',},
-  {},
-  {'b',},
-  {'B',},
 };
 
 enum {
@@ -274,9 +271,6 @@ static void parseData()
         case 2: _tone(getByte(0),getShort(1),getShort(2));; callOK(); break;
         case 3: sendByte((pinMode(getByte(0),INPUT_PULLUP),digitalRead(getByte(0)))); break;
         case 4: sendShort((_analogRead(getByte(0),getShort(1)))); break;
-        case 5: Wire.begin(21,22), sendWireScan(); break;
-        case 6: Wire.begin(21,22); Wire.beginTransmission(0x44); Wire.write(getBufLen(0)); Wire.endTransmission(false);; callOK(); break;
-        case 7: Wire.begin(21,22), sendWireRead(0x44,getByte(0)); break;
         #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: Wire.begin(); callOK(); break;
         #else

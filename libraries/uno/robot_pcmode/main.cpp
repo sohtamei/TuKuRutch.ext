@@ -1,28 +1,36 @@
 /* copyright (C) 2020 Sohta. */
 #include <Arduino.h>
-#include <stdint.h>
-#include <TukurutchEsp.h>
 #include "main.h"
+
+enum {
+	T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
+	T_C5=523, T_D5=587, T_E5=659, T_F5=698,
+};
 
 // ポート定義
 
-WebsocketsServer wsServer;
-
-#define P_GND		4
-
+#define P_GND		A1
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
 struct port {uint8_t sig; uint8_t gnd;};
 
-const uint8_t sensorTable[4] = {35, 34, 36, 39};
+const uint8_t sensorTable[4] = {A2, A3, A4, A5};
 uint16_t _getAdc1(uint8_t idx, uint16_t count)
 {
 	if(!idx || idx > numof(sensorTable)) return 0;
-	return getAdc1(sensorTable[idx-1], count);
+	idx--;
+
+	if(count == 0) count = 1;
+	count *= 100;
+	uint32_t sum = 0;
+	for(int i = 0; i < count; i++)
+		sum += analogRead(sensorTable[idx]);
+	sum = ((sum / count) * 625UL) / 128;  // 1024->5000
+	return sum;
 }
 
-const struct port ledTable[6] = {{2,0}, {26,25}, {17,16}, {27,14}, {12,13}, {5,23}};
+const struct port ledTable[6] = {{13,0}, {2,3}, {4,5}, {6,7}, {8,9}, {10,11}};
 void _setLED(uint8_t idx, uint8_t onoff)
 {
 	if(!idx || idx > numof(ledTable)) return;
@@ -36,7 +44,7 @@ void _setLED(uint8_t idx, uint8_t onoff)
 	}
 }
 
-const struct port swTable[3] = {{26,17},{16,14},{12,5}};
+const struct port swTable[3] = {{2,4},{5,7},{8,10}};
 uint8_t _getSw(uint8_t idx)
 {
 	if(!idx || idx > numof(swTable)) return 0;
@@ -50,40 +58,15 @@ uint8_t _getSw(uint8_t idx)
 	return digitalRead(swTable[idx].sig) ? 0: 1;
 }
 
-void onConnect(String ip)
-{
-	_setLED(1,1);
-	_tone(P_BUZZER, T_C4, 250);
-	_tone(P_BUZZER, T_D4, 250);
-	_tone(P_BUZZER, T_E4, 250);
-
-	wsServer.listen(PORT_WEBSOCKET);
-	Serial.println(ip);
-}
-
 void _setup(const char* ver)
 {
 	_setLED(1,0);
 	pinMode(P_GND, OUTPUT);
 	digitalWrite(P_GND, LOW);
 
+	pinMode(P_BUZZER, OUTPUT);
 	_tone(P_BUZZER, T_C5, 100);
 	Serial.begin(115200);
-	if(_getSw(1)) {
-		delay(100);
-		_tone(P_BUZZER, T_C5, 100);
-		Serial.println("Waiting for SmartConfig.");
-		WiFi.mode(WIFI_STA);
-		WiFi.beginSmartConfig();
-		while (!WiFi.smartConfigDone()) {
-			delay(1000);
-			_setLED(1,1);
-			_tone(P_BUZZER, T_C5, 100);
-			_setLED(1,0);
-		}
-		Serial.println("SmartConfig received.");
-	}
-	initWifi(ver, false, onConnect);
 }
 
 void _loop(void)

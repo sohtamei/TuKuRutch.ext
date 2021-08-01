@@ -49,15 +49,6 @@
 		["w", "play tone on port %n %d.noteJ2 beat %d.beats","BuzzerJ2",	19,"C4","Half",	{"remote":["B","S","S"],"func":"_tone({0},{1},{2});"}],
 		["B", "read port %n",								"getDigital",		26,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT_PULLUP),digitalRead({0})"}],
 		["R", "read analog port %n average %n times",		"getAnalog",		35,4,		{"remote":["B","S",	"S"],"func":"_analogRead({0},{1})"}],
-		
-		["R", "scan I2C",									"scanI2C",						{"remote":[			"b"],"func":"Wire.begin(21,22), sendWireScan()"}],
-		["w", "send I2C data %s",							"sendI2C",			"5C001700",
-			{"remote":["b"],		"func":"Wire.begin(21,22); Wire.beginTransmission(0x44); Wire.write({0}); Wire.endTransmission(false);"}],
-		["R", "receive I2C %n bytes",						"recvI2C",			6,			{"remote":["B",		"b"],"func":"Wire.begin(21,22), sendWireRead(0x44,{0})"}],
-			
-		["w", "ソニーTV2 %s",								"SoTV2",			"5C0017002E001800170018002F001700180017002F00180018001800170018002E00180018001700180017001800180018004F035C0017002E001800170018002F001700180017002F00180018001800170018002E0018001800170018001700180018001800",
-			{"remote":["b"],		"func":"sendRemote({0});"}],
-			
 	],
 
 	// メニュー定義
