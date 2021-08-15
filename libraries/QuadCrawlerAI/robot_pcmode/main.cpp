@@ -12,6 +12,7 @@ static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 WebsocketsServer wsServer;
 //HardwareSerial Serial2(2);
 
+// Lidar -----------------
 static struct __attribute__((packed)) _packet {	// 47bytes
 	uint8_t header;			// 0x54
 	uint8_t ver_len;		// 0x2c = 2+2+3*12+2+2

@@ -78,8 +78,8 @@ void _respLidar();
 
 //		["B", "SW is pressed",							"getSW",						{"remote":[			"B"],"func":"quadCrawler_SW()==0"}],
 		["R", "get VBAT",								"getVbat",						{"remote":[			"S"],"func":"getAdc1(33,1)*2"}],
-		["-"],//["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"quadCrawler_digitalWrite({0},{1});"}],
-		["-"],//["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"],"func":"quadCrawler_digitalRead({0})"}],
+		["w", "set digital pin %n output as %d.digital","setDigital",		0,"HIGH",	{"remote":["B","B"],	"func":"quadCrawler_digitalWrite({0},{1});"}],
+		["B", "read digital pin %n",					"getDigital",		0,			{"remote":["B",		"B"],"func":"quadCrawler_digitalRead({0})"}],
 		["w", "set PWM ch %n data %n",					"setPWM",			8,320,		{"remote":["B","S"],	"func":"_setPWM({0},{1});"}],
 
 		["-"],	// ブロック区切り
