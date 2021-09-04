@@ -1,0 +1,74 @@
+{
+	"name"			: "unitCam",
+	"port"			: 0,										// 変更禁止
+	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
+
+	"sort"			: 50,										// メニュー上の表示順序
+	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
+	"helpURL"		: "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
+	"productInfoURL": "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
+	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
+	"javascriptURL"	: "robot.js",
+	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
+	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+	"prefs"			: ["custom_CPUFreq=esp32_240",
+						"custom_DebugLevel=esp32_none",
+						"custom_FlashFreq=esp32_80",
+						"custom_FlashMode=esp32_qio",
+						"custom_FlashSize=esp32_4M",
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=esp32_default",
+						"custom_UploadSpeed=esp32_921600"],
+
+	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// ヘッダ (C言語)
+	"header":"
+#define mVersion \"unitCam1.0\"
+
+#include \"TukurutchEsp.h\"
+#include \"main.h\"
+",
+	// setup処理 (C言語)
+	"setup":"_setup(mVersion);",
+
+	// loop処理 (C言語)
+	"loop":"
+  loopWebSocket();
+  _loop();
+",
+
+	// スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
+		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+		["-"],
+		["-"],
+		["-"],
+		["-"],
+		["-"],
+		["-"],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+	],
+	"menus": {
+		"onoff"		:["On","Off"],
+	},
+	"values":{
+		"On":1,"Off":0,
+	},
+	"translators":{
+		"ja":{
+			"set LED %d.onoff"								:"LED %d.onoff",
+		}
+	}
+}
