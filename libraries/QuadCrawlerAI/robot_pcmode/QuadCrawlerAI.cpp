@@ -405,6 +405,8 @@ void quadCrawler_setSpeed(uint16_t speed, int16_t x, int16_t y)
 		x = -x;
 	case COM_FW:
 		calib = x*256L*2/y;
+		if(calib >  256) calib =  256;
+		if(calib < -256) calib = -256;
 		if(calib>=0)
 			walkCalib256.RF = walkCalib256.RR = 256 - calib;
 		else
@@ -415,6 +417,8 @@ void quadCrawler_setSpeed(uint16_t speed, int16_t x, int16_t y)
 		y = -y;
 	case COM_LEFT:
 		calib = y*256L*2/x;
+		if(calib >  256) calib =  256;
+		if(calib < -256) calib = -256;
 		if(calib>=0)
 			walkCalib256.LR = walkCalib256.RR = 256 - calib;
 		else

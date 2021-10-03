@@ -57,6 +57,12 @@
   #define BAT_OUTPUT_HOLD_PIN	33	// 0-bat power disable
   #define BAT_ADC_PIN			38
 
+  #define INIT_IO() { \
+	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT); \
+	digitalWrite(BAT_OUTPUT_HOLD_PIN,1); \
+	bmm8563_init(); \
+	bmm8563_close(); \
+  }
 #elif defined(DEVICE_M5CAMERA)
 // M5camera modelB
   #define PWDN_GPIO_NUM     -1
@@ -79,10 +85,12 @@
 
   #define P_LED				14
   #define P_LED_NEG			1
+  #define P_SRV0			13
+  #define P_SRV1			4
 
 #elif defined(DEVICE_ESP32_CAM)
 // ESP32-CAM
-  #define PWDN_GPIO_NUM     32
+  #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    -1
   #define XCLK_GPIO_NUM     0
   #define SIOD_GPIO_NUM     26
@@ -102,7 +110,11 @@
 
   #define P_LED				33
   #define P_LED_NEG			1
-  // flash-4
+
+  #define INIT_IO() { \
+	digitalWrite(32, 0); pinMode(32, OUTPUT); /*CAM PWR*/ \
+	digitalWrite(4, 0); pinMode(4, OUTPUT); /*FLASH*/ \
+  }
   // io-2,4,12,13,14,15
 
 #elif defined(DEVICE_ESP32CAM)
@@ -201,7 +213,8 @@ void M5CameraCar_init(void)
 	config.pin_sscb_scl = SIOC_GPIO_NUM;
 	config.pin_pwdn = PWDN_GPIO_NUM;
 	config.pin_reset = RESET_GPIO_NUM;
-	config.xclk_freq_hz = 20000000;
+	config.xclk_freq_hz = 5000000;
+//	config.xclk_freq_hz = 10000000;
 	config.pixel_format = PIXFORMAT_JPEG;
 	//init with high specs to pre-allocate larger buffers
 	if(psramFound()){
@@ -240,11 +253,8 @@ void _setup(const char* ver)
 
 	Serial.begin(115200);
 
-#if defined(DEVICE_M5TIMERCAM)
-	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT);
-	digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
-	bmm8563_init();
-	bmm8563_close();
+#if defined(INIT_IO)
+	INIT_IO();
 #endif
 	M5CameraCar_init();
 

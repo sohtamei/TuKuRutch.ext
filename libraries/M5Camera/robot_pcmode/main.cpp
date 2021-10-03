@@ -12,7 +12,30 @@
 
 // ポート定義
 
-#if defined(DEVICE_M5TIMERCAM)
+#if defined(DEVICE_UNITCAM)
+// UnitCam
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    15
+  #define XCLK_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     25
+  #define SIOC_GPIO_NUM     23
+
+  #define Y9_GPIO_NUM       19
+  #define Y8_GPIO_NUM       36
+  #define Y7_GPIO_NUM       18
+  #define Y6_GPIO_NUM       39
+  #define Y5_GPIO_NUM        5
+  #define Y4_GPIO_NUM       34
+  #define Y3_GPIO_NUM       35
+  #define Y2_GPIO_NUM       32
+  #define VSYNC_GPIO_NUM    22
+  #define HREF_GPIO_NUM     26
+  #define PCLK_GPIO_NUM     21
+
+  #define P_LED				4
+  #define P_LED_NEG			1
+
+#elif defined(DEVICE_M5TIMERCAM)
 // M5TimerCam
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    15
@@ -34,13 +57,17 @@
 
   #define P_LED				2
   #define P_LED_NEG			0
-  #define P_SRV0			13
-  #define P_SRV1			4
 
   #include "bmm8563.h"
   #define BAT_OUTPUT_HOLD_PIN	33	// 0-bat power disable
   #define BAT_ADC_PIN			38
 
+  #define INIT_IO() { \
+	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT); \
+	digitalWrite(BAT_OUTPUT_HOLD_PIN,1); \
+	bmm8563_init(); \
+	bmm8563_close(); \
+  }
 #elif defined(DEVICE_M5CAMERA)
 // M5camera modelB
   #define PWDN_GPIO_NUM     -1
@@ -68,7 +95,7 @@
 
 #elif defined(DEVICE_ESP32_CAM)
 // ESP32-CAM
-  #define PWDN_GPIO_NUM     32
+  #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    -1
   #define XCLK_GPIO_NUM     0
   #define SIOD_GPIO_NUM     26
@@ -88,9 +115,11 @@
 
   #define P_LED				33
   #define P_LED_NEG			1
-  #define P_SRV0			13
-  #define P_SRV1			4
-  // flash-4
+
+  #define INIT_IO() { \
+	digitalWrite(32, 0); pinMode(32, OUTPUT); /*CAM PWR*/ \
+	digitalWrite(4, 0); pinMode(4, OUTPUT); /*FLASH*/ \
+  }
   // io-2,4,12,13,14,15
 
 #elif defined(DEVICE_ESP32CAM)
@@ -115,8 +144,6 @@
 
   #define P_LED				16
   #define P_LED_NEG			0
-  #define P_SRV0			4
-  #define P_SRV1			13
 
 #elif defined(QC)
 // QC
@@ -140,8 +167,6 @@
 
   #define P_LED				0
   #define P_LED_NEG			0
-  #define P_SRV0			4
-  #define P_SRV1			13
 
 #else
   #error
@@ -513,11 +538,8 @@ void _setup(const char* ver)
 
 	Serial.begin(115200);
 
-#if defined(DEVICE_M5TIMERCAM)
-	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT);
-	digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
-	bmm8563_init();
-	bmm8563_close();
+#if defined(INIT_IO)
+	INIT_IO();
 #endif
 	M5CameraCar_init();
 

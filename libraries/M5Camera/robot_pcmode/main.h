@@ -18,5 +18,5 @@ char* _getCal(void);
 //#define DEVICE_M5TIMERCAM
 //#define DEVICE_ESP32_CAM
 //#define DEVICE_ESP32CAM
-//#define QC
+//#define DEVICE_UNITCAM
 #endif  // main_h

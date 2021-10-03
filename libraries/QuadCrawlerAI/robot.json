@@ -89,6 +89,8 @@ void _respLidar();
 		// enum
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
+
+		["w", "set %d.speed %n %n",						"setSpeedXY",		"fast",0,100,{"remote":["S","S","S"],"func":"quadCrawler_setSpeed({0},{1},{2});"}],
 	],
 	"menus": {
 		"noteJ1":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",],

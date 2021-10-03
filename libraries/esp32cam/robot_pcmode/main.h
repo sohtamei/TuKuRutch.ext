@@ -8,8 +8,8 @@ void _loop(void);
 void _setLED(uint8_t onoff);
 
 //#define DEVICE_M5CAMERA
-#define DEVICE_M5TIMERCAM
-//#define DEVICE_ESP32_CAM
+//#define DEVICE_M5TIMERCAM
+#define DEVICE_ESP32_CAM
 //#define DEVICE_ESP32CAM
 //#define DEVICE_UNITCAM
 #endif  // main_h
