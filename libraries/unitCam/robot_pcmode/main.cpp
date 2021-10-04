@@ -169,8 +169,6 @@
 
 WebsocketsServer wsServer;
 
-#define numof(a) (sizeof(a)/sizeof((a)[0]))
-
 void _setLED(uint8_t onoff)
 {
 #if P_LED_NEG
@@ -179,6 +177,23 @@ void _setLED(uint8_t onoff)
 	digitalWrite(P_LED, onoff);
 #endif
 	pinMode(P_LED, OUTPUT);
+}
+
+void _setCameraMode(uint8_t mode, uint8_t gain)
+{
+	sensor_t * s = esp_camera_sensor_get();
+	uint8_t enabled = 1;
+	switch(mode) {
+	case 1:		// color detect
+		s->set_agc_gain(s, gain);
+		enabled = 0;
+	case 0:		// normal
+		s->set_whitebal(s, enabled);
+		s->set_awb_gain(s, enabled);
+		s->set_gain_ctrl(s, enabled);
+		break;
+	}
+	return;
 }
 
 static uint8_t connected = false;
@@ -192,7 +207,7 @@ void onConnect(String ip)
 	connected = true;
 }
 
-void M5CameraCar_init(void)
+void _camera_init(void)
 {
 	camera_config_t config;
 	config.ledc_channel = LEDC_CHANNEL_0;
@@ -213,8 +228,8 @@ void M5CameraCar_init(void)
 	config.pin_sscb_scl = SIOC_GPIO_NUM;
 	config.pin_pwdn = PWDN_GPIO_NUM;
 	config.pin_reset = RESET_GPIO_NUM;
-	config.xclk_freq_hz = 5000000;
-//	config.xclk_freq_hz = 10000000;
+//	config.xclk_freq_hz = 5000000;
+	config.xclk_freq_hz = 10000000;
 	config.pixel_format = PIXFORMAT_JPEG;
 	//init with high specs to pre-allocate larger buffers
 	if(psramFound()){
@@ -256,7 +271,7 @@ void _setup(const char* ver)
 #if defined(INIT_IO)
 	INIT_IO();
 #endif
-	M5CameraCar_init();
+	_camera_init();
 
 	initWifi(ver, false, onConnect);
 }

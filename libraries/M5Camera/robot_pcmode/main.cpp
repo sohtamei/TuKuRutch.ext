@@ -173,10 +173,39 @@
 #endif
 
 WebsocketsServer wsServer;
-static Preferences preferencesRobot;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
 
+void _setLED(uint8_t onoff)
+{
+#if P_LED_NEG
+	digitalWrite(P_LED, !onoff);
+#else
+	digitalWrite(P_LED, onoff);
+#endif
+	pinMode(P_LED, OUTPUT);
+}
+
+void _setCameraMode(uint8_t mode, uint8_t gain)
+{
+	sensor_t * s = esp_camera_sensor_get();
+	uint8_t enabled = 1;
+	switch(mode) {
+	case 1:		// color detect
+		s->set_agc_gain(s, gain);
+		enabled = 0;
+	case 0:		// normal
+		s->set_whitebal(s, enabled);
+		s->set_awb_gain(s, enabled);
+		s->set_gain_ctrl(s, enabled);
+		break;
+	}
+	return;
+}
+
+/////////////////////////////////////////////
+
+static Preferences preferencesRobot;
 
 enum {
 	CAL0P = 0,
@@ -222,16 +251,6 @@ enum {
 };
 static uint8_t servo_stt = 0;
 static uint32_t servo_time = 0;
-
-void _setLED(uint8_t onoff)
-{
-#if P_LED_NEG
-	digitalWrite(P_LED, !onoff);
-#else
-	digitalWrite(P_LED, onoff);
-#endif
-	pinMode(P_LED, OUTPUT);
-}
 
 static uint16_t pwm_last[2];
 static uint16_t pwm_req[2];
@@ -410,8 +429,6 @@ void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration)
 		_setMotor(speed*dir_table[direction].L, speed*dir_table[direction].R, calib, duration);
 	}
 }
-
-/////////////////////////////////////////////
 
 char* _downloadCal(int16_t id, char* base64)
 {

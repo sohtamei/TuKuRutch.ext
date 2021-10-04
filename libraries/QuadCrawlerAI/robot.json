@@ -32,16 +32,12 @@
 #define mVersion \"QuadCrawlerAI1.0\"
 
 #include \"QuadCrawlerAI.h\"
-#include <TukurutchEsp.h>
-
-extern WebsocketsServer wsServer;
-void _setup();
-void _loop();
-void _respLidar();
-
+#include \"TukurutchEsp.h\"
+#include \"main.h\"
 ",
 	// setup処理 (C言語)
-	"setup":"_setup();",
+	"setup":"_setup(mVersion);",
+
 	// loop処理 (C言語)
 	"loop":"
   loopWebSocket();
