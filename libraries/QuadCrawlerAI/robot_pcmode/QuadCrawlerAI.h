@@ -104,4 +104,8 @@ int  quadCrawler_SW(void);
 void quadCrawler_digitalWrite(uint8_t pin, uint8_t data);
 uint8_t quadCrawler_digitalRead(uint8_t pin);
 
+#define LIDAR_ENABLED
+void _respLidar();
+void loopLidar();
+
 #endif  // quadCrawler_h

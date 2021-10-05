@@ -105,90 +105,6 @@ void _camera_init(void)
 	s->set_framesize(s, FRAMESIZE_HVGA);
 }
 
-// Lidar -----------------
-static struct __attribute__((packed)) _packet {	// 47bytes
-	uint8_t header;			// 0x54
-	uint8_t ver_len;		// 0x2c = 2+2+3*12+2+2
-	uint16_t speed;			// in degrees per second;
-	uint16_t startAngle;	// unit: 0.01 degree;
-	struct __attribute__((packed)) {
-		uint16_t distance;
-		uint8_t conficence;
-	} points[12];
-	uint16_t endAngle;		// unit: 0.01 degree；
-	uint16_t timestamp;		// ms, recount if reaching to MAX 30000；
-	uint8_t crc8;
-} packet;
-static uint8_t packetIndex = 0;
-
-#define ROTATE_MAX 550
-static struct __attribute__((packed)) _point {
-	uint16_t distance;
-	uint8_t conficence;
-} rotate1[ROTATE_MAX];
-static uint16_t lastAngle = 0;
-static uint16_t rotateCount = 0;
-static uint16_t rotateNum = 0;
-
-static uint8_t RespLidar[4+ROTATE_MAX*3];
-
-static void loopLidar()
-{
-	int16_t c;
-	while(Serial2.available()>0) {
-		c = Serial2.read();
-		((uint8_t*)&packet)[packetIndex++] = c;
-
-		switch(packetIndex) {
-		case 1:
-		  if(c != 0x54)
-		    packetIndex = 0;
-		  break;
-		case 2:
-		  if(c != 0x2c) 
-		    packetIndex = 0;
-		  break;
-		case sizeof(packet):
-		  packetIndex = 0;
-
-		  int div = packet.endAngle - packet.startAngle;
-		  if(div < 0) div += 36000;
-		  div = div / 12;
-		  int angle = packet.startAngle;
-		  int i;
-		  for(i = 0; i < 12; i++) {
-			if(angle < lastAngle) {
-				memcpy(RespLidar+4, rotate1, sizeof(rotate1));
-				rotateNum = rotateCount;
-				rotateCount = 0;
-		//	  Serial.println(rotateNum);
-			}
-			if(rotateCount < ROTATE_MAX) {
-				memcpy(&(rotate1[rotateCount]), &(packet.points[i]), 3);
-				rotateCount++;
-			}
-			lastAngle = angle;
-
-			angle += div;
-			if(angle >= 36000) angle -= 36000;
-		  }
-		  break;
-		}
-	}
-}
-
-void _write(uint8_t* dp, int count);
-void _respLidar()
-{
-  int num = 3*rotateNum;
-  RespLidar[0] = 0xff;
-  RespLidar[1] = 0x54;
-  RespLidar[2] = num&0xff;
-  RespLidar[3] = num>>8;
-  _write(RespLidar, 4+num);
-  rotateNum = 0;
-}
-
 void _setup(const char* ver)
 {
 	Serial.begin(115200);
@@ -222,8 +138,6 @@ static int detect_sw4(void)
 void loop_originAdj();
 void _loop()
 {
-	loopLidar();
-
 	if(originAdj) {
 		loop_originAdj();
 		return;
