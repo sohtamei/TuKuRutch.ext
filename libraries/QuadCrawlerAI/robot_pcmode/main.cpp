@@ -108,7 +108,9 @@ void _camera_init(void)
 void _setup(const char* ver)
 {
 	Serial.begin(115200);
+#ifdef LIDAR_ENABLED
 	Serial2.begin(230400);
+#endif
 	quadCrawler_init();
 	_camera_init();
 	quadCrawler_colorWipe(COLOR_PURPLE);

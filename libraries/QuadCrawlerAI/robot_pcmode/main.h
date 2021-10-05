@@ -7,4 +7,6 @@ void _loop(void);
 
 //void _setLED(uint8_t onoff);
 void _setCameraMode(uint8_t mode, uint8_t gain);
+
+#define CAMERA_ENABLED
 #endif  // main_h
