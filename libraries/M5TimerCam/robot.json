@@ -22,7 +22,9 @@
 
 	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
 	"scratch3burn"	: [
-			{"name":"M5Camera", "type":"esp32", "baudrate":921600, "binPath":"M5Camera"},
+			{"name":"M5Camera",   "type":"esp32", "baudrate":921600, "binPath":"M5Camera"},
+			{"name":"ESP32_CAM",  "type":"esp32", "baudrate":921600, "binPath":"esp32cam"},
+			{"name":"UnitCam",    "type":"esp32", "baudrate":921600, "binPath":"unitCam"},
 			{"name":"M5TimerCam", "type":"esp32", "baudrate":1500000, "binPath":"M5TimerCam"},
 	],
 
