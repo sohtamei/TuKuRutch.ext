@@ -9,8 +9,8 @@
 	"productInfoURL": "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
 	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
 	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
+	"normalFW"		: "",										// 最初のプログラム
+	"pcmodeFW"		: "src/src",								// PC modeプログラム
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",

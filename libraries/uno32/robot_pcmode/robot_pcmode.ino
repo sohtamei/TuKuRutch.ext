@@ -110,7 +110,8 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
-      // neoPixcel
+  {},				// 0x8b:neoPixcel      ()
+  {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
 };
 #define CMD_MIN   0x81
 #define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
@@ -198,15 +199,7 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
     #endif
 }
 
-#if defined(__AVR_ATmega328P__)
-// 3,5,6,9,10,11  8bit
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-// 5と11除く、8bit、3chまで
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(ESP32)
+#if defined(ESP32)
 static uint8_t ledc2port[LEDC_PWM_END+1] = {0};
 static void _setPwm(uint8_t port, uint16_t data)
 {
@@ -224,6 +217,11 @@ static void _setPwm(uint8_t port, uint16_t data)
             }
       }
 }
+#else
+// 328P:3,5,6,9,10,11  8bit
+// nRF51,nRF52:5と11除く、8bit、3chまで
+// RP2040
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
 #endif
 
 static void _setPwms(uint8_t* buf, int num)
@@ -272,10 +270,10 @@ static void parseData()
         case 2: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
         case 3: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
-          case 0x81: Wire.begin(); callOK(); break;
-        #else
+        #if defined(ESP32)
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+        #else
+          case 0x81: Wire.begin(); callOK(); break;
         #endif
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
@@ -287,6 +285,10 @@ static void parseData()
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
+          case 0x8b: callOK(); break;
+        #if defined(CAMERA_ENABLED)
+          case 0x8c: _setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        #endif
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;

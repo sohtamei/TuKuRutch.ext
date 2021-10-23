@@ -5,7 +5,8 @@
 	// for Scratch3
 	"scratch3ext"	: "uno",									// ext名[,SupportCamera]
 	"scratch3burn"	: [											// binary定義
-			{"name":"generic_ESP32", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
+			{"name":"generic_ESP32_921600", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
+			{"name":"generic_ESP32_115200", "type":"esp32", "baudrate":115200, "binPath":"uno32"},
 			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
 	],
 

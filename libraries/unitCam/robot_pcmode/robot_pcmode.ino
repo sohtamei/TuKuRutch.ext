@@ -113,7 +113,8 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
-      // neoPixcel
+  {},				// 0x8b:neoPixcel      ()
+  {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
 };
 #define CMD_MIN   0x81
 #define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
@@ -284,6 +285,10 @@ static void parseData()
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
+          case 0x8b: callOK(); break;
+        #if defined(CAMERA_ENABLED)
+          case 0x8c: _setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        #endif
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;
