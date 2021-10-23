@@ -1,23 +1,18 @@
 /* copyright (C) 2020 Sohta. */
 #include <Arduino.h>
 #include <stdint.h>
-#include <Wire.h>
-#include <HTTPClient.h>
-#include <libb64/cencode.h>
-#include <libb64/cdecode.h>
-#include <Preferences.h>
 #include <TukurutchEspCamera.h>
 #include <TukurutchEsp.h>
 #include "main.h"
 
 // ポート定義
 
-#if defined(DEVICE_UNITCAM)
-// UnitCam
+#if defined(DEVICE_M5CAMERA)
+// M5camera modelB
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    15
   #define XCLK_GPIO_NUM     27
-  #define SIOD_GPIO_NUM     25
+  #define SIOD_GPIO_NUM     22
   #define SIOC_GPIO_NUM     23
 
   #define Y9_GPIO_NUM       19
@@ -28,12 +23,14 @@
   #define Y4_GPIO_NUM       34
   #define Y3_GPIO_NUM       35
   #define Y2_GPIO_NUM       32
-  #define VSYNC_GPIO_NUM    22
+  #define VSYNC_GPIO_NUM    25
   #define HREF_GPIO_NUM     26
   #define PCLK_GPIO_NUM     21
 
-  #define P_LED				4
+  #define P_LED				14
   #define P_LED_NEG			1
+  #define P_SRV0			13
+  #define P_SRV1			4
 
 #elif defined(DEVICE_M5TIMERCAM)
 // M5TimerCam
@@ -68,31 +65,6 @@
 	bmm8563_init(); \
 	bmm8563_close(); \
   }
-#elif defined(DEVICE_M5CAMERA)
-// M5camera modelB
-  #define PWDN_GPIO_NUM     -1
-  #define RESET_GPIO_NUM    15
-  #define XCLK_GPIO_NUM     27
-  #define SIOD_GPIO_NUM     22
-  #define SIOC_GPIO_NUM     23
-
-  #define Y9_GPIO_NUM       19
-  #define Y8_GPIO_NUM       36
-  #define Y7_GPIO_NUM       18
-  #define Y6_GPIO_NUM       39
-  #define Y5_GPIO_NUM        5
-  #define Y4_GPIO_NUM       34
-  #define Y3_GPIO_NUM       35
-  #define Y2_GPIO_NUM       32
-  #define VSYNC_GPIO_NUM    25
-  #define HREF_GPIO_NUM     26
-  #define PCLK_GPIO_NUM     21
-
-  #define P_LED				14
-  #define P_LED_NEG			1
-  #define P_SRV0			13
-  #define P_SRV1			4
-
 #elif defined(DEVICE_ESP32_CAM)
 // ESP32-CAM
   #define PWDN_GPIO_NUM     -1
@@ -145,8 +117,31 @@
   #define P_LED				16
   #define P_LED_NEG			0
 
-#elif defined(QC)
-// QC
+#elif defined(DEVICE_UNITCAM)
+// UnitCam
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    15
+  #define XCLK_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     25
+  #define SIOC_GPIO_NUM     23
+
+  #define Y9_GPIO_NUM       19
+  #define Y8_GPIO_NUM       36
+  #define Y7_GPIO_NUM       18
+  #define Y6_GPIO_NUM       39
+  #define Y5_GPIO_NUM        5
+  #define Y4_GPIO_NUM       34
+  #define Y3_GPIO_NUM       35
+  #define Y2_GPIO_NUM       32
+  #define VSYNC_GPIO_NUM    22
+  #define HREF_GPIO_NUM     26
+  #define PCLK_GPIO_NUM     21
+
+  #define P_LED				4
+  #define P_LED_NEG			1
+
+#elif defined(QCAI)
+// QCAI
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    -1
   #define XCLK_GPIO_NUM     32
@@ -168,13 +163,34 @@
   #define P_LED				0
   #define P_LED_NEG			0
 
+#elif defined(DEVICE_CAMERATCH32)
+// CAMERATCH32
+  #define PWDN_GPIO_NUM     -1
+  #define RESET_GPIO_NUM    -1
+  #define XCLK_GPIO_NUM     32
+  #define SIOD_GPIO_NUM     26
+  #define SIOC_GPIO_NUM     27
+
+  #define Y9_GPIO_NUM       35
+  #define Y8_GPIO_NUM       34
+  #define Y7_GPIO_NUM       39
+  #define Y6_GPIO_NUM       36
+  #define Y5_GPIO_NUM       21
+  #define Y4_GPIO_NUM       19
+  #define Y3_GPIO_NUM       18
+  #define Y2_GPIO_NUM       5
+  #define VSYNC_GPIO_NUM    25
+  #define HREF_GPIO_NUM     23
+  #define PCLK_GPIO_NUM     22
+
+  #define P_LED				15
+  #define P_LED_NEG			0
+
 #else
   #error
 #endif
 
 WebsocketsServer wsServer;
-
-#define numof(a) (sizeof(a)/sizeof((a)[0]))
 
 void _setLED(uint8_t onoff)
 {
@@ -204,6 +220,14 @@ void _setCameraMode(uint8_t mode, uint8_t gain)
 }
 
 /////////////////////////////////////////////
+
+#include <Wire.h>
+#include <HTTPClient.h>
+#include <libb64/cencode.h>
+#include <libb64/cdecode.h>
+#include <Preferences.h>
+
+#define numof(a) (sizeof(a)/sizeof((a)[0]))
 
 static Preferences preferencesRobot;
 
@@ -495,7 +519,7 @@ void onConnect(String ip)
 	connected = true;
 }
 
-void M5CameraCar_init(void)
+void _camera_init(void)
 {
 	camera_config_t config;
 	config.ledc_channel = LEDC_CHANNEL_0;
@@ -516,7 +540,7 @@ void M5CameraCar_init(void)
 	config.pin_sscb_scl = SIOC_GPIO_NUM;
 	config.pin_pwdn = PWDN_GPIO_NUM;
 	config.pin_reset = RESET_GPIO_NUM;
-	config.xclk_freq_hz = 20000000;
+	config.xclk_freq_hz = XCLK_FREQ;
 	config.pixel_format = PIXFORMAT_JPEG;
 	//init with high specs to pre-allocate larger buffers
 	if(psramFound()){
@@ -558,7 +582,7 @@ void _setup(const char* ver)
 #if defined(INIT_IO)
 	INIT_IO();
 #endif
-	M5CameraCar_init();
+	_camera_init();
 
 	// ServoCar
 	ledcSetup(servoTable[0].ledc, 50/*Hz*/, 12/*bit*/);

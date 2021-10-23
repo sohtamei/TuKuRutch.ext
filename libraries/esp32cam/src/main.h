@@ -14,4 +14,7 @@ void _setCameraMode(uint8_t mode, uint8_t gain);
 #define DEVICE_ESP32_CAM
 //#define DEVICE_ESP32CAM
 //#define DEVICE_UNITCAM
+//#define QCAI
+//#define DEVICE_CAMERATCH32
+#define XCLK_FREQ 10000000
 #endif  // main_h

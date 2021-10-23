@@ -22,4 +22,7 @@ char* _getCal(void);
 //#define DEVICE_ESP32_CAM
 //#define DEVICE_ESP32CAM
 //#define DEVICE_UNITCAM
+//#define QCAI
+//#define DEVICE_CAMERATCH32
+#define XCLK_FREQ 20000000
 #endif  // main_h
