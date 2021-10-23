@@ -1,16 +1,7 @@
 {
-	"name"			: "esp32cam",
-	"port"			: 0,										// 変更禁止
+	"name"			: "esp32cam",								// マイコン拡張定義	
+	"scratch3ext"	: "esp32cam,SupportCamera",					// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
-
-	"sort"			: 50,										// メニュー上の表示順序
-	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
-	"productInfoURL": "http://sohta02.web.fc2.com/familyday_M5CameraCar.html",
-	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
@@ -19,8 +10,6 @@
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
-
-	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -70,5 +59,9 @@
 		"ja":{
 			"set LED %d.onoff"								:"LED %d.onoff",
 		}
-	}
+	},
+
+	"port"			: 0,
+	"sort"			: 11,										// メニュー上の表示順序
+	"pcmodeFW"		: "src/src",
 }

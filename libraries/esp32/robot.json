@@ -1,11 +1,6 @@
 {
-    // マイコン拡張定義	
-	"name"			: "esp32",
-
-	// for Scratch3
-	"scratch3ext"	: "esp32",									// ext名[,SupportCamera]
-
-	// for Arduino IDE
+	"name"			: "esp32",									// マイコン拡張定義	
+	"scratch3ext"	: "esp32",									// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -83,12 +78,6 @@
 	},
 
 	"port"			: 0,
-	"sort"			: 50,
-	"extensionAuthor": "",
-	"helpURL"		: "",
-	"productInfoURL": "",
-	"sampleDir"		: "",
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",
+	"sort"			: 10,
+	"pcmodeFW"		: "src/src",
 }

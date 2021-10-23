@@ -1,18 +1,7 @@
 {
 	"name"			: "GroveBeginnerKit",
-	"port"			: 0,										// 変更禁止
-	"boardType"		: "arduino:avr:uno",						// package:platform:board
-
-	"sort"			: 11,										// メニュー上の表示順序
-	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "",
-	"productInfoURL": "",
-	"sampleDir"		: "",
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
-
 	"scratch3ext"	: "GroveBeginnerKit",						// scratch3 ext名[,SupportCamera]
+	"boardType"		: "arduino:avr:uno",						// package:platform:board
 	"scratch3burn"	: [
 			{"name":"GroveBeginnerKit", "type":"atmega328", "baudrate":115200, "binPath":"GroveBeginnerKit"},
 	],
@@ -79,5 +68,8 @@
 			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
 		}
-	}
+	},
+	"port"			: 0,
+	"sort"			: 50,										// メニュー上の表示順序
+	"pcmodeFW"		: "src/src",
 }

@@ -1,11 +1,6 @@
 {
-    // マイコン拡張定義	
-	"name"			: "uno",
-
-	// for Scratch3
-	"scratch3ext"	: "unoAvr",									// ext名[,SupportCamera]
-
-	// for Arduino IDE
+	"name"			: "uno",									// マイコン拡張定義	
+	"scratch3ext"	: "unoAvr",									// scratch3 ext名[,SupportCamera]
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -76,11 +71,5 @@
 
 	"port"			: 0,
 	"sort"			: 10,										// メニュー上の表示順序
-	"extensionAuthor": "",
-	"helpURL"		: "",
-	"productInfoURL": "",
-	"sampleDir"		: "",
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",
+	"pcmodeFW"		: "src/src",
 }

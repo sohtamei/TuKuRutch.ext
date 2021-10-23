@@ -1,16 +1,6 @@
 {
-    // マイコン拡張定義	
-	"name"			: "uno32",
-
-	// for Scratch3
-	"scratch3ext"	: "uno",									// ext名[,SupportCamera]
-	"scratch3burn"	: [											// binary定義
-			{"name":"generic_ESP32_921600", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
-			{"name":"generic_ESP32_115200", "type":"esp32", "baudrate":115200, "binPath":"uno32"},
-			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
-	],
-
-	// for Arduino IDE
+	"name"			: "uno32",									// マイコン拡張定義	
+	"scratch3ext"	: "uno",									// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -20,6 +10,12 @@
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
+
+	"scratch3burn"	: [											// binary定義
+			{"name":"generic_ESP32_921600", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
+			{"name":"generic_ESP32_115200", "type":"esp32", "baudrate":115200, "binPath":"uno32"},
+			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
+	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -94,11 +90,5 @@
 
 	"port"			: 0,
 	"sort"			: 10,
-	"extensionAuthor": "",
-	"helpURL"		: "",
-	"productInfoURL": "",
-	"sampleDir"		: "",
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",
+	"pcmodeFW"		: "src/src",
 }
