@@ -8,7 +8,7 @@
 
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 
-// QC
+// QCAI
 #define PWDN_GPIO_NUM	-1
 #define RESET_GPIO_NUM	-1
 #define XCLK_GPIO_NUM	32
@@ -75,8 +75,7 @@ void _camera_init(void)
 	config.pin_sscb_scl = SIOC_GPIO_NUM;
 	config.pin_pwdn = PWDN_GPIO_NUM;
 	config.pin_reset = RESET_GPIO_NUM;
-//	config.xclk_freq_hz = 5000000;
-	config.xclk_freq_hz = 10000000;
+	config.xclk_freq_hz = XCLK_FREQ;
 	config.pixel_format = PIXFORMAT_JPEG;
 	//init with high specs to pre-allocate larger buffers
 	{
