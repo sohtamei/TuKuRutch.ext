@@ -31,7 +31,7 @@
 
 	//  type | Block定義                                   | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
-		["h", "Program Start",								"runArduino",					{}],	// 変更禁止
+		["-"],					// dummy
 
 		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
 

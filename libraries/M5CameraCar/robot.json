@@ -44,7 +44,7 @@
 
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
-		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+		["-"],					// dummy
 
 		["w", "%d.direction at speed %d.speed calib %n duration %n",
 														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],

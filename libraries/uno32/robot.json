@@ -45,7 +45,7 @@
 
 	//  type | Block表示                                   | Block名           | 初期値     |remote/enum           | 実行/取得関数
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
-		["h", "Program Start",								"runArduino",					{}],	// 変更禁止
+		["-"],					// dummy
 
 		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
 		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],

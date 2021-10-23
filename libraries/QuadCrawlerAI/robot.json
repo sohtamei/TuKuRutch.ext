@@ -48,7 +48,7 @@
 
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
-		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+		["-"],					// dummy
 
 		["w", "walk %d.walkcmd %d.speed",				"setWalk",			"fw","fast",{"remote":["B","S"],	"func":"quadCrawler_Walk({1},{0});"}],
 		["w", "FrontR up/down %d.knee fw/back %d.crotchF","setPoseRF",		0,0,		{"remote":["S","S"],	"func":"quadCrawler_setPose1(0,{0},{1});"}],

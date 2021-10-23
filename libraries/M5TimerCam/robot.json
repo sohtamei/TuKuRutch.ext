@@ -47,7 +47,7 @@
 
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
-		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
+		["-"],					// dummy
 		["-"],
 		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
 		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
