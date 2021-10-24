@@ -69,7 +69,5 @@
 		}
 	},
 
-	"port"			: 0,
 	"sort"			: 10,										// メニュー上の表示順序
-	"pcmodeFW"		: "src/src",
 }

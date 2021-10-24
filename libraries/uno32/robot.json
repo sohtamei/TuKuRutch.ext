@@ -88,7 +88,5 @@
 		}
 	},
 
-	"port"			: 0,
 	"sort"			: 10,
-	"pcmodeFW"		: "src/src",
 }

@@ -55,13 +55,6 @@
 	"values":{
 		"On":1,"Off":0,
 	},
-	"translators":{
-		"ja":{
-			"set LED %d.onoff"								:"LED %d.onoff",
-		}
-	},
 
-	"port"			: 0,
 	"sort"			: 11,										// メニュー上の表示順序
-	"pcmodeFW"		: "src/src",
 }
