@@ -1,29 +1,21 @@
 {
-	"name"			: "M5TimerCam",
-	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
+	"name"			: "testCam",
+	"scratch3ext"	: "testCam,SupportCamera",				// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
-						"custom_PSRAM=esp32_enabled",
+						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_1500000"],
-
-	"scratch3burn"	: [
-			{"name":"M5Camera",   "type":"esp32", "baudrate":921600, "binPath":"M5CameraCar"},
-			{"name":"ESP32_CAM",  "type":"esp32", "baudrate":921600, "binPath":"esp32cam"},
-			{"name":"UnitCam",    "type":"esp32", "baudrate":921600, "binPath":"unitCam"},
-			{"name":"M5TimerCam", "type":"esp32", "baudrate":1500000, "binPath":"M5TimerCam"},
-			{"name":"testXclkIssue","type":"esp32", "baudrate":115200, "binPath":"testCamWifi"},
-	],
+						"custom_UploadSpeed=esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5TimerCam1.0\"
+#define mVersion \"testCam1.0\"
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
@@ -50,8 +42,8 @@
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
 		["-"],
-		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
-		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
+		["-"],
+		["-"],
 		["-"],
 		["-"],
 		["-"],
