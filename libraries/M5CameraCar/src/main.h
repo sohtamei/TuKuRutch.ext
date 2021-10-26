@@ -24,5 +24,5 @@ char* _getCal(void);
 //#define DEVICE_UNITCAM
 //#define QCAI
 //#define DEVICE_CAMERATCH32
-#define XCLK_FREQ 20000000
+#define XCLK_FREQ 10000000
 #endif  // main_h
