@@ -19,6 +19,19 @@
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
+
+void _setReg(uint32_t adrs, uint32_t data)
+{
+  *(uint32_t*)adrs = data;
+}
+
+char buf[32] = {};
+char* _getReg(uint32_t adrs)
+{
+  snprintf(buf, sizeof(buf), \"%08x\", *(uint32_t*)adrs);
+  return buf;
+}
+void _setLedc(uint32_t clock);
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -41,9 +54,9 @@
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
-		["-"],
-		["-"],
-		["-"],
+		["w", "set %n %n",								"setReg",		"0x3FF59000",0x0,{"remote":["L","L"],	"func":"_setReg({0},{1});"}],
+		["R", "get %n",									"getReg",		"0x3FF59000",	{"remote":["L","s"],	"func":"_getReg({0})"}],
+		["w", "clock %n",								"setLedc",		10000000,		{"remote":["L"],		"func":"_setLedc({0});"}],
 		["-"],
 		["-"],
 		["-"],

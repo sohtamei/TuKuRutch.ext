@@ -237,6 +237,12 @@ extern "C" {
 
 camera_config_t config;
 
+void _setLedc(uint32_t clock)
+{
+	config.xclk_freq_hz = clock;
+	camera_enable_out_clock(&config);
+}
+
 void _camera_init(void)
 {
 	config.ledc_channel = LEDC_CHANNEL_0;
@@ -270,8 +276,8 @@ void _camera_init(void)
 		config.fb_count = 1;
 	}
 	camera_enable_out_clock(&config);
-	PIN_SET_DRV(GPIO_PIN_MUX_REG[32],0);
-	Serial.printf("PIN_MUX[32]=%08x\n",*(volatile uint32_t*)(GPIO_PIN_MUX_REG[32]));
+//	PIN_SET_DRV(GPIO_PIN_MUX_REG[32],0);
+//	Serial.printf("PIN_MUX[32]=%08x\n",*(volatile uint32_t*)(GPIO_PIN_MUX_REG[32]));
 /*
 	// camera init
 	esp_err_t err = esp_camera_init(&config);
@@ -293,7 +299,45 @@ void _camera_init(void)
 	s->set_framesize(s, FRAMESIZE_HVGA);
 */
 }
+/*
+#include <driver/i2s.h>
 
+#define I2S_NUM_AMP                     I2S_NUM_1
+#define I2S_SAMPLE_RATE                 39062 // 39.062kHz x 256 = 10M
+//#define I2S_SAMPLE_RATE                 78125 // 78.125kHz x 256 = 20M
+//#define I2S_SAMPLE_RATE                 156250 // 156.25kHz x 256 = 40M
+//#define I2S_SAMPLE_RATE                 312500 // 312.5kHz x 256 = 80M
+  i2s_config_t i2s_config = {
+    .mode                 = (i2s_mode_t)I2S_MODE_MASTER,
+    .sample_rate          = I2S_SAMPLE_RATE,
+    .bits_per_sample      = I2S_BITS_PER_SAMPLE_32BIT,
+    .channel_format       = I2S_CHANNEL_FMT_RIGHT_LEFT, //stereo
+    .communication_format = I2S_COMM_FORMAT_I2S,
+    .intr_alloc_flags     = ESP_INTR_FLAG_LEVEL1,
+    .dma_buf_count        = 2,
+    .dma_buf_len          = 512,
+    .use_apll             = false,
+    .tx_desc_auto_clear   = false,
+    .fixed_mclk           = 0
+  };
+void setI2s(uint32_t sample_rate) {
+  i2s_config.sample_rate = sample_rate;
+  i2s_stop(I2S_NUM_AMP);
+  i2s_driver_uninstall(I2S_NUM_AMP);
+  i2s_driver_install(I2S_NUM_AMP, &i2s_config, 0, NULL);
+  PIN_FUNC_SELECT(IO_MUX_GPIO0_REG, FUNC_GPIO0_CLK_OUT1);
+}
+
+void i2s_enable() {
+  i2s_driver_install(I2S_NUM_AMP, &i2s_config, 0, NULL);
+  PIN_FUNC_SELECT(IO_MUX_GPIO0_REG, FUNC_GPIO0_CLK_OUT1);
+}
+
+void i2s_disable() {
+  i2s_stop(I2S_NUM_AMP);
+  i2s_driver_uninstall(I2S_NUM_AMP);
+}
+*/
 void _setup(const char* ver)
 {
 	_setLED(0);
@@ -304,6 +348,8 @@ void _setup(const char* ver)
 	INIT_IO();
 #endif
 	_camera_init();
+
+//	i2s_enable();
 
 	initWifi(ver, false, onConnect);
 }

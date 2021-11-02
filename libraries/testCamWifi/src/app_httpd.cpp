@@ -135,15 +135,39 @@ extern "C" {
 }
 
 extern camera_config_t config;
+int set_framesize(sensor_t *sensor, framesize_t framesize)
+{
+	Serial.printf("xclk=%d\n", framesize);
+	if(framesize) {
+		config.xclk_freq_hz = framesize;
+		camera_enable_out_clock(&config);
+	} else {
+		camera_disable_out_clock();
+	}
+	return 0;
+}
+
 int set_whitebal(sensor_t *sensor, int enable)
 {
-	Serial.printf("xclk=%d\n", enable);
+	Serial.printf("xclk1=%d\n", enable);
 	if(enable)
 		camera_enable_out_clock(&config);
 	else
 		camera_disable_out_clock();
+	return 0;
 }
-
+/*
+void i2s_enable();
+void i2s_disable();
+int set_awb_gain(sensor_t *sensor, int enable)
+{
+	Serial.printf("xclk2=%d\n", enable);
+	if(enable)
+		i2s_enable();
+	else
+		i2s_disable();
+}
+*/
 sensor_t sensor_ = {0};
 static esp_err_t cmd_handler(httpd_req_t *req){
     char*  buf;
@@ -339,8 +363,9 @@ void startCameraServer(){
         httpd_register_uri_handler(stream_httpd, &stream_uri);
     }
 
-    sensor_.set_whitebal = set_whitebal;
-    sensor_.status.awb = 1;
+    sensor_.set_framesize = set_framesize;
+    sensor_.pixformat = PIXFORMAT_JPEG;
+    sensor_.status.framesize = 20000000;
 }
 
 const uint8_t imageBuf1[] = {

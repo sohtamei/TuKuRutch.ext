@@ -49,7 +49,9 @@ typedef enum {
     FRAMESIZE_P_3MP,    //  864x1536
     FRAMESIZE_QXGA,     // 2048x1536
     FRAMESIZE_INVALID
-} framesize_t;
+} _framesize_t;
+
+typedef int framesize_t;
 
 typedef enum {
     ASPECT_RATIO_4X3,
