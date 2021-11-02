@@ -16,5 +16,5 @@ void _setCameraMode(uint8_t mode, uint8_t gain);
 #define DEVICE_UNITCAM
 //#define QCAI
 //#define DEVICE_CAMERATCH32
-#define XCLK_FREQ 5000000
+#define XCLK_FREQ 8000000
 #endif  // main_h

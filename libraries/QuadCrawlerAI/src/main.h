@@ -9,5 +9,5 @@ void _loop(void);
 void _setCameraMode(uint8_t mode, uint8_t gain);
 
 #define CAMERA_ENABLED
-#define XCLK_FREQ 10000000
+#define XCLK_FREQ 8000000
 #endif  // main_h

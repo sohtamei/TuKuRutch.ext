@@ -11,6 +11,10 @@
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
 
+	"scratch3burn"	: [
+			{"name":"cameratch32", "type":"esp32", "baudrate":921600, "binPath":"cameratch32"},
+	],
+
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
@@ -19,9 +23,60 @@
 
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
+
+const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
+  { 8, 4},  // Left, Forward
+  { 9,13},  // Left, Backward
+  {10,33},  // Right, Forward
+  {11,12}}; // Right, Backward
+
+void _setMotor(uint8_t index, int16_t speed)
+{
+  if(index >= 2) return;
+
+  uint32_t pwm = (speed<0) ? -speed: speed;
+  pwm = (pwm * 4096) / 100;
+  if(pwm > 4095) pwm = 4095;
+
+  if(speed > 0) {
+    ledcWrite(motorTable[index*2+0].ledc, pwm);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  } else if(speed < 0) {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, pwm);
+  } else {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  }
+}
+
+struct { int16_t L; int16_t R;} static const dir_table[7] = {
+//  L   R
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+};
+
+void _setCar(uint8_t direction, int16_t speed)
+{
+  if(direction >= 7) return;
+  _setMotor(0, speed * dir_table[direction].L);
+  _setMotor(1, speed * dir_table[direction].R);
+}
 ",
 	// setup処理 (C言語)
-	"setup":"_setup(mVersion);",
+	"setup":"
+  _setup(mVersion);
+  for(int i = 0; i < 4; i++) {
+    ledcSetup(motorTable[i].ledc, 50/*Hz*/, 12/*bit*/);
+    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
+    ledcWrite(motorTable[i].ledc, 0);
+  }
+",
 
 	// loop処理 (C言語)
 	"loop":"
@@ -41,19 +96,22 @@
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
+		["w", "set LED %d.onoff",						"setLED",		"On",			{"remote":["B"],		"func":"_setLED({0});"}],
+		["w", "%d.direction at speed %n",				"setCar",		"run forward",100,{"remote":["B","S"],	"func":"_setCar({0},{1});"}],
+		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
+		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
 		["-"],
-		["-"],
-		["-"],
-		["-"],
-		["-"],
-		["-"],
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],
+		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"motorch"	:["ch-L","ch-R"],
 	},
 	"values":{
 		"On":1,"Off":0,
+		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
+		"ch-L":0,"ch-R":1,
 	},
 
 	"sort"			: 11,										// メニュー上の表示順序
