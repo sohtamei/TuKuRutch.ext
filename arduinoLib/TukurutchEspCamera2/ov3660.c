@@ -357,10 +357,10 @@ static int set_framesize(sensor_t *sensor, framesize_t framesize)
     if (sensor->pixformat == PIXFORMAT_JPEG) {
         if (framesize == FRAMESIZE_QXGA) {
             //40MHz SYSCLK and 10MHz PCLK
-            ret = set_pll(sensor, false, 24, 1, 3, false, 0, true, 8);
+            ret = set_pll(sensor, false, 24, 1, 1, false, 0, true, 8);
         } else {
             //50MHz SYSCLK and 10MHz PCLK
-            ret = set_pll(sensor, false, 30, 1, 3, false, 0, true, 10);
+            ret = set_pll(sensor, false, 30, 1, 1, false, 0, true, 10);
         }
     } else {
         if (framesize > FRAMESIZE_CIF) {

@@ -24,15 +24,21 @@
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 
+#define P_STBY    0
+#define P_BUZZER  2
+#define P_NEOPIX  14
 const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
   { 8, 4},  // Left, Forward
   { 9,13},  // Left, Backward
   {10,33},  // Right, Forward
   {11,12}}; // Right, Backward
 
+int16_t _speed[2] = {0,0};
 void _setMotor(uint8_t index, int16_t speed)
 {
   if(index >= 2) return;
+  _speed[index] = speed;
+  digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
 
   uint32_t pwm = (speed<0) ? -speed: speed;
   pwm = (pwm * 4096) / 100;
@@ -71,11 +77,16 @@ void _setCar(uint8_t direction, int16_t speed)
 	// setup処理 (C言語)
 	"setup":"
   _setup(mVersion);
+  digitalWrite(P_STBY, 0);
+  pinMode(P_STBY, OUTPUT_OPEN_DRAIN);
   for(int i = 0; i < 4; i++) {
     ledcSetup(motorTable[i].ledc, 50/*Hz*/, 12/*bit*/);
     ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
     ledcWrite(motorTable[i].ledc, 0);
   }
+  _tone(P_BUZZER, T_C4, 300);
+  _tone(P_BUZZER, T_D4, 300);
+  _tone(P_BUZZER, T_E4, 300);
 ",
 
 	// loop処理 (C言語)
