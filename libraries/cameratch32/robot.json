@@ -27,6 +27,9 @@
 #define P_STBY    0
 #define P_BUZZER  2
 #define P_NEOPIX  14
+
+#define PWM_FREQ  10000
+#define PWM_BITS  8//12
 const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
   { 8, 4},  // Left, Forward
   { 9,13},  // Left, Backward
@@ -41,8 +44,8 @@ void _setMotor(uint8_t index, int16_t speed)
   digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
 
   uint32_t pwm = (speed<0) ? -speed: speed;
-  pwm = (pwm * 4096) / 100;
-  if(pwm > 4095) pwm = 4095;
+  pwm = (pwm * (1<<PWM_BITS)) / 100;
+  if(pwm > (1<<PWM_BITS)-1) pwm = (1<<PWM_BITS)-1;
 
   if(speed > 0) {
     ledcWrite(motorTable[index*2+0].ledc, pwm);
@@ -80,7 +83,7 @@ void _setCar(uint8_t direction, int16_t speed)
   digitalWrite(P_STBY, 0);
   pinMode(P_STBY, OUTPUT_OPEN_DRAIN);
   for(int i = 0; i < 4; i++) {
-    ledcSetup(motorTable[i].ledc, 50/*Hz*/, 12/*bit*/);
+    ledcSetup(motorTable[i].ledc, PWM_FREQ/*Hz*/, PWM_BITS/*bit*/);
     ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
     ledcWrite(motorTable[i].ledc, 0);
   }
