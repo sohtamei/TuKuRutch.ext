@@ -12,6 +12,7 @@ void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration)
 void _setMotor(int16_t left, int16_t right/* -4 ~ +4 */,
 	int16_t calib,   /* -50(Left) ~ +50(right) */
 	int16_t duration);
+void _setCar2(uint8_t direction, int16_t speed, int16_t duration);
 void _stopServo(void);
 char* _downloadCal(int16_t id, char* base64);
 char* _getCal(void);

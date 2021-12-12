@@ -50,7 +50,7 @@
 														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],
 		["w", "set motor left %d.speed right %d.speed calib %n duration %n",
 														"setMotor",			4,4,0,0,	{"remote":["S","S","S","S"],"func":"_setMotor({0},{1},{2},{3});"}],
-		["-"],
+		["w", "%d.direction at speed %n duration %n ms","setCar2",	"run forward",100,0,{"remote":["B","S","S"],	"func":"_setCar2({0},{1},{2});"}],
 		["-"],
 		["w", "stop",									"stopCar",						{"remote":[],				"func":"_stopServo();"}],
 

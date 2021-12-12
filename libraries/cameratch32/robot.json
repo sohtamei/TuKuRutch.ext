@@ -28,7 +28,7 @@
 #define P_BUZZER  2
 #define P_NEOPIX  14
 
-#define PWM_FREQ  10000
+#define PWM_FREQ 10000
 #define PWM_BITS  8//12
 const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
   { 8, 4},  // Left, Forward
@@ -70,11 +70,26 @@ struct { int16_t L; int16_t R;} static const dir_table[7] = {
   { 1, -1},  // 6:ROLL_RIGHT
 };
 
-void _setCar(uint8_t direction, int16_t speed)
+void _setCar(uint8_t direction, int16_t speed, int16_t duration)
 {
   if(direction >= 7) return;
   _setMotor(0, speed * dir_table[direction].L);
   _setMotor(1, speed * dir_table[direction].R);
+
+  if(duration) {
+    delay(duration);
+    _setMotor(0, 0);
+    _setMotor(1, 0);
+ }
+}
+
+void _setPwmFreq(int16_t pwm_freq)
+{
+  for(int i = 0; i < 4; i++) {
+    ledcSetup(motorTable[i].ledc, pwm_freq/*Hz*/, PWM_BITS/*bit*/);
+    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
+    ledcWrite(motorTable[i].ledc, 0);
+  }
 }
 ",
 	// setup処理 (C言語)
@@ -82,11 +97,7 @@ void _setCar(uint8_t direction, int16_t speed)
   _setup(mVersion);
   digitalWrite(P_STBY, 0);
   pinMode(P_STBY, OUTPUT_OPEN_DRAIN);
-  for(int i = 0; i < 4; i++) {
-    ledcSetup(motorTable[i].ledc, PWM_FREQ/*Hz*/, PWM_BITS/*bit*/);
-    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
-    ledcWrite(motorTable[i].ledc, 0);
-  }
+  _setPwmFreq(PWM_FREQ);
   _tone(P_BUZZER, T_C4, 300);
   _tone(P_BUZZER, T_D4, 300);
   _tone(P_BUZZER, T_E4, 300);
@@ -111,9 +122,10 @@ void _setCar(uint8_t direction, int16_t speed)
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
 		["w", "set LED %d.onoff",						"setLED",		"On",			{"remote":["B"],		"func":"_setLED({0});"}],
-		["w", "%d.direction at speed %n",				"setCar",		"run forward",100,{"remote":["B","S"],	"func":"_setCar({0},{1});"}],
+		["w", "%d.direction at speed %n duration %n ms","setCar",	"run forward",100,0,{"remote":["B","S","S"],"func":"_setCar({0},{1},{2});"}],
 		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
-		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0);"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
+		["w", "set pwm freq %n",						"setPwmFreq",	10000,			{"remote":["S"],		"func":"_setPwmFreq({0});"}],
 		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
 		["-"],
 	],

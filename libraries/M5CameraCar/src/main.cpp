@@ -280,8 +280,9 @@ static uint16_t pwm_last[2];
 static uint16_t pwm_req[2];
 static uint16_t pwm_duration = 0;
 
+#define PWM_NEUTRAL 307		// 1.5ms/20ms*4096 = 307.2
+#define PWM_COEF    164		// (2.3ms-1.5ms)/20ms*4096 = 163.8
 #define PWM_MIN     143
-#define PWM_NEUTRAL 307
 #define PWM_MAX     471
 const struct {uint8_t ledc; uint8_t port;} servoTable[] = {{8,P_SRV0},{9,P_SRV1}};
 void _setPwm2(uint8_t idx, int16_t data)
@@ -441,7 +442,7 @@ struct { int16_t L; int16_t R;} static const dir_table[7] = {
 	{-1, -1},  // 4:BACK
 	{-1,  1},  // 5:ROLL_LEFT
 	{ 1, -1},  // 6:ROLL_RIGHT
-					   // 7:CALIBRATION
+			   // 7:CALIBRATION
 };
 
 void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration)
@@ -451,6 +452,30 @@ void _setCar(uint8_t direction, uint16_t speed, int16_t calib, int16_t duration)
 		_setPwm2(1, PWM_NEUTRAL);
 	} else {
 		_setMotor(speed*dir_table[direction].L, speed*dir_table[direction].R, calib, duration);
+	}
+}
+
+void _setCar2(uint8_t direction, int16_t speed, int16_t duration)
+{
+	     if(speed < -100) speed = -100;
+	else if(speed >  100) speed =  100;
+
+	for(int i = 0; i < 2; i++) {
+		int32_t level = (i == 0) ? dir_table[direction].L : -dir_table[direction].R;
+		level = speed * level;
+		if(level) {
+			level = (level * PWM_COEF) / 100 + PWM_NEUTRAL;
+		}
+		_setPwm2(i, level);
+	}
+
+	if(duration) {
+		delay(duration);
+
+		_setPwm2(0, 0);
+		_setPwm2(1, 0);
+		servo_stt = SERVO_IDLE;
+		servo_time = 0;
 	}
 }
 
