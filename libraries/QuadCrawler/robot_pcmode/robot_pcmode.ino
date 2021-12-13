@@ -18,7 +18,7 @@ const uint8_t sw_table[4] = {P_Sw1,P_Sw2,P_Sw3,P_Sw4};
 #if defined(__AVR_ATmega328P__)
   #include <avr/wdt.h>
 
-#elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   #include <BLEPeripheral.h>
   static BLEPeripheral blePeripheral = BLEPeripheral();
 #endif
@@ -42,7 +42,7 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
 #define LEDC_BUZZER  15
-#define LEDC_PWM_START 1
+#define LEDC_PWM_START 2
 #define LEDC_PWM_END   14
 
 void setup()
@@ -52,7 +52,8 @@ void setup()
       wdt_disable();
     #elif defined(ESP32)
       ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
-    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      Serial.begin(19200);
       _bleSetup();
     #endif
     
@@ -67,7 +68,8 @@ void setup()
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
-static uint8_t _packetLen = 4;
+static uint8_t* _packet_dp = buffer;
+static uint16_t _packetLen = 4;
 
 #define ARG_NUM  16
 #define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
@@ -112,10 +114,12 @@ void _write(uint8_t* dp, int count)
 {
     #if defined(ESP32)
       if(comMode == MODE_WS) {
+            _packet_dp = dp;
             _packetLen = count;
       } else
-    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
       if(comMode == MODE_BLE) {
+            _packet_dp = dp;
             _packetLen = count;
       } else
     #endif
@@ -140,7 +144,8 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
-      // neoPixcel
+  {},				// 0x8b:neoPixcel      ()
+  {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
 };
 #define CMD_MIN   0x81
 #define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
@@ -196,6 +201,7 @@ static int _analogRead(uint8_t port, uint16_t count)
     #if defined(ESP32)
       return getAdc1(port,count);
     #else
+      pinMode(port, INPUT);
       if(count == 0) count = 1;
       int i;
       uint32_t sum = 0;
@@ -227,15 +233,7 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
     #endif
 }
 
-#if defined(__AVR_ATmega328P__)
-// 3,5,6,9,10,11  8bit
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-// 5と11除く、8bit、3chまで
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(ESP32)
+#if defined(ESP32)
 static uint8_t ledc2port[LEDC_PWM_END+1] = {0};
 static void _setPwm(uint8_t port, uint16_t data)
 {
@@ -253,6 +251,11 @@ static void _setPwm(uint8_t port, uint16_t data)
             }
       }
 }
+#else
+// 328P:3,5,6,9,10,11  8bit
+// nRF51,nRF52:5と11除く、8bit、3chまで
+// RP2040
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
 #endif
 
 static void _setPwms(uint8_t* buf, int num)
@@ -311,10 +314,10 @@ static void parseData()
         case 12: sendFloat((quadCrawler_getSonner())); break;
         case 13: sendByte((((getByte(0)>=1&&getByte(0)<=4)?digitalRead(sw_table[getByte(0)-1]):0)==0)); break;
         case 21: pinMode(P_LED,OUTPUT);digitalWrite(P_LED,getByte(0));; callOK(); break;
-        #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
-          case 0x81: Wire.begin(); callOK(); break;
-        #else
+        #if defined(ESP32)
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+        #else
+          case 0x81: Wire.begin(); callOK(); break;
         #endif
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
@@ -326,6 +329,10 @@ static void parseData()
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
+          case 0x8b: callOK(); break;
+        #if defined(CAMERA_ENABLED)
+          case 0x8c: _setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        #endif
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;
@@ -365,6 +372,7 @@ int16_t _readUart(void)
       return -1;
 }
 
+static uint8_t blePeri_enable = false;
 static uint8_t _index = 0;
 void loop()
 {
@@ -398,8 +406,8 @@ void loop()
     
     #if defined(ESP32)
       readWifi();
-    #elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
-      blePeripheral.poll();
+    #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+      if(blePeri_enable) blePeripheral.poll();
     #endif
     
     quadCrawler_servoLoop();
@@ -428,7 +436,7 @@ void onMessageCallback(WebsocketsMessage msg) {
       memcpy(buffer, msg.c_str(), _packetLen);
       comMode = MODE_WS;
       parseData();
-      _client.sendBinary((char*)buffer, _packetLen);
+      _client.sendBinary((char*)_packet_dp, _packetLen);
 }
 
 static void loopWebSocket(void)
@@ -445,14 +453,19 @@ static void loopWebSocket(void)
       _client.poll();
       return;
 }
-#elif defined(NRF51_SERIES) //|| defined(NRF52_SERIES)
+#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
 static BLEDescriptor _nameDesc = BLEDescriptor("2901", mVersion);
 static BLEService        _service = BLEService("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
 static BLECharacteristic _rxChar  = BLECharacteristic("6E400002-B5A3-F393-E0A9-E50E24DCCA9E", BLEWrite|BLEWriteWithoutResponse, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
   // write/writeWoResp, both OK
 static BLECharacteristic _txChar  = BLECharacteristic("6E400003-B5A3-F393-E0A9-E50E24DCCA9E", BLENotify|BLERead, BLE_ATTRIBUTE_MAX_VALUE_LENGTH);
 
-void _bleSetup() {
+void bleStop() {
+        if(blePeri_enable) blePeripheral.end();
+        blePeri_enable = false;
+}
+
+static void _bleSetup() {
       blePeripheral.setLocalName(mVersion);
     
       blePeripheral.addAttribute(_service);
@@ -467,6 +480,7 @@ void _bleSetup() {
       blePeripheral.setEventHandler(BLEDisconnected, _bleDisconnected);
     
       blePeripheral.begin();
+      blePeri_enable = true;
 }
 
 static void _bleConnected(BLECentral& central) {
@@ -484,7 +498,7 @@ static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
       comMode = MODE_BLE;
       parseData();
       //Serial.print(F("W:")); _dump((uint8_t*)buffer, _packetLen);
-      _txChar.setValue((uint8_t*)buffer, _packetLen);
+      _txChar.setValue((uint8_t*)_packet_dp, _packetLen);
 }
 /*
 static void _dump(const uint8_t* buf, int size)
@@ -553,7 +567,7 @@ char* getString(uint8_t n)
       return (char*)buffer+x;
 }
 
-static void callOK()
+/*static*/ void callOK()
 {
       uint8_t* dp = buffer;
       *dp++ = 0xff;

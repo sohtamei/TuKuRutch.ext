@@ -118,12 +118,12 @@ static void _set_servo(uint8_t id, int16_t deg)
 	if(deg > DEG_MAX) deg = DEG_MAX;
 	else if(deg < DEG_MIN) deg = DEG_MIN;
 
-	pwm.setPWM(channelTbl[id], 0, ((deg-DEG_MIN)*(SERVO_MAX-SERVO_MIN)) / (DEG_MAX-DEG_MIN) + SERVO_MIN);
+	pwm.setPWM(channelTbl[id], (512*id)&0xFFF, (512*id+((deg-DEG_MIN)*(SERVO_MAX-SERVO_MIN)) / (DEG_MAX-DEG_MIN) + SERVO_MIN)&0xFFF);
 }
 
 void _setPWM(uint8_t id, uint16_t value)
 {
-	pwm.setPWM(channelTbl[id], 0, value);
+	pwm.setPWM(channelTbl[id], (512*id)&0xFFF, (512*id+value)&0xFFF);
 }
 
 static void setServo1(uint8_t id, int16_t deg)
