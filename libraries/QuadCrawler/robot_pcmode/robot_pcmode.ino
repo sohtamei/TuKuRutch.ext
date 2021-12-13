@@ -2,7 +2,7 @@
 
 #define PCMODE
 
-#define mVersion "QuadCrawler1.3"
+#define mVersion "QuadCrawler1.4"
 
 #include <quadCrawler.h>
 #include <analogRemote.h>

@@ -1,5 +1,5 @@
 // copyright to SohtaMei & H.Sunakawa 2020.
-#define mVersion "QuadCrawler1.3"
+#define mVersion "QuadCrawler1.4"
 
 #include <quadCrawler.h>
 #include <analogRemote.h>
