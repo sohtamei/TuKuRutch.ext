@@ -270,7 +270,6 @@ static const struct calibrate calInit = {
 enum {
 	SERVO_IDLE,
 	SERVO_STOP_REQ,
-	SERVO_OFF_REQ,
 	SERVO_REV_REQ,
 };
 static uint8_t servo_stt = 0;
@@ -472,8 +471,11 @@ void _setCar2(uint8_t direction, int16_t speed, int16_t duration)
 	if(duration) {
 		delay(duration);
 
-		_setPwm2(0, 0);
-		_setPwm2(1, 0);
+		_setPwm2(0, PWM_NEUTRAL);
+		_setPwm2(1, PWM_NEUTRAL);
+		servo_stt = SERVO_STOP_REQ;
+		servo_time = millis() + 100;
+	} else {
 		servo_stt = SERVO_IDLE;
 		servo_time = 0;
 	}
@@ -646,7 +648,6 @@ void _loop(void)
 				break;
 
 			case SERVO_STOP_REQ:
-			case SERVO_OFF_REQ:
 			default:
 				servo_stt = SERVO_IDLE;
 				servo_time = 0;
