@@ -17,8 +17,9 @@
 	"header":"
 #define mVersion \"esp32cam1.0\"
 
-#include \"TukurutchEsp.h\"
+#include <TukurutchEsp.h>
 #include \"main.h\"
+#include <TukurutchEspCamera.h>
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -47,7 +48,7 @@
 		["-"],
 		["-"],
 		["-"],
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"espcamera_setLED({0});"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],

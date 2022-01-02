@@ -21,8 +21,9 @@
 	"header":"
 #define mVersion \"M5Camera1.0\"
 
-#include \"TukurutchEsp.h\"
+#include <TukurutchEsp.h>
 #include \"main.h\"
+#include <TukurutchEspCamera.h>
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -50,13 +51,13 @@
 														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],
 		["w", "set motor left %d.speed right %d.speed calib %n duration %n",
 														"setMotor",			4,4,0,0,	{"remote":["S","S","S","S"],"func":"_setMotor({0},{1},{2},{3});"}],
-		["w", "%d.direction at speed %n duration %n ms","setCar2",	"run forward",100,0,{"remote":["B","S","S"],	"func":"_setCar2({0},{1},{2});"}],
+		["-"],
 		["-"],
 		["w", "stop",									"stopCar",						{"remote":[],				"func":"_stopServo();"}],
 
 		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
 
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"espcamera_setLED({0});"}],
 
 		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
 		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
