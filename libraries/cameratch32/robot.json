@@ -21,6 +21,7 @@
 	"header":"
 #define mVersion \"cameratch32_1.0\"
 
+#include <Adafruit_NeoPixel.h>
 #include <TukurutchEsp.h>
 #include \"main.h\"
 #include <TukurutchEspCamera.h>
@@ -92,6 +93,59 @@ void _setPwmFreq(int16_t pwm_freq)
     ledcWrite(motorTable[i].ledc, 0);
   }
 }
+
+//----------------
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(4, P_NEOPIX, NEO_GRB + NEO_KHZ800);
+
+static void colorWipe(uint32_t c)
+{
+  uint8_t i;
+  for (i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+    delay(10);
+  }
+}
+
+enum {
+  COLOR_OFF = 0,
+  COLOR_RED,
+  COLOR_GREEN,
+  COLOR_BLUE,
+  COLOR_YELLOW,
+  COLOR_PURPLE,
+  COLOR_LIGHTBLUE,
+};
+void _colorWipe(uint8_t color)
+{
+  switch(color) {
+  case COLOR_OFF:
+    colorWipe(strip.Color(0,0,0));
+    break;
+  case COLOR_RED:
+    colorWipe(strip.Color(255,0,0));
+    break;
+  case COLOR_GREEN:
+    colorWipe(strip.Color(0,255,0));
+    break;
+  case COLOR_BLUE:
+    colorWipe(strip.Color(0,0,255));
+    break;
+  case COLOR_YELLOW:
+    colorWipe(strip.Color(128,128,0));
+    break;
+  case COLOR_PURPLE:
+    colorWipe(strip.Color(128,0,128));
+    break;
+  case COLOR_LIGHTBLUE:
+    colorWipe(strip.Color(0,128,128));
+    break;
+  default:
+    break;
+  }
+}
+
 ",
 	// setup処理 (C言語)
 	"setup":"
@@ -102,6 +156,9 @@ void _setPwmFreq(int16_t pwm_freq)
   _tone(P_BUZZER, T_C4, 300);
   _tone(P_BUZZER, T_D4, 300);
   _tone(P_BUZZER, T_E4, 300);
+
+  strip.begin();
+  strip.show(); // Initialize all pixels to 'off'
 ",
 
 	// loop処理 (C言語)
@@ -127,18 +184,20 @@ void _setPwmFreq(int16_t pwm_freq)
 		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
 		["w", "set pwm freq %n",						"setPwmFreq",	10000,			{"remote":["S"],		"func":"_setPwmFreq({0});"}],
+		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_colorWipe({0});"}],
 		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
-		["-"],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],
 		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
 		"motorch"	:["ch-L","ch-R"],
+		"color":["off","red","green","blue","yellow","purple","lightblue"],
 	},
 	"values":{
 		"On":1,"Off":0,
 		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
 		"ch-L":0,"ch-R":1,
+		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
 	},
 
 	"sort"			: 11,										// メニュー上の表示順序
