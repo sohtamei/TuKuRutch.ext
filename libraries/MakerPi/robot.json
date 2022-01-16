@@ -1,0 +1,217 @@
+{
+	"name"			: "MakerPi",
+	"scratch3ext"	: "MakerPi",								// scratch3 ext名[,SupportCamera]
+	"boardType"		: "arduino:mbed_rp2040:pico",				// package:platform:board
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// ヘッダ (C言語)
+	"header":"
+#define mVersion \"RPiPico 1.0\"  // マイコン拡張名＋version
+#include <Adafruit_NeoPixel.h>
+#include \"main.h\"
+
+enum {
+  T_C4=262, T_D4=294, T_E4=330, T_F4=349, T_G4=392, T_A4=440, T_B4=494,
+  T_C5=523, T_D5=587, T_E5=659, T_F5=698,
+};
+
+#define P_NEOPIX	18
+#define P_BUZZER	22
+
+#define P_BUTTON0	20
+#define P_BUTTON1	21
+
+#define P_SERVO0	12
+#define P_SERVO1	13
+#define P_SERVO2	14
+#define P_SERVO3	15
+
+#define P_MOTOR1A	8
+#define P_MOTOR1B	9
+#define P_MOTOR2A	10
+#define P_MOTOR2B	11
+
+const uint8_t motorTable[4] = {
+  8,    // Left, Forward
+  9,    // Left, Backward
+  10,   // Right, Forward
+  11};  // Right, Backward
+
+int16_t _speed[2] = {0,0};
+void _setMotor(uint8_t index, int16_t speed)
+{
+  if(index >= 2) return;
+  _speed[index] = speed;
+
+  uint32_t pwm = (speed<0) ? -speed: speed;
+/*
+  pwm = (pwm * (1<<PWM_BITS)) / 100;
+  if(pwm > (1<<PWM_BITS)-1) pwm = (1<<PWM_BITS)-1;
+*/
+  pwm = 1;
+
+  if(speed > 0) {
+    digitalWrite(motorTable[index*2+0], pwm);
+    digitalWrite(motorTable[index*2+1], 0);
+  } else if(speed < 0) {
+    digitalWrite(motorTable[index*2+0], 0);
+    digitalWrite(motorTable[index*2+1], pwm);
+  } else {
+    digitalWrite(motorTable[index*2+0], 0);
+    digitalWrite(motorTable[index*2+1], 0);
+  }
+}
+
+struct { int16_t L; int16_t R;} static const dir_table[7] = {
+//  L   R
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+};
+
+void _setCar(uint8_t direction, int16_t speed, int16_t duration)
+{
+  if(direction >= 7) return;
+  _setMotor(0, speed * dir_table[direction].L);
+  _setMotor(1, speed * dir_table[direction].R);
+
+  if(duration) {
+    delay(duration);
+    _setMotor(0, 0);
+    _setMotor(1, 0);
+ }
+}
+
+//----------------
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(2, P_NEOPIX, NEO_GRB + NEO_KHZ800);
+
+static void colorWipe(uint32_t c)
+{
+  uint8_t i;
+  for (i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+    delay(10);
+  }
+}
+
+enum {
+  COLOR_OFF = 0,
+  COLOR_RED,
+  COLOR_GREEN,
+  COLOR_BLUE,
+  COLOR_YELLOW,
+  COLOR_PURPLE,
+  COLOR_LIGHTBLUE,
+};
+void _colorWipe(uint8_t color)
+{
+  switch(color) {
+  case COLOR_OFF:
+    colorWipe(strip.Color(0,0,0));
+    break;
+  case COLOR_RED:
+    colorWipe(strip.Color(255,0,0));
+    break;
+  case COLOR_GREEN:
+    colorWipe(strip.Color(0,255,0));
+    break;
+  case COLOR_BLUE:
+    colorWipe(strip.Color(0,0,255));
+    break;
+  case COLOR_YELLOW:
+    colorWipe(strip.Color(128,128,0));
+    break;
+  case COLOR_PURPLE:
+    colorWipe(strip.Color(128,0,128));
+    break;
+  case COLOR_LIGHTBLUE:
+    colorWipe(strip.Color(0,128,128));
+    break;
+  default:
+    break;
+  }
+}
+
+",
+	// setup処理 (C言語)
+	"setup":"
+  _setup(mVersion);
+  pinMode(P_BUZZER, OUTPUT);
+  _tone(P_BUZZER, T_C4, 300);
+  pinMode(P_MOTOR1A, OUTPUT);
+  pinMode(P_MOTOR1B, OUTPUT);
+  pinMode(P_MOTOR2A, OUTPUT);
+  pinMode(P_MOTOR2B, OUTPUT);
+  strip.begin();
+  strip.show(); // Initialize all pixels to 'off'
+",
+
+	// loop処理 (C言語)
+	"loop":"
+  _loop();
+",
+
+	// スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
+		["-"],					// dummy
+		["w", "%d.direction at speed %n duration %n ms","setCar",	"run forward",100,0,{"remote":["B","S","S"],"func":"_setCar({0},{1},{2});"}],
+		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
+		["w", "play tone %d.noteJ2 beat %d.beats",		"BuzzerJ2",			"C4","Half",{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
+		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_colorWipe({0});"}],
+
+		["w", "set port %n output as %d.digital",		"setDigital",		2,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["B", "read port %n",							"getDigital",		26,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT_PULLUP),digitalRead({0})"}],
+		["R", "read analog port %n average %n times",	"getAnalog",		35,4,		{"remote":["B","S",	"S"],"func":"_analogRead({0},{1})"}],
+	],
+	"menus": {
+		"noteJ2"	:["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",],
+		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
+		"digital"	:["HIGH","LOW"],
+		"onoff"		:["On","Off"],
+		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"motorch"	:["ch-L","ch-R"],
+		"color"		:["off","red","green","blue","yellow","purple","lightblue"],
+	},
+	"values":{
+		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
+		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+		"HIGH":1,"LOW":0,
+		"On":1,"Off":0,
+		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
+		"ch-L":0,"ch-R":1,
+		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
+	},
+
+	"translators":{
+		"ja":{
+			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
+			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
+			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
+
+			"set port %n output as %d.digital"				:"ポート %n の出力を %d.digital にする",
+			"play tone %d.noteJ2 beat %d.beats"				:"%d.noteJ2 を %d.beats 鳴らす",
+			"read port %n"									:"ポート %n",
+			"read analog port %n average %n times"			:"アナログポート %n の %n 回平均",
+		}
+	},
+
+	"sort"			: 50,										// メニュー上の表示順序
+}
