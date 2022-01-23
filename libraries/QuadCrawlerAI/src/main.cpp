@@ -29,7 +29,7 @@ static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
 
 WebsocketsServer wsServer;
 
-void _setCameraMode(uint8_t mode, uint8_t gain)
+void espcamera_setCameraMode(uint8_t mode, uint8_t gain)
 {
 	sensor_t * s = esp_camera_sensor_get();
 	uint8_t enabled = 1;
@@ -217,7 +217,7 @@ void _loop()
 		case BUTTON_A_CENTER:
 		case BUTTON_2:
 			quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-			quadCrawler_Walk(quadCrawler_fast, COM_ALL_DOWN);
+			quadCrawler_Walk(quadCrawler_typical, COM_ALL_DOWN);
 			break;
 		case XY_DOWN + A_DOWN_OFFSET:
 		case BUTTON_3:
@@ -248,12 +248,12 @@ void _loop()
 		case BUTTON_A_LEFT:
 		case BUTTON_8:
 			quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-			quadCrawler_Walk(quadCrawler_fast, COM_L_R_UP);
+			quadCrawler_Walk(quadCrawler_typical, COM_L_R_UP);
 			break;
 		case BUTTON_A_RIGHT:
 		case BUTTON_9:
 			quadCrawler_colorWipe(COLOR_LIGHTBLUE);
-			quadCrawler_Walk(quadCrawler_fast, COM_ALL_UPDOWN);
+			quadCrawler_Walk(quadCrawler_typical, COM_ALL_UPDOWN);
 			break;
 		default:                      // ボタンを離したとき : 停止
 			quadCrawler_colorWipe(COLOR_PURPLE);
