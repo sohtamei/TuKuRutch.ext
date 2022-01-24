@@ -135,7 +135,7 @@ static int8_t servoStart[8] = {0,0,0,0,0,0,0,0};
 static int8_t servoEnd[8] = {-1,-1,-1,-1,-1,-1,-1,-1};
 
 static uint32_t timeStart[8] = {0,0,0,0,0,0,0,0};
-static uint32_t timeDur[8] = {0,0,0,0,0,0,0,0};
+static uint16_t timeDur[8] = {0,0,0,0,0,0,0,0};
 
 static void setTarget(uint8_t id, int16_t deg, int16_t duration)
 {
@@ -175,7 +175,7 @@ static void setTargetLoop(void)
 		int16_t elapsed = cur - timeStart[i];
 		if(elapsed > timeDur[i]) continue;
 
-		int32_t k256 = (elapsed*256)/timeDur[i];
+		int32_t k256 = (elapsed*256L)/timeDur[i];
 		_set_servo(i, ((((int)servoEnd[i] - (int)servoStart[i]) * k256)>>8) + servoStart[i]);
 	}
 }
@@ -234,8 +234,8 @@ static void motionWalk(const s_walk pWalk[2])
 }
 
 enum {
-	DUR_UPDOWN = 80,
-	DUR_UPSLIDE = 120,
+	DUR_UPDOWN = 80L,
+	DUR_UPSLIDE = 120L,
 };
 
 enum {
