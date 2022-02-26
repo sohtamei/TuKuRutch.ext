@@ -7,7 +7,7 @@
  *
  */
 #define CONFIG_SCCB_HARDWARE_I2C_PORT1  1
-#if 0		// 0 for M5camera
+#ifdef I2C_WIRE		// 0 for M5camera
 #include <Wire.h>
 #include "sccb.h"
 

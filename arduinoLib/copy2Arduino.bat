@@ -1,4 +1,7 @@
 rmdir                    ..\..\Arduino\portable\sketchbook\libraries\analogRemote\  /S /Q
+rmdir                    ..\..\Arduino\portable\sketchbook\libraries\TukurutchEsp\  /S /Q
+rmdir                    ..\..\Arduino\portable\sketchbook\libraries\TukurutchEspCamera\  /S /Q
+rmdir                    ..\..\Arduino\portable\sketchbook\libraries\TukurutchEspCamera2\  /S /Q
 
 xcopy analogRemote       ..\..\Arduino\portable\sketchbook\libraries\analogRemote\  /S /Q /Y
 xcopy TukurutchEsp       ..\..\Arduino\portable\sketchbook\libraries\TukurutchEsp\  /S /Q /Y

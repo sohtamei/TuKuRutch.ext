@@ -136,7 +136,7 @@
   #define HREF_GPIO_NUM     23
   #define PCLK_GPIO_NUM     22
 
-  #define P_LED				0
+  #define P_LED				-1
   #define P_LED_NEG			0
 
 #elif defined(DEVICE_CAMERATCH32)

@@ -21,6 +21,7 @@
 	"header":"
 #define mVersion \"cameratch32_1.0\"
 
+#include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
 #include <TukurutchEsp.h>
 #include \"main.h\"
@@ -146,6 +147,39 @@ void _colorWipe(uint8_t color)
   }
 }
 
+//----------------
+
+Adafruit_PWMServoDriver pwm9685 = Adafruit_PWMServoDriver();	// 
+uint8_t pwm9685_init = false;
+
+void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
+{
+  if(id >= 8) return;
+
+  if(!pwm9685_init) {
+    pwm9685.begin();
+    pwm9685.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
+    pwm9685_init = true;
+  }
+
+  uint16_t pwmWidth;
+  if(continuous) {
+    #define srvZero 307		// 1.5ms/20ms*4096 = 307.2
+    #define srvCoef 163		// (2.3ms-1.5ms)/20ms*4096 = 163.8
+    if(data < -100) data = -100;
+    else if(data > 100) data = 100;
+    pwmWidth = (data * srvCoef) / 100 + srvZero;
+    if(data==0) pwmWidth=0;
+  } else {
+    #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
+    #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
+    if(data < 0) data = 0;
+    else if(data > 180) data = 180;
+    pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
+  }
+  pwm9685.setPWM(id, (512*id)&0xFFF, (512*id+pwmWidth)&0xFFF);
+}
+
 ",
 	// setup処理 (C言語)
 	"setup":"
@@ -185,6 +219,8 @@ void _colorWipe(uint8_t color)
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
 		["w", "set pwm freq %n",						"setPwmFreq",	10000,			{"remote":["S"],		"func":"_setPwmFreq({0});"}],
 		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_colorWipe({0});"}],
+		["w", "set servo %n %n",						"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
+		["w", "stop servo %n",							"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
 		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
 	],
 	"menus": {

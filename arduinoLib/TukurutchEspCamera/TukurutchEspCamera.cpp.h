@@ -2,12 +2,14 @@
 
 void espcamera_setLED(uint8_t onoff)
 {
+#if P_LED != -1
 #if P_LED_NEG
 	digitalWrite(P_LED, !onoff);
 #else
 	digitalWrite(P_LED, onoff);
 #endif
 	pinMode(P_LED, OUTPUT);
+#endif
 }
 
 void espcamera_setCameraMode(uint8_t mode, uint8_t gain)
@@ -118,3 +120,5 @@ void espcamera_loop(void)
 		}
 	}
 }
+
+#include "sccb.cpp.h"
