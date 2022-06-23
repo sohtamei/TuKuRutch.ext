@@ -142,7 +142,7 @@ int remoconRobo_incCalib(int offset)
 }
 
 // MP3 ----------------
-
+/*
 #include "SoftwareSerialRR.h"
 
 static SoftwareSerialRR mySerial(PORT_TONE, 9600); // RX, TX
@@ -202,14 +202,20 @@ void remoconRobo_stopMP3(void)
 		SendMP3(pause);
 	}
 }
-
-uint16_t remoconRobo_getAnalog(uint8_t ch, uint16_t count)
+*/
+uint16_t remoconRobo_getAnalog(uint8_t ch, uint16_t count, uint8_t discharge)
 {
+	if(discharge) {
+		pinMode(ch, OUTPUT);		// 電荷discharge (リモコンロボで1000mVくらいに帯電してしまう)
+		digitalWrite(ch, LOW);
+		delay(1);
+	}
+	pinMode(ch, INPUT);
+
 	if(count == 0) count = 1;
+	count *= 100;
 	uint32_t sum = 0;
-	uint16_t i;
-	for(i = 0; i < count; i++)
+	for(int i = 0; i < count; i++)
 		sum += analogRead(ch);
-	sum = ((sum / count) * 625UL) / 128;	// 1024->5000
-	return sum;
+	return ((sum / count) * 625UL) / 128;	// 1024->5000
 }

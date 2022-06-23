@@ -40,13 +40,12 @@ void remoconRobo_setRobotLR(int speedL, int speedR);
 int remoconRobo_getCalib(void);
 int remoconRobo_setCalib(int calib);
 int remoconRobo_incCalib(int offset);
-
+/*
 // MP3
-
 void remoconRobo_initMP3(int volume);			// 0~30
 void remoconRobo_playMP3(int track, int loop);
 void remoconRobo_stopMP3(void);
-
-uint16_t remoconRobo_getAnalog(uint8_t ch, uint16_t count);
+*/
+uint16_t remoconRobo_getAnalog(uint8_t ch, uint16_t count, uint8_t discharge);
 
 #endif

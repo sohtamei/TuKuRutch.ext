@@ -1,23 +1,23 @@
 {
 	"name"			: "RemoconRobo",
-	"port"			: 0,										// 変更禁止
+	"scratch3ext"	: "RemoconRobo",							// scratch3 ext名[,SupportCamera]
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	"sort"			: 50,										// メニュー上の表示順序
-	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday.html",
-	"productInfoURL": "https://bit-trade-one.co.jp/adkrbt/",
 	"sampleDir"		: "sample/RemoconRobo",						// サンプルディレクトリ
-	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"libraryPath"	: "remoconRoboLib",							// 専用ライブラリ(option)
+
+	"scratch3burn"	: [											// binary定義
+			{"name":"remoconRobo", "type":"atmega328", "baudrate":115200, "binPath":"RemoconRobo"},
+	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"RemoconRobo1.1\"
+#define mVersion \"RemoconRobo1.2\"
 
 #include <Servo.h>
 #include <remoconRoboLib.h>
@@ -27,9 +27,17 @@
 void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
 analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
 
-uint8_t initMP3 = 0;        // for playMP3
 Servo srvClass[3];          // for setServo
 const uint8_t srvPin[3] = {3,9,10};
+
+#ifdef PCMODE
+static int speed = 255;
+static const uint8_t SpeedTable[10] = { 48, 71, 94, 117, 140, 163, 186, 209, 232, 255};
+static void beep(int sound)
+{
+  remoconRobo_tone(sound, 300);
+}
+#endif
 ",
 	// setup処理 (C言語)
 	"setup":"
@@ -38,28 +46,94 @@ digitalWrite(13, LOW);
 remoconRobo_init();
 remoconRobo_tone(500, 50);
 Serial.begin(115200);
+pinMode(A1, OUTPUT);
+digitalWrite(A1, LOW);
 ",
 	// loop処理 (C言語)
-	"loop":"",
+	"loop":"
+#ifdef PCMODE
+if(comMode == MODE_INVALID) {
+  int updated = remote.checkUpdated();
 
-	// スクラッチブロック定義
+  switch(remote.keys) {
+  case BUTTON_POWER:  if(!remoconRobo_incCalib(-1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;
+  case BUTTON_B:
+  case BUTTON_MENU:  if(!remoconRobo_incCalib(+1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;
+  }
+
+  if(updated) {
+
+    //char buf[64]; sprintf(buf, \"%d, %d, %d\\r\\n\", remote.keys, remote.y, remote.x); Serial.print(buf);
+    if(updated == REMOTE_ANALOG)
+      remoconRobo_setRobotLR(remote.y + remote.x,  // L
+                 remote.y - remote.x);  // R
+
+    switch(remote.keys) {
+    case BUTTON_A_RIGHT:
+    case BUTTON_TEST:  remoconRobo_setMotor(CH3,  speed); break;
+    case BUTTON_A_LEFT:
+    case BUTTON_RETURN:  remoconRobo_setMotor(CH3, -speed); break;
+
+    case BUTTON_CENTER:
+    case BUTTON_UP:    remoconRobo_setRobot(DIR_FORWARD, speed); break;
+    case BUTTON_DOWN:  remoconRobo_setRobot(DIR_BACK,    speed); break;
+  #ifdef DEF_CH4
+    case BUTTON_LEFT:  remoconRobo_setRobot(DIR_ROLL_LEFT, speed); break;
+    case BUTTON_RIGHT:  remoconRobo_setRobot(DIR_ROLL_RIGHT,speed); break;
+
+    case BUTTON_A_UP:
+    case BUTTON_0:    remoconRobo_setMotor(CH4,  1); break;
+    case BUTTON_A_DOWN:
+    case BUTTON_C:    remoconRobo_setMotor(CH4, -1); break;
+  #else
+    case BUTTON_LEFT:  remoconRobo_setRobot(DIR_LEFT,    speed); break;
+    case BUTTON_RIGHT:  remoconRobo_setRobot(DIR_RIGHT,   speed); break;
+    case BUTTON_0:    remoconRobo_setRobot(DIR_ROLL_LEFT, speed); break;
+    case BUTTON_C:    remoconRobo_setRobot(DIR_ROLL_RIGHT,speed); break;
+  #endif
+    case BUTTON_1: beep(T_C4); speed = SpeedTable[1]; break;
+    case BUTTON_2: beep(T_D4); speed = SpeedTable[2]; break;
+    case BUTTON_3: beep(T_E4); speed = SpeedTable[3]; break;
+    case BUTTON_4: beep(T_F4); speed = SpeedTable[4]; break;
+    case BUTTON_5: beep(T_G4); speed = SpeedTable[5]; break;
+    case BUTTON_6: beep(T_A4); speed = SpeedTable[6]; break;
+    case BUTTON_7: beep(T_B4); speed = SpeedTable[7]; break;
+    case BUTTON_8: beep(T_C5); speed = SpeedTable[8]; break;
+    case BUTTON_9: beep(T_D5); speed = SpeedTable[9]; break;
+
+    default:
+      if(updated != REMOTE_ANALOG) remoconRobo_setRobotLR(0, 0);
+      remoconRobo_setMotor(CH3, 0);
+    #ifdef DEF_CH4
+      remoconRobo_setMotor(CH4, 0);
+    #endif
+      break;
+    }
+  }
+}
+#endif
+",
+
+	// ブロック定義
 	"blockSpecs": [
 	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
-	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// Block表示	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
 	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
 	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
 
-	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//  type | Block表示                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["h", "Program Start",							"runArduino",					{}],	// 変更禁止
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"pinMode(13,OUTPUT);digitalWrite(13,{0});"}],
 
-		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
+//		["w", "play tone on note %d.noteJ1 beat %d.beats","BuzzerJ1",	  "ド2","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
 		["w", "play tone on note %d.noteJ2 beat %d.beats","BuzzerJ2",	  "ド4","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
-		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
+//		["w", "play tone on note %d.noteJ3 beat %d.beats","BuzzerJ3",	  "ド6","Half",	{"remote":["S","S"],	"func":"remoconRobo_tone({0},{1});"}],
+
+		["R", "read analog A%n ,average %n times,discharge %d.onoff","getAnalogAve",0,1,"Off",	{"remote":["B","S","B",	"S"],"func":"remoconRobo_getAnalog(A0+{0},{1},{2})"}],
 
 		["w", "%d.direction at speed %d.speedvalue",	"setRobot",  "run forward",255,	{"remote":["B","B"],	"func":"remoconRobo_setRobot({0},{1});"}],
 		["w", "stop",									"stopRobot",					{"remote":[],			"func":"remoconRobo_setRobot(0,0);"}],
@@ -81,19 +155,14 @@ Serial.begin(115200);
 
 		["-"],
 
-		["w", "set digital pin %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "set digital pin A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
-		["B", "read digital pin %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
-		["B", "read digital pin A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
-		["R", "read analog pin A%n",					"getAnalog",		0,			{"remote":["B",		"S"],"func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},1)"}],
-		["R", "read analog pin A%n average %n times",	"getAnalogAve",		0,10,		{"remote":["B","S",	"S"],"func":"pinMode(A0+{0},INPUT),remoconRobo_getAnalog(A0+{0},{1})"}],
+		["w", "set digital %n output as %d.digital","setDigital",		13,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
+		["w", "set digital A%n output as %d.digital","setDigitalA",		0,"HIGH",	{"remote":["B","B"],	"func":"pinMode(A0+{0},OUTPUT);digitalWrite(A0+{0},{1});"}],
+		["B", "read digital %n",					"getDigital",		9,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT),digitalRead({0})"}],
+		["B", "read digital A%n",					"getDigitalA",		0,			{"remote":["B",		"B"],"func":"pinMode(A0+{0},INPUT),digitalRead(A0+{0})"}],
 
 		["-"],
 
 		["w", "set servo %d.servoSlot angle %d.servovalue","setServo",		"servo3",90,{"remote":["B","B"],	"func":"if(!srvClass[{0}].attached()) srvClass[{0}].attach(srvPin[{0}]); srvClass[{0}].write({1});"}],
-
-		["w", "Play MP3 track %n with loop %d.onoff",	"playMP3",			1,"Off",	{"remote":["B","B"],	"func":"if(!initMP3) remoconRobo_initMP3(30); initMP3=1; remoconRobo_playMP3({0},{1});"}],
-		["w", "Stop MP3",								"stopMP3",						{"remote":[],			"func":"remoconRobo_stopMP3();"}],
 
 		// enum
 		["r", "%d.noteJ2 .",							"enumNote",			"ド4",		{"enum":"",				"func":"{0}"}],
@@ -108,9 +177,6 @@ Serial.begin(115200);
 		"speedvalue":[255,100,50,0],
 
 		"direction":["run forward","turn left","turn right","run backward","rotate left","rotate right"],
-		"note":["C2","D2","E2","F2","G2","A2","B2","C3","D3","E3","F3","G3","A3","B3",
-				"C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",
-				"C6","D6","E6","F6","G6","A6","B6","C7","D7","E7","F7","G7","A7","B7","C8","D8"],
 		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
 		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
 		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
@@ -124,13 +190,6 @@ Serial.begin(115200);
 		"servo3":0,"servo9":1,"servo10":2,
 		"run forward":0,"turn left":1,"turn right":2,"run backward":3,"rotate left":4,"rotate right":5,
 
-		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
-		"C3":131,"D3":147,"E3":165,"F3":175,"G3":196,"A3":220,"B3":247,
-		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
-		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
-		"C6":1047,"D6":1175,"E6":1319,"F6":1397,"G6":1568,"A6":1760,"B6":1976,
-		"C7":2093,"D7":2349,"E7":2637,"F7":2794,"G7":3136,"A7":3520,"B7":3951,
-		"C8":4186,"D8":4699,
 		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
 		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,
 		"ド4":262,"レ4":294,"ミ4":330,"ファ4":349,"ソ4":392,"ラ4":440,"シ4":494,
@@ -150,12 +209,14 @@ Serial.begin(115200);
 		"ja":{
 			"run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回",
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
+			"CENTER":"真ん中", "stop":"ストップ", "On":"オン", "Off":"オフ",
 
 			"set LED %d.onoff"								:"LEDを %d.onoff",
 			"play tone on note %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
 			"play tone on note %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
 			"play tone on note %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
-			"play tone on note %d.note beat %d.beats"		:"%d.note を %d.beats 鳴らす",
+			"read analog A%n ,average %n times,discharge %d.onoff":"アナログ A%n の %n 回平均 放電 %d.onoff",
+
 			"%d.direction at speed %d.speedvalue"			:"%d.direction 向きに %d.speedvalue の速さで動かす",
 			"set motor%d.motorPort speed %d.motorvalue"		:"モーター %d.motorPort の速さを %d.motorvalue にする",
 			"calibration right %n"							:"右に%n 補正",
@@ -167,15 +228,11 @@ Serial.begin(115200);
 			"analog remote %d.ircodeA pressed"				:"押されたのがアナログ %d.ircodeA のボタン",
 			"get remote X"									:"アナログXの値",
 			"get remote Y"									:"アナログYの値",
-			"set digital pin %n output as %d.digital"		:"デジタルピン %n の出力を %d.digital にする",
-			"set digital pin A%n output as %d.digital"		:"デジタルピン A%n の出力を %d.digital にする",
-			"read digital pin %n"							:"デジタルピン %n",
-			"read digital pin A%n"							:"デジタルピン A%n",
-			"read analog pin A%n"							:"アナログピン A%n",
-			"read analog pin A%n average %n times"			:"アナログピン A%n の %n 回平均",
+			"set digital %n output as %d.digital"			:"デジタル %n の出力を %d.digital にする",
+			"set digital A%n output as %d.digital"			:"デジタル A%n の出力を %d.digital にする",
+			"read digital %n"								:"デジタル %n",
+			"read digital A%n"								:"デジタル A%n",
 			"set servo %d.servoSlot angle %d.servovalue"	:"サーボ %d.servoSlot の角度を %d.servovalue にする",
-			"Play MP3 track %n with loop %d.onoff"			:"MP3の%n 曲目をループ%d.onoff で再生",
-			"Stop MP3"										:"MP3を止める",
 		}
 	}
 }

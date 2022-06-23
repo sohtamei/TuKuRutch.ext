@@ -63,11 +63,12 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 };
 
 enum {
-    MODE_UART = 0,
+    MODE_INVALID = 0,
+    MODE_UART,
     MODE_WS,
     MODE_BLE,
 };
-uint8_t comMode = MODE_UART;
+uint8_t comMode = MODE_INVALID;
 
 void _write(uint8_t* dp, int count)
 {

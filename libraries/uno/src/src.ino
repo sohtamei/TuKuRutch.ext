@@ -34,7 +34,7 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 
 #define LEDC_BUZZER  15
-#define LEDC_PWM_START 2
+#define LEDC_PWM_START 8  // ch2~7だとduration=20ms以下で設定できない
 #define LEDC_PWM_END   14
 
 void setup()
@@ -68,11 +68,12 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 };
 
 enum {
-        MODE_UART = 0,
+        MODE_INVALID = 0,
+        MODE_UART,
         MODE_WS,
         MODE_BLE,
 };
-uint8_t comMode = MODE_UART;
+uint8_t comMode = MODE_INVALID;
 
 void _write(uint8_t* dp, int count)
 {
@@ -110,6 +111,7 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
   {},				// 0x8b:neoPixcel      ()
   {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
+  {'S','B','b'},	// 0x8d:setPwmsDur     (duration,mode,LIST[port,data])
 };
 #define CMD_MIN   0x81
 #define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
@@ -229,6 +231,27 @@ static void _setPwms(uint8_t* buf, int num)
         _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
 }
 
+static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
+{
+      #define PWM_NEUTRAL 307	// 1.5ms/20ms*4096 = 307.2
+    
+      int i;
+      for(i = 0; i < num; i += 3)
+        _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
+    
+      if(duration) {
+            delay(duration);
+        
+            uint16_t data = 0;
+            switch(mode) {
+                case 0: data = 0; break;
+                case 1: data = PWM_NEUTRAL; break;
+            }
+            for(i = 0; i < num; i += 3)
+              _setPwm(buf[i+0], data);
+      }
+}
+
 static void parseData()
 {
       uint8_t cmd = buffer[3];
@@ -285,8 +308,9 @@ static void parseData()
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
           case 0x8b: callOK(); break;
         #if defined(CAMERA_ENABLED)
-          case 0x8c: _setCameraMode(getByte(0),getByte(1)); callOK(); break;
+          case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
         #endif
+          case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;
