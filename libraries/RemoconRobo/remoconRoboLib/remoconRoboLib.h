@@ -31,6 +31,7 @@ enum {
 	DIR_BACK,
 	DIR_ROLL_LEFT,
 	DIR_ROLL_RIGHT,
+	DIR_STOP,
 };
 
 void remoconRobo_setMotor(int ch, int speed);

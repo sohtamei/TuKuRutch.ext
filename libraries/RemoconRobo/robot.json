@@ -176,7 +176,7 @@ if(comMode == MODE_INVALID) {
 		"motorvalue":[255,100,50,0,-50,-100,-255],
 		"speedvalue":[255,100,50,0],
 
-		"direction":["run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"direction":["run forward","turn left","turn right","run backward","rotate left","rotate right","stop"],
 		"noteJ1":["ド2","レ2","ミ2","ファ2","ソ2","ラ2","シ2","ド3","レ3","ミ3","ファ3","ソ3","ラ3","シ3",],
 		"noteJ2":["ド4","レ4","ミ4","ファ4","ソ4","ラ4","シ4","ド5","レ5","ミ5","ファ5","ソ5","ラ5","シ5",],
 		"noteJ3":["ド6","レ6","ミ6","ファ6","ソ6","ラ6","シ6","ド7","レ7","ミ7","ファ7","ソ7","ラ7","シ7","ド8","レ8"],
@@ -188,7 +188,7 @@ if(comMode == MODE_INVALID) {
 	},
 	"values":{
 		"servo3":0,"servo9":1,"servo10":2,
-		"run forward":0,"turn left":1,"turn right":2,"run backward":3,"rotate left":4,"rotate right":5,
+		"run forward":0,"turn left":1,"turn right":2,"run backward":3,"rotate left":4,"rotate right":5,"stop":6,
 
 		"ド2":65,"レ2":73,"ミ2":82,"ファ2":87,"ソ2":98,"ラ2":110,"シ2":123,
 		"ド3":131,"レ3":147,"ミ3":165,"ファ3":175,"ソ3":196,"ラ3":220,"シ3":247,

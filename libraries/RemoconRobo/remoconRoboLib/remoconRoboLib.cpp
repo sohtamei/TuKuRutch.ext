@@ -28,13 +28,14 @@ static volatile int calibLR;
 
 void remoconRobo_tone(int sound, int ms)
 {
-	int TCCR2Alast = TCCR2A;
-	int TCCR2Blast = TCCR2B;
-	int OCR2Alast = OCR2A;
-	tone(PORT_TONE, sound, ms); delay(ms);
-	TCCR2A = TCCR2Alast;
-	TCCR2B = TCCR2Blast;
-	OCR2A = OCR2Alast;
+//	int TCCR2Alast = TCCR2A;
+//	int TCCR2Blast = TCCR2B;
+//	int OCR2Alast = OCR2A;
+	if(sound) tone(PORT_TONE, sound, ms);
+	delay(ms);
+//	TCCR2A = TCCR2Alast;
+//	TCCR2B = TCCR2Blast;
+//	OCR2A = OCR2Alast;
 }
 
 void remoconRobo_init(void)
@@ -98,7 +99,7 @@ void remoconRobo_setRobotLR(int speedL, int speedR)
 struct {
 	int  L;
 	int  R;
-} static const dir_table[6] = {
+} static const dir_table[7] = {
 	//L   R
 	{ 1,  1},	// DIR_FORWARD
 	{ 0,  1},	// DIR_LEFT,
@@ -106,6 +107,7 @@ struct {
 	{-1, -1},	// DIR_BACK,
 	{-1,  1},	// DIR_ROLL_LEFT,
 	{ 1, -1},	// DIR_ROLL_RIGHT,
+	{ 0,  0},	// DIR_STOP,
 };
 
 void remoconRobo_setRobot(int direction, int speed)
