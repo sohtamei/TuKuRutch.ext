@@ -653,7 +653,8 @@ static void sendRemote(void)
   *dp++ = 0x55;
   *dp++ = 1+1+2+2;
   *dp++ = CMD_CHECKREMOTEKEY;
-  *dp++ = remote.checkRemoteKey();
+//*dp++ = remote.checkRemoteKey();
+  *dp++ = remoconRobo_checkRemoteKey();
   data = remote.x; *dp++ = data&0xff; *dp++ = data>>8;
   data = remote.y; *dp++ = data&0xff; *dp++ = data>>8;
   _write(buffer, dp-buffer);
