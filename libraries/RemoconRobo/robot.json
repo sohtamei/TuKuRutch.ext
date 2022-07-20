@@ -21,11 +21,12 @@
 
 #include <Servo.h>
 #include <remoconRoboLib.h>
-#include <analogRemote.h>
+//#include <analogRemote.h>
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template
-void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
-analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
+//void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+//analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
+struct remoconData remote;
 
 Servo srvClass[3];          // for setServo
 const uint8_t srvPin[3] = {3,9,10};
@@ -53,7 +54,9 @@ digitalWrite(A1, LOW);
 	"loop":"
 #ifdef PCMODE
 if(comMode == MODE_INVALID) {
-  int updated = remote.checkUpdated();
+//int updated = remote.checkUpdated();
+  int updated = remoconRobo_checkRemoteUpdated();
+  remote = remoconRobo_getRemoteData();
 
   switch(remote.keys) {
   case BUTTON_POWER:  if(!remoconRobo_incCalib(-1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;

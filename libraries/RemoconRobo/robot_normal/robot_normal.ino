@@ -4,15 +4,15 @@
 #include <Arduino.h>
 #include <util/delay.h>
 #include <remoconRoboLib.h>
-#include <analogRemote.h>
+//#include <analogRemote.h>
 
 //#define DEF_CH4
 
 static int speed = 255;
 static const uint8_t SpeedTable[10] = { 48, 71, 94, 117, 140, 163, 186, 209, 232, 255};
 
-static void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
-static analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
+//static void funcLed(uint8_t onoff) { digitalWrite(13, onoff); }
+//static analogRemote remote(MODE_NORMAL, /*port*/2, funcLed);
 
 void setup()
 {
@@ -34,7 +34,9 @@ void setup()
 void loop()
 {
 	while (1) {
-		int updated = remote.checkUpdated();
+//		int updated = remote.checkUpdated();
+		int updated = remoconRobo_checkRemoteUpdated();
+		struct remoconData remote = remoconRobo_getRemoteData();
 
 		switch(remote.keys) {
 		case BUTTON_POWER:	if(!remoconRobo_incCalib(-1)) {remoconRobo_tone(T_C4+remoconRobo_getCalib(),150);} break;
