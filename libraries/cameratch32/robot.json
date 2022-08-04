@@ -34,10 +34,10 @@
 #define PWM_FREQ 10000
 #define PWM_BITS  8//12
 const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
-  { 8, 4},  // Left, Forward
-  { 9,13},  // Left, Backward
-  {10,33},  // Right, Forward
-  {11,12}}; // Right, Backward
+  {2, 4},  // Left, Forward
+  {3,13},  // Left, Backward
+  {4,33},  // Right, Forward
+  {5,12}}; // Right, Backward
 
 int16_t _speed[2] = {0,0};
 void _setMotor(uint8_t index, int16_t speed)

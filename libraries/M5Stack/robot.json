@@ -1,16 +1,6 @@
 {
 	"name"			: "M5Stack",
-	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
-
-	"sort"			: 12,										// メニュー上の表示順序
-	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者
-	"helpURL"		: "https://github.com/sohtamei/docs/blob/master/M5.md",
-	"productInfoURL": "https://github.com/sohtamei/docs/blob/master/M5.md",
-	"sampleDir"		: "sample/M5Series",						// サンプルディレクトリ
-	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
@@ -104,5 +94,7 @@
 	"translators":{
 		"ja":{
 		}
-	}
+	},
+
+	"sort"			: 12,										// メニュー上の表示順序
 }

@@ -25,7 +25,6 @@ void _setup(const char* ver)
 	pinMode(BAT_OUTPUT_HOLD_PIN,OUTPUT);
 	digitalWrite(BAT_OUTPUT_HOLD_PIN,1);
 	bmm8563_init();
-	bmm8563_close();
 	espcamera_setup();
 
 	initWifi(ver, false, onConnect);

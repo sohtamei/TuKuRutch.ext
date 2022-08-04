@@ -61,19 +61,7 @@ void _setup(const char* ver)
 	M5.Lcd.setTextSize(2);
 
 	M5.Lcd.setCursor(0, 0);
-	if(_getSw(0)) {
-		M5.Lcd.println("ESP SmartConfig");
-		WiFi.mode(WIFI_STA);
-		WiFi.beginSmartConfig();
-		while (!WiFi.smartConfigDone()) {
-			delay(1000);
-			_setLED(1);
-			_tone(P_BUZZER, T_C5, 100);
-			_setLED(0);
-		}
-	} else {
-		M5.Lcd.println(ver);
-	}
+	M5.Lcd.println(ver);
 
 	Serial.begin(115200);
 	initWifi(ver, false, onConnect);

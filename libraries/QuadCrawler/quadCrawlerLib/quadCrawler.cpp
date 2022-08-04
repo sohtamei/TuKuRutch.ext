@@ -693,7 +693,7 @@ void quadCrawler_init(void)
 		if(calib[i] != -1) initFlag = 0;
 	}
 	if(initFlag) {
-		Serial.println("init calib");
+		Serial.println(F("init calib"));
 		memset(calib, 0, sizeof(calib));
 		for(i = 0; i < 8; i++)
 			EEPROM.update(EEPROM_CALIB+i, calib[i]);

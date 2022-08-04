@@ -41,11 +41,12 @@ static void beep(int sound)
 ",
 	// setup処理 (C言語)
 	"setup":"
+Serial.begin(115200);
 pinMode(13, OUTPUT);
 digitalWrite(13, LOW);
 remoconRobo_init();
+remote.probe();
 remoconRobo_tone(500, 50);
-Serial.begin(115200);
 pinMode(A1, OUTPUT);
 digitalWrite(A1, LOW);
 ",

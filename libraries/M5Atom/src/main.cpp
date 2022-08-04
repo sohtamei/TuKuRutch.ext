@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <TukurutchEsp.h>
+#include <M5Atom.h>
 #include "main.h"
 
 
@@ -11,15 +12,17 @@ WebsocketsServer wsServer;
 
 void _setLED(uint8_t onoff)
 {
-	digitalWrite(P_LED, !onoff);
-	pinMode(P_LED, OUTPUT);
+	if(onoff)
+		M5.dis.drawpix(0,0xf00000);
+	else
+		M5.dis.clear();
 }
 
 uint8_t _getSw(uint8_t button)
 {
 	switch(button) {
-	case 0: return M5.BtnA.isPressed();
-	case 1: return M5.BtnB.isPressed();
+	case 0: return M5.Btn.isPressed();
+//	case 1: return M5.BtnB.isPressed();
 //	case 2: return M5.BtnC.isPressed();
 	}
 	return 0;
@@ -45,36 +48,15 @@ float getIMU(uint8_t index)
 
 static void onConnect(String ip)
 {
-	M5.Lcd.fillScreen(BLACK);
-	M5.Lcd.setCursor(0,0);
-	M5.Lcd.println(ip);
+	_setLED(1);
 	wsServer.listen(PORT_WEBSOCKET);
+	Serial.println(ip);
 }
 
 void _setup(const char* ver)
 {
 	M5.begin(true, true, true); // init lcd, power, serial
 	M5.IMU.Init();
-	M5.Lcd.setRotation(3);
-
-	M5.Lcd.fillScreen(BLACK);
-	M5.Lcd.setTextSize(2);
-
-	M5.Lcd.setCursor(0, 0);
-	if(_getSw(0)) {
-		M5.Lcd.println("ESP SmartConfig");
-		WiFi.mode(WIFI_STA);
-		WiFi.beginSmartConfig();
-		while (!WiFi.smartConfigDone()) {
-			delay(1000);
-			_setLED(1);
-			_tone(P_BUZZER, T_C5, 100);
-			_setLED(0);
-		}
-	} else {
-		M5.Lcd.println(ver);
-	}
-
 	Serial.begin(115200);
 	initWifi(ver, false, onConnect);
 }

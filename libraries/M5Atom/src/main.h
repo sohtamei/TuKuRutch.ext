@@ -8,6 +8,5 @@ void _loop(void);
 void _setLED(uint8_t onoff);
 uint8_t _getSw(uint8_t button);
 float getIMU(uint8_t index);
-void _tone(int sound, int ms);
 
 #endif  // main_h

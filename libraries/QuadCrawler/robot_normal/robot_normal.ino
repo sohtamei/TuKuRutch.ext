@@ -30,6 +30,7 @@ void setup()
 	pinMode(P_LED, OUTPUT);
 	digitalWrite(P_LED, LOW);
 	quadCrawler_init();
+    remote.probe();
 	quadCrawler_colorWipe(COLOR_PURPLE);
 	quadCrawler_beep(100);
 	Serial.println("Normal: " mVersion);

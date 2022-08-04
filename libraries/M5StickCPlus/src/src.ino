@@ -35,7 +35,26 @@ enum {
 
 #define LEDC_BUZZER  15
 #define LEDC_PWM_START 2
-#define LEDC_PWM_END   14
+#define LEDC_PWM_END   7
+/*
+ * LEDC Chan to Group/Channel/Timer Mapping
+** ledc: 0  => Group: 0, Channel: 0, Timer: 0 //CameraWebServer
+** ledc: 1  => Group: 0, Channel: 1, Timer: 0
+** ledc: 2  => Group: 0, Channel: 2, Timer: 1 x
+** ledc: 3  => Group: 0, Channel: 3, Timer: 1 x
+** ledc: 4  => Group: 0, Channel: 4, Timer: 2 x
+** ledc: 5  => Group: 0, Channel: 5, Timer: 2 x
+** ledc: 6  => Group: 0, Channel: 6, Timer: 3 x
+** ledc: 7  => Group: 0, Channel: 7, Timer: 3 x
+** ledc: 8  => Group: 1, Channel: 0, Timer: 0 //lowSpeed(duration=20ms以下で設定できない)
+** ledc: 9  => Group: 1, Channel: 1, Timer: 0
+** ledc: 10 => Group: 1, Channel: 2, Timer: 1
+** ledc: 11 => Group: 1, Channel: 3, Timer: 1
+** ledc: 12 => Group: 1, Channel: 4, Timer: 2
+** ledc: 13 => Group: 1, Channel: 5, Timer: 2
+** ledc: 14 => Group: 1, Channel: 6, Timer: 3
+** ledc: 15 => Group: 1, Channel: 7, Timer: 3 //buzzer
+*/
 
 void setup()
 {
@@ -49,7 +68,7 @@ void setup()
       _bleSetup();
     #endif
     _setup(mVersion);
-      _Serial.println("PC mode: " mVersion);
+      _Serial.println(F("PC mode: " mVersion));
 }
 
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
@@ -59,7 +78,7 @@ static uint16_t _packetLen = 4;
 #define ARG_NUM  16
 #define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
 static uint8_t offsetIdx[ARG_NUM] = {0};
-static const char ArgTypesTbl[][ARG_NUM] = {
+static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
   {'B',},
@@ -80,11 +99,12 @@ static const char ArgTypesTbl[][ARG_NUM] = {
 };
 
 enum {
-        MODE_UART = 0,
+        MODE_INVALID = 0,
+        MODE_UART,
         MODE_WS,
         MODE_BLE,
 };
-uint8_t comMode = MODE_UART;
+uint8_t comMode = MODE_INVALID;
 
 void _write(uint8_t* dp, int count)
 {
@@ -108,7 +128,7 @@ void _println(const char* mes)
 }
 
 // sync with scratch-vm/src/extensions/scratch3_tukurutch/comlib.js
-static const char ArgTypesTbl2[][ARG_NUM] = {
+static const PROGMEM char ArgTypesTbl2[][ARG_NUM] = {
   {'B','B'},		// 0x81:wire_begin     (SDA, SCL)
   {'B','b'},		// 0x82:wire_write     (adrs, [DATA])          ret:0-OK
   {'B','b','B'},	// 0x83:wire_writeRead (adrs, [DATA], readNum) ret:[DATA]-OK, NULL-ERROR
@@ -120,14 +140,16 @@ static const char ArgTypesTbl2[][ARG_NUM] = {
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
-      // neoPixcel
+  {},				// 0x8b:neoPixcel      ()
+  {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
+  {'S','B','b'},	// 0x8d:setPwmsDur     (duration,mode,LIST[port,data])
 };
 #define CMD_MIN   0x81
 #define CMD_MAX  (CMD_MIN + sizeof(ArgTypesTbl2)/sizeof(ArgTypesTbl2[0]) - 1)
 
 // sync with scratch-vm/src/extensions/scratch3_tukurutch/comlib.js,
 //           mBlock/src/extensions/ExtensionManager.as
-static const char ArgTypesTbl3[][ARG_NUM] = {
+static const PROGMEM char ArgTypesTbl3[][ARG_NUM] = {
   {},				// 0xFB:statusWifi     ()                      ret:status SSID ip
   {},				// 0xFC:scanWifi       ()                      ret:SSID1 SSID2 SSID3 ..
   {'s','s'},		// 0xFD:connectWifi    (ssid,pass)             ret:status
@@ -208,15 +230,7 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
     #endif
 }
 
-#if defined(__AVR_ATmega328P__)
-// 3,5,6,9,10,11  8bit
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-// 5と11除く、8bit、3chまで
-  #define _setPwm(port, data) analogWrite(port, (data)>>4)
-
-#elif defined(ESP32)
+#if defined(ESP32)
 static uint8_t ledc2port[LEDC_PWM_END+1] = {0};
 static void _setPwm(uint8_t port, uint16_t data)
 {
@@ -234,6 +248,11 @@ static void _setPwm(uint8_t port, uint16_t data)
             }
       }
 }
+#else
+// 328P:3,5,6,9,10,11  8bit
+// nRF51,nRF52:5と11除く、8bit、3chまで
+// RP2040
+  #define _setPwm(port, data) analogWrite(port, (data)>>4)
 #endif
 
 static void _setPwms(uint8_t* buf, int num)
@@ -243,10 +262,31 @@ static void _setPwms(uint8_t* buf, int num)
         _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
 }
 
+static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
+{
+      #define PWM_NEUTRAL 307	// 1.5ms/20ms*4096 = 307.2
+    
+      int i;
+      for(i = 0; i < num; i += 3)
+        _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
+    
+      if(duration) {
+            delay(duration);
+        
+            uint16_t data = 0;
+            switch(mode) {
+                case 0: data = 0; break;
+                case 1: data = PWM_NEUTRAL; break;
+            }
+            for(i = 0; i < num; i += 3)
+              _setPwm(buf[i+0], data);
+      }
+}
+
 static void parseData()
 {
       uint8_t cmd = buffer[3];
-      const char *ArgTypes = NULL;
+      const PROGMEM char *ArgTypes = NULL;
       if(cmd < ITEM_NUM) {
              ArgTypes = ArgTypesTbl[cmd];
         
@@ -261,9 +301,11 @@ static void parseData()
       memset(offsetIdx, 0, sizeof(offsetIdx));
       if(ArgTypes) {
             uint16_t offset = 0;
-            for(i = 0; i < ARG_NUM && ArgTypes[i]; i++) {
+            for(i = 0; i < ARG_NUM; i++) {
+                  uint8_t type = pgm_read_byte(ArgTypes+i);
+                  if(type == 0) break;
                   offsetIdx[i] = offset;
-                  switch(ArgTypes[i]) {
+                  switch(type) {
                       case 'B': offset += 1; break;
                       case 'S': offset += 2; break;
                       case 'L': offset += 4; break;
@@ -289,10 +331,10 @@ static void parseData()
         case 14: M5.Lcd.println(getString(0));; callOK(); break;
         case 15: M5.Lcd.drawString(getString(0),getShort(1),getShort(2),getByte(3));; callOK(); break;
         case 16: M5.Lcd.fillScreen(getShort(0)); M5.Lcd.setCursor(0,0);; callOK(); break;
-        #if defined(__AVR_ATmega328P__) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
-          case 0x81: Wire.begin(); callOK(); break;
-        #else
+        #if defined(ESP32)
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+        #else
+          case 0x81: Wire.begin(); callOK(); break;
         #endif
           case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
           case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
@@ -304,6 +346,11 @@ static void parseData()
           case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
           case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
+          case 0x8b: callOK(); break;
+        #if defined(CAMERA_ENABLED)
+          case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        #endif
+          case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
         #if defined(ESP32)
           // WiFi設定
           case 0xFB: sendString(statusWifi()); break;

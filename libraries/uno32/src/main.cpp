@@ -69,20 +69,6 @@ void _setup(const char* ver)
 
 	_tone(P_BUZZER, T_C5, 100);
 	Serial.begin(115200);
-	if(_getSw(1)) {
-		delay(100);
-		_tone(P_BUZZER, T_C5, 100);
-		Serial.println("Waiting for SmartConfig.");
-		WiFi.mode(WIFI_STA);
-		WiFi.beginSmartConfig();
-		while (!WiFi.smartConfigDone()) {
-			delay(1000);
-			_setLED(1,1);
-			_tone(P_BUZZER, T_C5, 100);
-			_setLED(1,0);
-		}
-		Serial.println("SmartConfig received.");
-	}
 	initWifi(ver, false, onConnect);
 }
 

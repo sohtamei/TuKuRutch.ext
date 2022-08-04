@@ -28,6 +28,7 @@ void _setup(const char* ver)
 #endif
 	quadCrawler_init();
 	espcamera_setup();
+	remote.probe();
 	quadCrawler_colorWipe(COLOR_PURPLE);
 	quadCrawler_tone(T_C4, 300);
 	quadCrawler_tone(T_D4, 300);

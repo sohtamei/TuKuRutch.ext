@@ -53,6 +53,7 @@ Serial.begin(115200);
 pinMode(P_LED, OUTPUT);
 digitalWrite(P_LED, LOW);
 quadCrawler_init();
+remote.probe();
 quadCrawler_colorWipe(COLOR_PURPLE);
 quadCrawler_beep(100);
 ",
@@ -252,7 +253,6 @@ if(comMode == MODE_INVALID) {
     // アナログリモコンのJOYSTICK操作のとき速度設定
     quadCrawler_setSpeed(25000 / remote.xyLevel, remote.x, remote.y);
   }
-  quadCrawler_servoLoop();
 
   uint16_t elapsed = (timer0_millis - sonner_time);
   if(elapsed >= 100) {
