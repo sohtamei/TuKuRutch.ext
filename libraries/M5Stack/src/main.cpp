@@ -52,7 +52,7 @@ void _setup(const char* ver)
 {
 	M5.begin(true, true, true); // init lcd, sd card, serial
 	M5.Power.begin();    // use battery
-	M5.IMU.Init();
+//	M5.IMU.Init();
 
 	M5.Lcd.fillScreen(BLACK);
 	M5.Lcd.setTextSize(2);
