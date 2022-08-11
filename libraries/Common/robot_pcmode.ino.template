@@ -30,6 +30,7 @@ RSP_BUF     = 7,
 };
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
+#define getBufLen2(n) (buffer+5),(_packetLen-5)
 
 #define LEDC_BUZZER  15
 #define LEDC_PWM_START 2
@@ -70,7 +71,11 @@ void setup()
   _Serial.println(F("PC mode: " mVersion));
 }
 
+#ifdef RECV_BUFFER
+static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+#else
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+#endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
 
@@ -268,7 +273,11 @@ static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
 
 static void parseData()
 {
-  uint8_t cmd = buffer[3];
+  uint8_t cmd;
+  if(buffer[1] == 0x54) {
+    cmd = buffer[4];
+  } else if(buffer[1] == 0x55) {
+  cmd = buffer[3];
   const PROGMEM char *ArgTypes = NULL;
   if(cmd < ITEM_NUM) {
      ArgTypes = ArgTypesTbl[cmd];
@@ -300,6 +309,7 @@ static void parseData()
       }
       if(4+offset > _packetLen) return;
     }
+  }
   }
 
   switch(cmd){
@@ -364,7 +374,7 @@ int16_t _readUart(void)
 }
 
 static uint8_t blePeri_enable = false;
-static uint8_t _index = 0;
+static uint16_t _index = 0;
 void loop()
 {
   int16_t c;
@@ -379,11 +389,18 @@ void loop()
         _index = 0;
       break;
     case 2:
-      if(c != 0x55) 
+      if(c != 0x55 && c != 0x54)
         _index = 0;
       break;
     case 3:
-      _packetLen = 3+c;
+      if(buffer[1] == 0x55) {
+        _packetLen = 3+c;
+      }
+      break;
+    case 4:
+      if(buffer[1] == 0x54) {
+        _packetLen = 4+buffer[2]+(c<<8);
+      }
       break;
     }
     if(_index >= _packetLen) {

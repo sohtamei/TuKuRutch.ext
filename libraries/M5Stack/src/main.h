@@ -4,6 +4,7 @@
 #define M5STACK_MPU6886 
 // #define M5STACK_MPU9250 
 #include <M5Stack.h>
+#define RECV_BUFFER 65536
 
 // ポート定義
 #define P_BUZZER	25
