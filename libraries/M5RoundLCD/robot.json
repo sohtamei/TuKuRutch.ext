@@ -1,5 +1,5 @@
 {
-	"name"			: "M5Stack",
+	"name"			: "M5RoundLCD",
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -14,9 +14,8 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"M5STACK 1.0\"
+#define mVersion \"M5RoundLCD 1.0\"
 
-#include \"TukurutchEsp.h\"
 #include \"main.h\"
 #define RECV_BUFFER 65536
 ",
@@ -61,7 +60,7 @@
 		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"Ascii16",{"remote":["s","S","S","B"],"func":"lcd.drawString({0},{1},{2},{3});"}],
 		["w", "fill screen with %d.color",				"fillScreen",		"BLACK",	{"remote":["S"],		"func":"lcd.fillScreen({0}); lcd.setCursor(0,0);"}],
 		["w", "draw jpg %s",							"drawJpg",			"230100010071c1000065bd2d350100000000000000000000000000000000000000000000",
-																						{"remote":["b2"],		"func":"lcd.drawJpg({0});"}],
+																						{"remote":["b2"],		"func":"lcd.startWrite();lcd.drawJpg({0});lcd.endWrite();"}],
 	],
 	"menus": {
 		"onoff":["On","Off"],

@@ -4,7 +4,12 @@
 #define M5STACK_MPU6886 
 // #define M5STACK_MPU9250 
 #include <M5Stack.h>
-#define RECV_BUFFER 65536
+
+#define LGFX_M5STACK               // M5Stack (Basic / Gray / Go / Fire)
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
+#include <LGFX_AUTODETECT.hpp>
+extern LGFX lcd;
 
 // ポート定義
 #define P_BUZZER	25
