@@ -383,5 +383,78 @@ quadCrawler_servoLoop();
 
 			"off":"消す","red":"赤色","green":"緑色","blue":"青色","yellow":"黄色","purple":"紫色","lightblue":"水色",
 		}
+	},
+
+	"scratch3constructor":"
+		this.remoteKey = 0;
+		this.remoteX = 0;
+		this.remoteY = 0;
+",
+
+	"scratch3blocks":"
+{blockType: BlockType.BOOLEAN, opcode: 'checkRemoteKey', text: [
+	'remote pressed',
+	'リモコンボタンが押された'
+][this._locale], arguments: {
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'isRemoteKey', text: [
+	'ir remote [ARG1] pressed',
+	'押されたのが [ARG1] のボタン'
+][this._locale], arguments: {
+    ARG1: { type: ArgumentType.STRING, defaultValue:'69', menu: 'ircode' },
+}},
+
+{blockType: BlockType.BOOLEAN, opcode: 'isARemoteKey', text: [
+	'analog remote [ARG1] pressed',
+	'押されたのがアナログ [ARG1] のボタン'
+][this._locale], arguments: {
+    ARG1: { type: ArgumentType.STRING, defaultValue:'113', menu: 'ircodeA' },
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getRemoteX', text: [
+	'get remote X',
+	'アナログXの値'
+][this._locale], arguments: {
+}},
+
+{blockType: BlockType.REPORTER, opcode: 'getRemoteY', text: [
+	'get remote Y',
+	'アナログYの値'
+][this._locale], arguments: {
+}},
+",
+
+	"scratch3menus":"",
+
+	"scratch3funcs":"
+	checkRemoteKey(args) {
+		let ret = this.comlib.sendRecv(0x80, {}, {});
+		if(!(ret instanceof Promise)) return ret;
+
+		const _this = this;
+		return ret.then(data => {
+			let tmp2 = new DataView(data.buffer);
+			_this.remoteKey = tmp2.getUint8(0);
+			_this.remoteX = tmp2.getInt16(1, true);
+			_this.remoteY = tmp2.getInt16(3, true);
+		//	console.log(_this.remoteKey, _this.remoteX, _this.remoteY);
+			return _this.remoteKey;
+		});
 	}
+	isRemoteKey(args) {
+		return (this.remoteKey==Number(args.ARG1));
+	}
+	isARemoteKey(args) {
+		return (this.remoteKey==Number(args.ARG1));
+	}
+
+	getRemoteX(args) {
+		return this.remoteX;
+	}
+
+	getRemoteY(args) {
+		return this.remoteY;
+	}
+",
 }

@@ -5,6 +5,7 @@
 #include "main.h"
 
 
+LGFX lcd;
 WebsocketsServer wsServer;
 
 #define numof(a) (sizeof(a)/sizeof((a)[0]))
@@ -45,25 +46,25 @@ float getIMU(uint8_t index)
 
 static void onConnect(String ip)
 {
-	M5.Lcd.fillScreen(BLACK);
-	M5.Lcd.setCursor(0,0);
-	M5.Lcd.println(ip);
+	lcd.fillScreen(TFT_BLACK);
+	lcd.setCursor(0,0);
+	lcd.println(ip);
 	wsServer.listen(PORT_WEBSOCKET);
 }
 
 void _setup(const char* ver)
 {
-	M5.begin(true, true, true); // init lcd, power, serial
+	M5.begin(false, true, true); // init lcd, power, serial
 	M5.IMU.Init();
-	M5.Lcd.setRotation(3);
+	lcd.init();
+	lcd.setRotation(3);
 
-	M5.Lcd.fillScreen(BLACK);
-	M5.Lcd.setTextSize(2);
+	lcd.fillScreen(TFT_BLACK);
+	lcd.setTextSize(2);
 
-	M5.Lcd.setCursor(0, 0);
-	M5.Lcd.println(ver);
+	lcd.setCursor(0, 0);
+	lcd.println(ver);
 
-	Serial.begin(115200);
 	initWifi(ver, false, onConnect);
 }
 
