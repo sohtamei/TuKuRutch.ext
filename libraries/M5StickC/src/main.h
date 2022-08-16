@@ -12,6 +12,12 @@
   #include <M5StickCPlus.h>
 #endif
 
+#define LGFX_M5STICK_C             // M5Stick C / CPlus
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
+#include <LGFX_AUTODETECT.hpp>
+extern LGFX lcd;
+
 // ポート定義
 #define P_LED		10
 #define P_BUZZER	2
