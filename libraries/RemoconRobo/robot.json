@@ -3,7 +3,7 @@
 	"scratch3ext"	: "RemoconRobo",							// scratch3 ext名[,SupportCamera]
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
-	"sort"			: 50,										// メニュー上の表示順序
+	"sort"			: 1,										// メニュー上の表示順序
 	"sampleDir"		: "sample/RemoconRobo",						// サンプルディレクトリ
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template

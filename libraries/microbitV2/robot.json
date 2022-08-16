@@ -1,11 +1,8 @@
 {
 	"name"			: "microbitV2",
-	"port"			: 0,										// 変更禁止
 	"boardType"		: "sandeepmistry:nRF5:BBCmicrobitV2",		// package:platform:board
 
-	"sort"			: 12,										// メニュー上の表示順序
-	"extensionAuthor": "sohtamei",								// この拡張スクリプトの作者	"javascriptURL"	: "robot.js",
-	"normalFW"		: "",										// 最初のプログラム,  .ino, .cpp.standard.hex
+	"sort"			: 41,										// メニュー上の表示順序
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_softdevice=BBCmicrobitV2_s113"],
 

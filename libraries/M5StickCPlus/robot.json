@@ -125,7 +125,7 @@
 		const org_height = _renderer.canvas.height;
 		_renderer.canvas.width = TARGET_WIDTH;
 		_renderer.canvas.height = TARGET_HEIGHT;
-		_renderer.draw();
+		_renderer.drawWithMask(util.sequencer.runtime.ioDevices.video._skinId);
 	//	console.log(_renderer.canvas);
 		const tmpData = _renderer.canvas.toDataURL('image/jpeg', 0.5 /*quality*/);
 	//	console.log(tmpData);
@@ -147,5 +147,5 @@
 	}
 ",
 
-	"sort"			: 12,										// メニュー上の表示順序
+	"sort"			: 20,										// メニュー上の表示順序
 }

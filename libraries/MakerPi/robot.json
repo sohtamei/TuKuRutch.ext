@@ -213,5 +213,5 @@ void _colorWipe(uint8_t color)
 		}
 	},
 
-	"sort"			: 50,										// メニュー上の表示順序
+	"sort"			: 61,										// メニュー上の表示順序
 }

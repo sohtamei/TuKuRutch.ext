@@ -69,5 +69,5 @@ void _setLedc(uint32_t clock);
 		"On":1,"Off":0,
 	},
 
-	"sort"			: 11,										// メニュー上の表示順序
+	"sort"			: 31,										// メニュー上の表示順序
 }

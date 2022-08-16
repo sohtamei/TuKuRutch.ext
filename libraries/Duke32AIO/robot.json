@@ -1,14 +1,11 @@
 {
 	"name"			: "Duke32AIO",
-	"port"			: 0,										// 変更禁止
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
-	"sort"			: 50,										// メニュー上の表示順序
-	"extensionAuthor": "Thousandiy",							// この拡張スクリプトの作者
+	"sort"			: 61,										// メニュー上の表示順序
 	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#Duke32AIO",
 	"productInfoURL": "https://thousandiy.wordpress.com/2018/04/11/duke32_aio/",
 	"sampleDir"		: "sample/WifiCar",							// サンプルディレクトリ
-	"javascriptURL"	: "robot.js",
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
 	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
