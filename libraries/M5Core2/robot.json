@@ -1,28 +1,21 @@
 {
-	"name"			: "M5StickCPlus",
-	"scratch3ext"	: "M5Series",								// scratch3 ext名[,SupportCamera]
+	"name"			: "M5Core2",
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
-						"custom_PSRAM=esp32_disabled",
+						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_750000"],
-
-	"scratch3burn"	: [
-			{"name":"M5StickC", "type":"esp32", "baudrate":750000, "binPath":"M5StickC"},
-			{"name":"M5StickCPlus", "type":"esp32", "baudrate":750000, "binPath":"M5StickCPlus"},
-			{"name":"M5Stack", "type":"esp32", "baudrate":921600, "binPath":"M5Stack"},
-			{"name":"M5Core2", "type":"esp32", "baudrate":921600, "binPath":"M5Core2"},
-			{"name":"M5Atom", "type":"esp32", "baudrate":1500000, "binPath":"M5Atom"},
-	],
+						"custom_UploadSpeed=esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
+#define mVersion \"M5CORE2 1.0\"
+
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 #define RECV_BUFFER 65536
@@ -106,47 +99,5 @@
 		}
 	},
 
-	"scratch3constructor":"",
-
-	"scratch3blocks":"
-{blockType: BlockType.COMMAND, opcode: 'drawStage', text: 'draw stage', arguments: {
-}},
-",
-
-	"scratch3menus":"",
-
-	"scratch3funcs":"
-	drawStage(args,util) {
-		// 480x360(scratch) - 510x382(canvas) - M5Stack(320x240)
-		const TARGET_WIDTH = 320;
-		const TARGET_HEIGHT = 240;
-
-		const _renderer = this.comlib._runtime.renderer;
-		const org_width = _renderer.canvas.width;
-		const org_height = _renderer.canvas.height;
-		_renderer.canvas.width = TARGET_WIDTH;
-		_renderer.canvas.height = TARGET_HEIGHT;
-		_renderer.drawWithMask(util.sequencer.runtime.ioDevices.video._skinId);
-	//	console.log(_renderer.canvas);
-		const tmpData = _renderer.canvas.toDataURL('image/jpeg', 0.5 /*quality*/);
-	//	console.log(tmpData);
-		args.ARG1 = Base64Util.base64ToUint8Array(tmpData.replace('data:image/jpeg;base64,', ''));
-		console.log('size='+args.ARG1.length);
-		_renderer.canvas.width = org_width;
-		_renderer.canvas.height = org_height;
-/*
-		const tmpCanvas = document.createElement('canvas');
-		tmpCanvas.width = colorInfo.width;
-		tmpCanvas.height = colorInfo.height;
-		const tmpCtx = tmpCanvas.getContext('2d');
-		const imageData = tmpCtx.createImageData(colorInfo.width, colorInfo.height);
-		imageData.data.set(colorInfo.data);
-		tmpCtx.putImageData(imageData, 0, 0);
-		console.log(tmp);
-*/
-		return this.sendRecv('drawJpg', args);
-	}
-",
-
-	"sort"			: 20,										// メニュー上の表示順序
+	"sort"			: 21,										// メニュー上の表示順序
 }
