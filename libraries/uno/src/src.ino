@@ -32,6 +32,7 @@ enum {
 };
 
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
+#define getBufLen2(n) (buffer+5),(_packetLen-5)
 
 #define LEDC_BUZZER  15
 #define LEDC_PWM_START 2
@@ -71,7 +72,11 @@ void setup()
       _Serial.println(F("PC mode: " mVersion));
 }
 
+#ifdef RECV_BUFFER
+static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+#else
 static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+#endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
 
@@ -82,7 +87,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {},
   {'B','B',},
   {'S','S',},
-  {'B','S',},
+  {'B','S','B',},
   {'B',},
 };
 
@@ -273,44 +278,49 @@ static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
 
 static void parseData()
 {
-      uint8_t cmd = buffer[3];
-      const PROGMEM char *ArgTypes = NULL;
-      if(cmd < ITEM_NUM) {
-             ArgTypes = ArgTypesTbl[cmd];
+      uint8_t cmd;
+      if(buffer[1] == 0x54) {
+            cmd = buffer[4];
+      } else if(buffer[1] == 0x55) {
+          cmd = buffer[3];
+          const PROGMEM char *ArgTypes = NULL;
+          if(cmd < ITEM_NUM) {
+                 ArgTypes = ArgTypesTbl[cmd];
+            
+          } else if(cmd >= CMD_MIN && cmd <= CMD_MAX) {
+                 ArgTypes = ArgTypesTbl2[cmd-CMD_MIN];
+            
+          } else if(cmd >= CMD3_MIN && cmd <= CMD3_MAX) {
+                 ArgTypes = ArgTypesTbl3[cmd-CMD3_MIN];
+          }
         
-      } else if(cmd >= CMD_MIN && cmd <= CMD_MAX) {
-             ArgTypes = ArgTypesTbl2[cmd-CMD_MIN];
-        
-      } else if(cmd >= CMD3_MIN && cmd <= CMD3_MAX) {
-             ArgTypes = ArgTypesTbl3[cmd-CMD3_MIN];
-      }
-    
-      uint8_t i;
-      memset(offsetIdx, 0, sizeof(offsetIdx));
-      if(ArgTypes) {
-            uint16_t offset = 0;
-            for(i = 0; i < ARG_NUM; i++) {
-                  uint8_t type = pgm_read_byte(ArgTypes+i);
-                  if(type == 0) break;
-                  offsetIdx[i] = offset;
-                  switch(type) {
-                      case 'B': offset += 1; break;
-                      case 'S': offset += 2; break;
-                      case 'L': offset += 4; break;
-                      case 'F': offset += 4; break;
-                      case 'D': offset += 8; break;
-                      case 's': offset += strlen((char*)buffer+4+offset)+1; break;
-                      case 'b': offset += buffer[4+offset]+1; break;
-                      default: break;
-                  }
-                  if(4+offset > _packetLen) return;
-            }
+          uint8_t i;
+          memset(offsetIdx, 0, sizeof(offsetIdx));
+          if(ArgTypes) {
+                uint16_t offset = 0;
+                for(i = 0; i < ARG_NUM; i++) {
+                      uint8_t type = pgm_read_byte(ArgTypes+i);
+                      if(type == 0) break;
+                      offsetIdx[i] = offset;
+                      switch(type) {
+                          case 'B': offset += 1; break;
+                          case 'S': offset += 2; break;
+                          case 'L': offset += 4; break;
+                          case 'F': offset += 4; break;
+                          case 'D': offset += 8; break;
+                          case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+                          case 'b': offset += buffer[4+offset]+1; break;
+                          default: break;
+                      }
+                      if(4+offset > _packetLen) return;
+                }
+          }
       }
     
       switch(cmd){
         case 1: _setLED(getByte(0),getByte(1));; callOK(); break;
         case 2: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
-        case 3: sendShort((_getAdc1(getByte(0),getShort(1)))); break;
+        case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
         #if defined(ESP32)
           case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
@@ -372,7 +382,7 @@ int16_t _readUart(void)
 }
 
 static uint8_t blePeri_enable = false;
-static uint8_t _index = 0;
+static uint16_t _index = 0;
 void loop()
 {
       int16_t c;
@@ -387,11 +397,18 @@ void loop()
                     _index = 0;
                   break;
                 case 2:
-                  if(c != 0x55) 
+                  if(c != 0x55 && c != 0x54)
                     _index = 0;
                   break;
                 case 3:
-                  _packetLen = 3+c;
+                  if(buffer[1] == 0x55) {
+                        _packetLen = 3+c;
+                  }
+                  break;
+                case 4:
+                  if(buffer[1] == 0x54) {
+                        _packetLen = 4+buffer[2]+(c<<8);
+                  }
                   break;
             }
             if(_index >= _packetLen) {

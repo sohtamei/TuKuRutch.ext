@@ -16,10 +16,18 @@ WebsocketsServer wsServer;
 struct port {uint8_t sig; uint8_t gnd;};
 
 const uint8_t sensorTable[4] = {35, 34, 36, 39};
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
+uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 {
 	if(!idx || idx > numof(sensorTable)) return 0;
-	return getAdc1(sensorTable[idx-1], count);
+
+	uint8_t ch = sensorTable[idx-1];
+	if(discharge) {
+		digitalWrite(ch, LOW);
+		pinMode(ch, OUTPUT);		// 電荷discharge (リモコンロボで1000mVくらいに帯電してしまう)
+		delay(1);
+		pinMode(ch, INPUT);
+	}
+	return getAdc1(ch, count);
 }
 
 const struct port ledTable[6] = {{2,0}, {26,25}, {17,16}, {27,14}, {12,13}, {5,23}};

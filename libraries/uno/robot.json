@@ -30,7 +30,7 @@
 
 		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
 		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
-		["R", "Sensor %d.sensor average %n times",			"getAnalogAve",		1,4,		{"remote":["B","S",	"S"],"func":"_getAdc1({0},{1})"}],
+		["R", "Sensor %d.sensor average %n times,discharge %d.onoff","getAnalogAve",1,4,"Off",	{"remote":["B","S","B",	"S"],"func":"_getAdc1({0},{1},{2})"}],
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
 	],
 
@@ -64,10 +64,10 @@
 			"play tone %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
 			"play tone %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
 			"play tone %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
-			"Sensor %d.sensor average %n times"		:"センサ %d.sensor の %n 回平均",
+			"Sensor %d.sensor average %n times,discharge %d.onoff":"センサ %d.sensor の %n 回平均 放電 %d.onoff",
 			"SW %d.sw"								:"スイッチ %d.sw",
 		}
 	},
 
-	"sort"			: 11,										// メニュー上の表示順序
+	"sort"			: 10,
 }

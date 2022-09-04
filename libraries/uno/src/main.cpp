@@ -16,16 +16,22 @@ enum {
 struct port {uint8_t sig; uint8_t gnd;};
 
 const uint8_t sensorTable[4] = {A2, A3, A4, A5};
-uint16_t _getAdc1(uint8_t idx, uint16_t count)
+uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 {
 	if(!idx || idx > numof(sensorTable)) return 0;
-	idx--;
 
+	uint8_t ch = sensorTable[idx-1];
+	if(discharge) {
+		digitalWrite(ch, LOW);
+		pinMode(ch, OUTPUT);		// 電荷discharge (リモコンロボで1000mVくらいに帯電してしまう)
+		delay(1);
+		pinMode(ch, INPUT);
+	}
 	if(count == 0) count = 1;
 	count *= 100;
 	uint32_t sum = 0;
 	for(int i = 0; i < count; i++)
-		sum += analogRead(sensorTable[idx]);
+		sum += analogRead(ch);
 	sum = ((sum / count) * 625UL) / 128;  // 1024->5000
 	return sum;
 }
