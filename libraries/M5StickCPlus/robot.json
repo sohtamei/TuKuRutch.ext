@@ -17,6 +17,7 @@
 			{"name":"M5Stack", "type":"esp32", "baudrate":921600, "binPath":"M5Stack"},
 			{"name":"M5Core2", "type":"esp32", "baudrate":921600, "binPath":"M5Core2"},
 			{"name":"M5Atom", "type":"esp32", "baudrate":1500000, "binPath":"M5Atom"},
+			{"name":"M5RoundLCD", "type":"esp32c3", "baudrate":921600, "binPath":"M5RoundLCD"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

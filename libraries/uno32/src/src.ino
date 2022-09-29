@@ -1,5 +1,3 @@
-// copyright to SohtaMei 2019.
-
 #define PCMODE
 
 #define mVersion "uno32 1.0"  // マイコン拡張名＋version
@@ -36,11 +34,24 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 #define getBufLen2(n) (buffer+5),(_packetLen-5)
 
-#define LEDC_BUZZER  15
-#define LEDC_PWM_START 2
-#define LEDC_PWM_END   7
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  #define LEDC_BUZZER   15
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   7
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  #define LEDC_BUZZER    7   // by hajimef
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   6
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define LEDC_BUZZER    7
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   6
+#else
+  #pragma message "unsupported device"
+#endif
+
 /*
- * LEDC Chan to Group/Channel/Timer Mapping
+ * LEDC Chan to Group/Channel/Timer Mapping (ESP32)
 ** ledc: 0  => Group: 0, Channel: 0, Timer: 0 //CameraWebServer
 ** ledc: 1  => Group: 0, Channel: 1, Timer: 0
 ** ledc: 2  => Group: 0, Channel: 2, Timer: 1 x
@@ -190,7 +201,7 @@ static void digiWrite(uint8_t* buf, int num)
 
 static int _analogRead(uint8_t port, uint16_t count)
 {
-    #if defined(ESP32)
+    #if 0//defined(ESP32)
       return getAdc1(port,count);
     #else
       pinMode(port, INPUT);
@@ -201,11 +212,13 @@ static int _analogRead(uint8_t port, uint16_t count)
         sum += analogRead(port);
     
      #if defined(__AVR_ATmega328P__)
-      return ((sum / count) * 625UL) / 128;	// 1024->5000
+      return ((sum / count) * 625UL) / 128;		// 1024->5000
      #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-      return ((sum / count) * 825UL) / 256;	// 1024->3300
+      return ((sum / count) * 825UL) / 256;		// 1024->3300
+     #elif defined(ESP32)
+      return ((sum / count) * 825UL) / 1024;	// 4096->3300  by hajimef
      #else
-      return ((sum / count) * 825UL) / 256;	// 1024->3300
+      return ((sum / count) * 825UL) / 256;		// 1024->3300
      #endif
     #endif
 }
@@ -325,7 +338,7 @@ static void parseData()
         case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
         #if defined(ESP32)
-          case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+          case 0x81: Wire.end(); Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
           case 0x81: Wire.begin(); callOK(); break;
         #endif
