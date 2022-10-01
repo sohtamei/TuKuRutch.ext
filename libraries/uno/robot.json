@@ -1,6 +1,5 @@
 {
 	"name"			: "uno",									// マイコン拡張定義	
-	"scratch3ext"	: "unoAvr",									// scratch3 ext名[,SupportCamera]
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	// C言語記述注意 : " を使うときは \" とすること

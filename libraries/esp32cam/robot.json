@@ -1,6 +1,5 @@
 {
 	"name"			: "esp32cam",								// マイコン拡張定義	
-	"scratch3ext"	: "esp32cam,SupportCamera",					// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
