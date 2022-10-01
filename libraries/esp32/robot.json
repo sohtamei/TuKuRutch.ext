@@ -4,9 +4,11 @@
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
+						"custom_EventsCore=esp32_1",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
+						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
@@ -16,6 +18,7 @@
 	// ヘッダ (C言語)
 	"header":"
 #define mVersion \"esp32 1.0\"  // マイコン拡張名＋version
+
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
@@ -39,43 +42,15 @@
 	//  type | Block表示                                   | Block名           | 初期値     |remote/enum           | 実行/取得関数
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
-
-		["w", "set port %n output as %d.digital",			"setDigital",		2,"HIGH",	{"remote":["B","B"],	"func":"pinMode({0},OUTPUT);digitalWrite({0},{1});"}],
-		["w", "play tone on port %n %d.noteJ2 beat %d.beats","BuzzerJ2",	19,"C4","Half",	{"remote":["B","S","S"],"func":"_tone({0},{1},{2});"}],
-		["B", "read port %n",								"getDigital",		26,			{"remote":["B",		"B"],"func":"pinMode({0},INPUT_PULLUP),digitalRead({0})"}],
-		["R", "read analog port %n average %n times",		"getAnalog",		35,4,		{"remote":["B","S",	"S"],"func":"_analogRead({0},{1})"}],
 	],
 
 	// メニュー定義
 	"menus": {
-		"noteJ2"	:["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",],
-		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
-		"digital"	:["HIGH","LOW"],
-		"onoff"		:["On","Off"],
 	},
 
     // ラベル定義
 	"values":{
-		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
-		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
-		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
-		"HIGH":1,"LOW":0,
-		"On":1,"Off":0,
 	},
 
-	// 翻訳定義
-	"translators":{
-		"ja":{
-			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
-			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
-			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
-
-			"set port %n output as %d.digital"				:"ポート %n の出力を %d.digital にする",
-			"play tone on port %n %d.noteJ2 beat %d.beats"	:"ポート %n で %d.noteJ2 を %d.beats 鳴らす",
-			"read port %n"									:"ポート %n",
-			"read analog port %n average %n times"			:"アナログポート %n の %n 回平均",
-		}
-	},
-
-	"sort"			: 61,
+	"sort"			: 16,
 }

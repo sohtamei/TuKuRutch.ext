@@ -1,7 +1,7 @@
 // 藤本壱氏 https://github.com/hajimef/tukurutch_esp32s3 をインポート 2022.09.28
 {
 	"name"			: "esp32S3DevkitC",								// マイコン拡張定義	
-	"scratch3ext"	: "esp32S3DevkitC",								// scratch3 ext名[,SupportCamera]
+	"scratch3ext"	: "DevkitC",									// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32s3",						// package:platform:board
 	"prefs"			: ["custom_CDCOnBoot=esp32s3_default",
 						"custom_CPUFreq=esp32s3_240",
@@ -20,7 +20,10 @@
 						"custom_UploadSpeed=esp32s3_921600"],
 
 	"scratch3burn"	: [
-			{"name":"esp32S3DevkitC", "type":"esp32s3", "baudrate":921600, "binPath":"esp32S3DevkitC"},
+			{"name":"DevkitC_ESP32", "type":"esp32", "baudrate":921600, "binPath":"esp32"},
+			{"name":"DevkitC_S3", "type":"esp32s3", "baudrate":921600, "binPath":"esp32S3DevkitC"},
+			{"name":"generic_ESP32_921600", "type":"esp32", "baudrate":921600, "binPath":"esp32"},
+			{"name":"generic_ESP32_115200", "type":"esp32", "baudrate":115200, "binPath":"esp32"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -92,5 +95,5 @@
 		}
 	},
 
-	"sort"			: 11,
+	"sort"			: 15,
 }
