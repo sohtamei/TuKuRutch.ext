@@ -27,6 +27,7 @@ public:
 			cfg.i2c_addr	= 0x3C;			// I2Cデバイスのアドレス
 			_bus_instance.config(cfg);		// 設定値をバスに反映
 			_panel_instance.setBus(&_bus_instance);
+			if(height==32) _panel_instance.setComPins(0x02);	// 0x12 for 128x64, 0x02 for 128x32
 		}
 
 		{ // 表示パネル制御の設定
