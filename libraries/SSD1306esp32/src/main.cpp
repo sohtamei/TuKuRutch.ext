@@ -7,11 +7,11 @@
 LGFX_SSD1306 *lcd = NULL;
 WebsocketsServer wsServer;
 
-void _initLCD(int sda, int scl, int width, int height)
+void _initLCD(int sda, int scl, int lcdType)
 {
 	if(lcd) return;
 
-	lcd = new LGFX_SSD1306(sda,scl,width,height);
+	lcd = new LGFX_SSD1306(sda,scl,lcdType);
 	lcd->init();
 	lcd->fillScreen(TFT_BLACK);
 	lcd->setTextColor(TFT_WHITE,TFT_BLACK);
