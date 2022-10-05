@@ -30,6 +30,7 @@ RSP_BUF     = 7,
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 #define getBufLen2(n) (buffer+5),(_packetLen-5)
 
+#if defined(ESP32)
 #if defined(CONFIG_IDF_TARGET_ESP32)
   #define LEDC_BUZZER   15
   #define LEDC_PWM_START 2
@@ -44,6 +45,7 @@ RSP_BUF     = 7,
   #define LEDC_PWM_END   6
 #else
   #pragma message "unsupported device"
+#endif
 #endif
 
 /*
