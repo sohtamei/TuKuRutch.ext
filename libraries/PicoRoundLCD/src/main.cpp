@@ -34,11 +34,6 @@ void _setup(const char* ver)
 	lcd.setBrightness(128);
 	lcd.fillScreen(TFT_BLACK);
 	lcd.setTextSize(2);
-/*
-	lcd.width(), lcd.height()
-	lcd.startWrite();
-	lcd.endWrite();
-*/
 
 	lcd.setCursor(0, 0);
 	lcd.println(ver);
