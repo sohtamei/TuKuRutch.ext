@@ -12,16 +12,6 @@ WebsocketsServer wsServer;
 void _setLED(uint8_t onoff)
 {;}
 
-uint8_t _getSw(uint8_t button)
-{
-	return 0;
-}
-
-float getIMU(uint8_t index)
-{
-	return 0;
-}
-
 static void onConnect(String ip)
 {
 	lcd.fillScreen(TFT_BLACK);

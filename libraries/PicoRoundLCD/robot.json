@@ -43,7 +43,7 @@
 		["-"],
 		["-"],
 
-		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"lcd.setTextColor({0});lcd.setTextSize({1});"}],
+		["w", "set text %d.color size=%n",				"setText",			"WHITE", 2,	{"remote":["S","B"],	"func":"lcd.setTextColor({0},TFT_BLACK);lcd.setTextSize({1});"}],
 		["w", "set cursor at (%n ,%n )",				"setCursor",		0,0,		{"remote":["S","S"],	"func":"lcd.setCursor({0},{1});"}],
 		["w", "print text %s",							"printText",		"test",		{"remote":["s"],		"func":"lcd.print({0});"}],
 		["w", "print text %s and return",				"printlnText",		"test",		{"remote":["s"],		"func":"lcd.println({0});"}],

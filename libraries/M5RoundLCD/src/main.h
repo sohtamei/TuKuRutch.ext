@@ -13,9 +13,6 @@ void _setup(const char* ver);
 void _loop(void);
 
 void _setLED(uint8_t onoff);
-uint8_t _getSw(uint8_t button);
-float getIMU(uint8_t index);
-void _tone(uint8_t port, int16_t freq, int16_t ms);
 
 
 class LGFX_M5Stamp_SPI_GC9A01 : public lgfx::LGFX_Device
