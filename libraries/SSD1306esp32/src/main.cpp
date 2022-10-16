@@ -2,11 +2,20 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include "main.h"
-
+#include "panel_def.h"
 
 lgfx::LGFX_Device *lcd = NULL;
 WebsocketsServer wsServer;
 Preferences preferencesLCD;
+
+const char LcdTypeStr[][16] = {
+	"DEFAULT",		// 0
+	"SSD1306",
+	"SSD1306_32",
+	"SSD1331",
+	"3248S035",
+	"GC9A01",
+};
 
 
 void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
@@ -18,16 +27,21 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	}
 
 	switch(lcdType) {
-	default:
+	case LCDTYPE_SSD1306:
+	case LCDTYPE_SSD1306_32:
+		lcd = new LGFX_SSD1306(lcdType, config_buf, config_size);
+		break;
 	case LCDTYPE_SSD1331:
 		lcd = new LGFX_SSD1331(lcdType, config_buf, config_size);
 		break;
 	case LCDTYPE_3248S035:
 		lcd = new LGFX_3248S035(lcdType, config_buf, config_size);
 		break;
-	case LCDTYPE_SSD1306:
-		lcd = new LGFX_SSD1306(lcdType, config_buf, config_size);
+	case LCDTYPE_GC9A01:
+		lcd = new LGFX_GC9A01(lcdType, config_buf, config_size);
 		break;
+	default:
+		return;
 	}
 
 	lcd->init();
@@ -36,6 +50,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	lcd->setFont(&fonts::lgfxJapanGothic_12);
 	lcd->setCursor(0,0);
 	lcd->println("OK");
+	lcd->setCursor(0,0);
 }
 
 static void onConnect(String ip)
@@ -64,10 +79,7 @@ void _setup(const char* ver)
 		memset(config, 0xFF, NVSCONFIG_MAX);
 		int config_num = preferencesLCD.getBytes("config", config, NVSCONFIG_MAX);
 
-		Serial.printf("type=%d,port=", lcdType);
-		for(int i=0; i<config_num; i++)
-			Serial.printf("%d,", config[i]);
-		Serial.printf("\n");
+		Serial.printf("type=%s\n", LcdTypeStr[lcdType]);
 
 		_setupLCD(lcdType, config, config_num);
 		lcd->println(ver);

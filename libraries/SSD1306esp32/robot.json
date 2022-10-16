@@ -1,5 +1,5 @@
 {
-	"name"			: "SSD1306esp32",
+	"name"			: "micomLCDesp32",
 	"scratch3ext"	: "micomLCD",								// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
@@ -14,16 +14,14 @@
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [
-			{"name":"SSD1306.esp32", "type":"esp32", "baudrate":921600, "binPath":"SSD1306esp32"},
-			{"name":"SSD1331.esp32", "type":"esp32", "baudrate":921600, "binPath":"SSD1331esp32"},
-			{"name":"ESP32-3248S035C", "type":"esp32", "baudrate":921600, "binPath":"ESP32-3248S035C"},
+			{"name":"micomLCD.esp32", "type":"esp32", "baudrate":921600, "binPath":"micomLCDesp32"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"SSD1306.ESP32 1.0\"
+#define mVersion \"micomLCD.ESP32 1.0\"
 
 #include \"main.h\"
 #define RECV_BUFFER 65536
@@ -56,11 +54,10 @@ void _getConfig(void) {
 		return;
 	}
 
-	buffer[0] = preferencesLCD.getInt(\"lcdType\", -1);
+	SetL16(buffer+0, lcd->width());
+	SetL16(buffer+2, lcd->height());
 
-	SetL16(buffer+1, lcd->width());
-	SetL16(buffer+3, lcd->height());
-
+	buffer[4] = preferencesLCD.getInt(\"lcdType\", -1);
 	int config_num = preferencesLCD.getBytes(\"config\", buffer+5, NVSCONFIG_MAX);
 
 	sendBin(buffer, 5+config_num);
@@ -101,7 +98,7 @@ void _drawJpg(uint8_t* buf, int size) {
 	//-------+-----------------------------------------+---------------+----------------+----------------------+----------------------------------
 		["-"],					// dummy
 
-		["w", "set config type=%d.lcdType %s",			"setConfig",	"default","1516",{"remote":["B","b"],	"func":"_setConfig({0},{1});_setupLCD({0},{1});"}],
+		["w", "set config type=%d.lcdType %s",			"setConfig",	"SSD1306","",	{"remote":["B","b"],	"func":"_setConfig({0},{1});_setupLCD({0},{1});"}],
 		["R", "get config",								"getConfig",					{"remote":[		"b"],	"func":"_getConfig()"}],
 		["w", "set font=%d.font",						"setFont",		"monospace12",	{"remote":["B"],		"func":"if(lcd) lcd->setFont(fontTbl[{0}]);"}],
 		["w", "set text %d.color ,%d.color size=%n",	"setText",	"WHITE","BLACK",2,	{"remote":["S","S","F"],"func":"if(lcd) {lcd->setTextColor({0},{1});lcd->setTextSize({2});}"}],
@@ -122,7 +119,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
 				"monospace12","proportional12","monospace16","proportional16",],
 
-		"lcdType":["default","SSD1306","SSD1306_32",],
+		"lcdType":["SSD1306","SSD1306_32","SSD1331","3248S035","3248S035","GC9A01"],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -132,7 +129,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
 		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
 
-		"default":0,"SSD1306":1,"SSD1306_32":2,
+		"SSD1306":1,"SSD1306_32":2,"SSD1331":3,"3248S035":4,"GC9A01":5,
 	},
 	"translators":{
 		"ja":{
