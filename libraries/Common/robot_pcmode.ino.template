@@ -85,9 +85,9 @@ void setup()
 }
 
 #ifdef RECV_BUFFER
-static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
 #else
-static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;

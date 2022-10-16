@@ -11,9 +11,19 @@ typedef struct {
 	uint8_t cs;
 	uint8_t rst;
 	uint8_t busy;
+	uint8_t bl;
 } nvscfg_spi_t;
 
-#define ChkFF(a) (((a)==0xFF)?-1:(a))
+#if defined(ESP32)	// IO1/IO3 禁止
+  #define ChkFF(a) (((a)==0xFF||(a)==1||(a)==3)?-1:(a))
+  #define PWM_CH  7
+#elif defined(ESP32C3)
+  #define ChkFF(a) (((a)==0xFF)?-1:(a))
+  #define PWM_CH  3
+#else
+  #define ChkFF(a) (((a)==0xFF)?-1:(a))
+  #define PWM_CH  7
+#endif
 
 class LGFX_SSD1306 : public lgfx::LGFX_Device
 {
@@ -73,13 +83,14 @@ public:
 			.cs = 27,
 			.rst = 25,
 			.busy = -1,
+			.bl = -1,
 		};
 
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
-		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d\n",
-					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy);
+		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
+					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
 
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
@@ -140,6 +151,17 @@ public:
 	LGFX_GC9A01(int lcdType, uint8_t *config_buf, int config_size)
 	{
 		nvscfg_spi_t nvs = {
+			.sclk = 14,
+			.mosi = 12,
+			.miso = -1,
+			.dc = 16,
+			.cs = 17,
+			.rst = 15,
+			.busy = -1,
+			.bl = 13,
+		};
+/*
+		nvscfg_spi_t nvs = {
 			.sclk = 4,
 			.mosi = 6,
 			.miso = -1,
@@ -147,13 +169,15 @@ public:
 			.cs = 7,
 			.rst = 0,
 			.busy = -1,
+			.bl = 10,
 		};
-
+*/
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
-		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d\n",
-					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy);
+		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
+					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
 
@@ -202,11 +226,10 @@ public:
 		{ // バックライト制御の設定を行います。（必要なければ削除）
 			auto cfg = _light_instance.config();	// バックライト設定用の構造体を取得します。
 
-			cfg.pin_bl = 10;				// バックライトが接続されているピン番号
+			cfg.pin_bl = ChkFF(nvs.bl);		// バックライトが接続されているピン番号
 			cfg.invert = false;				// バックライトの輝度を反転させる場合 true
 			cfg.freq   = 44100;				// バックライトのPWM周波数
-			cfg.pwm_channel = 3;			// 使用するPWMのチャンネル番号
-
+			cfg.pwm_channel = PWM_CH;		// 使用するPWMのチャンネル番号
 			_light_instance.config(cfg);
 			_panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
 		}
@@ -256,7 +279,7 @@ public:
 			cfg.panel_height     =   480;	// 実際に表示可能な高さ
 			cfg.offset_x         =     0;	// パネルのX方向オフセット量
 			cfg.offset_y         =     0;	// パネルのY方向オフセット量
-			cfg.offset_rotation  =     0;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+			cfg.offset_rotation  =     5;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.dummy_read_pixel =     8;	// ピクセル読出し前のダミーリードのビット数
 			cfg.dummy_read_bits  =     1;	// ピクセル以外のデータ読出し前のダミーリードのビット数
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
@@ -273,8 +296,7 @@ public:
 			cfg.pin_bl = 27;				// バックライトが接続されているピン番号
 			cfg.invert = false;				// バックライトの輝度を反転させる場合 true
 			cfg.freq   = 44100;				// バックライトのPWM周波数
-			cfg.pwm_channel = 7;			// 使用するPWMのチャンネル番号
-
+			cfg.pwm_channel = PWM_CH;		// 使用するPWMのチャンネル番号
 			_light_instance.config(cfg);
 			_panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
 		}
