@@ -11,10 +11,12 @@
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_huge_app",
-						"custom_UploadSpeed=esp32_921600"],
+						"custom_UploadSpeed=esp32_750000"],
+//						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [
 			{"name":"micomLCD.esp32", "type":"esp32", "baudrate":921600, "binPath":"micomLCDesp32"},
+			{"name":"micomLCD.esp32_750000", "type":"esp32", "baudrate":750000, "binPath":"micomLCDesp32"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -43,25 +45,6 @@ const lgfx::IFont* fontTbl[] = {
 	&fonts::lgfxJapanGothic_16,		// 12:
 	&fonts::lgfxJapanGothicP_16,	// 13:
 };
-
-#define GetL16(a) (((a)[1]<<8) | (a)[0])
-#define SetL16(a, b) ((a)[1] = (b)>>8,  (a)[0] = ((b) & 0xFF))
-
-extern uint8_t buffer[RECV_BUFFER];
-void _getLcdConfig(void) {
-	if(!lcd) {
-		callOK();
-		return;
-	}
-
-	SetL16(buffer+0, lcd->width());
-	SetL16(buffer+2, lcd->height());
-
-	buffer[4] = preferencesLCD.getInt(\"lcdType\", -1);
-	int config_num = preferencesLCD.getBytes(\"config\", buffer+5, NVSCONFIG_MAX);
-
-	sendBin(buffer, 5+config_num);
-}
 
 void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 {
@@ -98,8 +81,8 @@ void _drawJpg(uint8_t* buf, int size) {
 	//-------+-----------------------------------------+---------------+----------------+----------------------+----------------------------------
 		["-"],					// dummy
 
-		["w", "set config %d.lcdType port=%s",			"setLcdConfig",	"SSD1306"," ",	{"remote":["B","b"],	"func":"_setLcdConfig({0},{1});_setupLCD({0},{1});"}],
-		["R", "get config",								"getLcdConfig",					{"remote":[		"b"],	"func":"_getLcdConfig()"}],
+		["w", "set config %d.lcdType port=%s",			"setLcdConfig",	"no-LCD"," ",	{"remote":["B","b"],	"func":"_setLcdConfig({0},{1});_setupLCD({0},{1});"}],
+		["R", "get config",								"getLcdConfig",					{"remote":[		"b"],	"func":"sendBin(buffer, _getLcdConfig(buffer))"}],
 		["w", "set font=%d.font",						"setFont",		"monospace12",	{"remote":["B"],		"func":"if(lcd) lcd->setFont(fontTbl[{0}]);"}],
 		["w", "set rotation=%n",						"setRotation",	0,				{"remote":["B"],		"func":"if(lcd) lcd->setRotation({0});"}],
 		["w", "set text %d.color ,%d.color size=%n",	"setText",	"WHITE","BLACK",2,	{"remote":["S","S","F"],"func":"if(lcd) {lcd->setTextColor({0},{1});lcd->setTextSize({2});}"}],
@@ -120,7 +103,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
 				"monospace12","proportional12","monospace16","proportional16",],
 
-		"lcdType":["SSD1306","SSD1306_32","SSD1331","3248S035","GC9A01"],
+		"lcdType":["no-LCD", "AUTO","AUTO-ROLL","SSD1306","SSD1306_32","SSD1331","3248S035","ROUNDLCD","MSP2807",],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -130,7 +113,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
 		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
 
-		"SSD1306":1,"SSD1306_32":2,"SSD1331":3,"3248S035":4,"GC9A01":5,
+		"no-LCD":0, "AUTO":1,"AUTO-ROLL":2,"SSD1306":3,"SSD1306_32":4,"SSD1331":5,"3248S035":6,"ROUNDLCD":7,"MSP2807":8,
 	},
 	"translators":{
 		"ja":{
