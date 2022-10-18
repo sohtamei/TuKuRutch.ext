@@ -19,10 +19,10 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 
 	switch(lcdType) {
 	case LCDTYPE_AUTO:
-	case LCDTYPE_AUTO_ROLL:
+	case LCDTYPE_AUTO_ROT1:
 		lcd = new LGFX();
 		lcd->init();
-		if(lcdType == LCDTYPE_AUTO_ROLL)
+		if(lcdType == LCDTYPE_AUTO_ROT1)
 			lcd->setRotation(1);
 		break;
 
@@ -52,40 +52,41 @@ int _getLcdConfig(uint8_t* buf)
 
 	SetL16(buf+0, lcd->width());
 	SetL16(buf+2, lcd->height());
-	buf[4] = preferencesLCD.getInt("lcdType", -1);
+	int lcdType = preferencesLCD.getInt("lcdType", -1);
+	SetL16(buf+4, lcdType);
 
 	lgfx::IBus* bus = lcd->panel()->bus();
 	lgfx::ILight* light = lcd->panel()->light();
 
 	switch(bus->busType()) {
-	default:
-		return 5;
-	case lgfx::bus_i2c: {
-		auto cfgI2c = ((lgfx::Bus_I2C*)bus)->config();
-		buf[5] = cfgI2c.pin_sda;
-		buf[6] = cfgI2c.pin_scl;
-		return 7;
-	  }
-	case lgfx::bus_spi: {
-		auto cfgSpi = ((lgfx::Bus_SPI*)bus)->config();
-		buf[5] = cfgSpi.pin_sclk;
-		buf[6] = cfgSpi.pin_mosi;
-		buf[7] = cfgSpi.pin_miso;
-		buf[8] = cfgSpi.pin_dc;
-
-		auto cfgPanel = lcd->panel()->config();
-		buf[9] = cfgPanel.pin_cs;
-		buf[10] = cfgPanel.pin_rst;
-		buf[11] = cfgPanel.pin_busy;
-
-		if(light) {
-			auto cfgPwm = ((lgfx::Light_PWM*)light)->config();
-			buf[12] = cfgPwm.pin_bl;
-		} else {
-			buf[12] = -1;
+		default:
+			return 6;
+		case lgfx::bus_i2c: {
+			auto cfgI2c = ((lgfx::Bus_I2C*)bus)->config();
+			buf[6] = cfgI2c.pin_sda;
+			buf[7] = cfgI2c.pin_scl;
+			return 8;
 		}
-		return 13;
-	  }
+		case lgfx::bus_spi: {
+			auto cfgSpi = ((lgfx::Bus_SPI*)bus)->config();
+			buf[6] = cfgSpi.pin_sclk;
+			buf[7] = cfgSpi.pin_mosi;
+			buf[8] = cfgSpi.pin_miso;
+			buf[9] = cfgSpi.pin_dc;
+
+			auto cfgPanel = lcd->panel()->config();
+			buf[10] = cfgPanel.pin_cs;
+			buf[11] = cfgPanel.pin_rst;
+			buf[12] = cfgPanel.pin_busy;
+
+			if(light) {
+				auto cfgPwm = ((lgfx::Light_PWM*)light)->config();
+				buf[13] = cfgPwm.pin_bl;
+			} else {
+				buf[13] = -1;
+			}
+			return 14;
+		}
 	}
 }
 

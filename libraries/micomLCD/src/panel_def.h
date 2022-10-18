@@ -1,7 +1,7 @@
 enum {
 	LCDTYPE_NOLCD = 0,
 	LCDTYPE_AUTO = 1,
-	LCDTYPE_AUTO_ROLL = 2,
+	LCDTYPE_AUTO_ROT1 = 2,
 
 	LCDTYPE_SSD1306 = 3,
 	LCDTYPE_SSD1306_32 = 4,
@@ -14,7 +14,7 @@ enum {
 const char LcdTypeStr[][16] = {
 	"no-LCD",		// 0
 	"AUTO",
-	"AUTO_ROLL",
+	"AUTO_ROT1",
 	"SSD1306",
 	"SSD1306_32",
 	"SSD1331",
