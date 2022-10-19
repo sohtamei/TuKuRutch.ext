@@ -39,14 +39,30 @@ typedef struct {
 	uint8_t bl;
 } nvscfg_spi_t;
 
-#define ChkFF(a) (((a)==0xFF)?-1:(a))
-
 #if defined(CONFIG_IDF_TARGET_ESP32)
   #define PWM_CH  7
+  int ChkFF(int a) {
+    const uint8_t availables[] = {/*input*/34,35, 32,33,25,26,27,14,12, 13,15,2, 0,4,16,17,5,18,19,21,22,23};
+    for(int i=0; i<sizeof(availables); i++)
+      if(a == availables[i]) return a;
+    return -1;
+  }
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
   #define PWM_CH  3
+  int ChkFF(int a) {
+    const uint8_t availables[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17, /*usb*/18,19, /*uart 20,21*/};
+    for(int i=0; i<sizeof(availables); i++)
+      if(a == availables[i]) return a;
+    return -1;
+  }
 #else
   #define PWM_CH  7
+  int ChkFF(int a) {
+    const uint8_t availables[] = {4,5,6,7,15,16,17,18,8,19,20, 3,46,9,10,11,12,13,14,21,47,48,45, 0,35,36,19,37,38,39,40,41,42,2,1};
+    for(int i=0; i<sizeof(availables); i++)
+      if(a == availables[i]) return a;
+    return -1;
+  }
 #endif
 
 class LGFX_SSD1306 : public lgfx::LGFX_Device
@@ -65,16 +81,17 @@ public:
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
 		Serial.printf("sda=%d,scl=%d\n", nvs.sda, nvs.scl);
+		if(ChkFF(nvs.sda)<0 || ChkFF(nvs.scl)<0) return;
 
 		{ // バス制御の設定
 			auto cfg = _bus_instance.config();
-			cfg.i2c_port	= 0;			// 使用するI2Cポートを選択 (0 or 1)
-			cfg.freq_write	= 400000;		// 送信時のクロック
-			cfg.freq_read	= 400000;		// 受信時のクロック
-			cfg.pin_sda		= nvs.sda;		// SDAを接続しているピン番号
-			cfg.pin_scl		= nvs.scl;		// SCLを接続しているピン番号
-			cfg.i2c_addr	= 0x3C;			// I2Cデバイスのアドレス
-			_bus_instance.config(cfg);		// 設定値をバスに反映
+			cfg.i2c_port	= 0;				// 使用するI2Cポートを選択 (0 or 1)
+			cfg.freq_write	= 400000;			// 送信時のクロック
+			cfg.freq_read	= 400000;			// 受信時のクロック
+			cfg.pin_sda		= ChkFF(nvs.sda);	// SDAを接続しているピン番号
+			cfg.pin_scl		= ChkFF(nvs.scl);	// SCLを接続しているピン番号
+			cfg.i2c_addr	= 0x3C;				// I2Cデバイスのアドレス
+			_bus_instance.config(cfg);			// 設定値をバスに反映
 			_panel_instance.setBus(&_bus_instance);
 			if(lcdType==LCDTYPE_SSD1306_32)
 				_panel_instance.setComPins(0x02);	// 0x12 for 128x64, 0x02 for 128x32
@@ -116,6 +133,7 @@ public:
 
 		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
 					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+		if(ChkFF(nvs.sclk)<0 || ChkFF(nvs.mosi)<0) return;
 
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
@@ -176,6 +194,9 @@ class LGFX_3248S035 : public lgfx::LGFX_Device
 public:
 	LGFX_3248S035(int lcdType, uint8_t *config_buf, int config_size)
 	{
+		#if !defined(CONFIG_IDF_TARGET_ESP32)
+		return;
+		#endif
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
 
@@ -275,6 +296,7 @@ public:
 
 		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
 					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+		if(ChkFF(nvs.sclk)<0 || ChkFF(nvs.mosi)<0) return;
 
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
@@ -360,6 +382,7 @@ public:
 
 		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
 					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+		if(ChkFF(nvs.sclk)<0 || ChkFF(nvs.mosi)<0) return;
 
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。

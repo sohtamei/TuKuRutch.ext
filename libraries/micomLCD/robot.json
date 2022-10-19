@@ -1,6 +1,6 @@
 {
-	"name"			: "micomLCDesp32",
-	"scratch3ext"	: "micomLCD",								// scratch3 ext名[,SupportCamera]
+	"name"			: "lovyanGFXesp32",
+	"scratch3ext"	: "lovyanGFX",								// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -15,15 +15,15 @@
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [
-			{"name":"micomLCD.esp32", "type":"esp32", "baudrate":921600, "binPath":"micomLCD"},
-			{"name":"micomLCD.esp32_750000", "type":"esp32", "baudrate":750000, "binPath":"micomLCD"},
+			{"name":"lovyanGFX.esp32", "type":"esp32", "baudrate":921600, "binPath":"micomLCD"},
+			{"name":"lovyanGFX.esp32_750000", "type":"esp32", "baudrate":750000, "binPath":"micomLCD"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"micomLCD 1.0\"
+#define mVersion \"lovyanGFX 1.0\"
 
 #include \"main.h\"
 #define RECV_BUFFER 65536

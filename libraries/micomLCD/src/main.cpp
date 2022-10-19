@@ -18,6 +18,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	}
 
 	switch(lcdType) {
+#if defined(CONFIG_IDF_TARGET_ESP32)
 	case LCDTYPE_AUTO:
 	case LCDTYPE_AUTO_ROT1:
 		lcd = new LGFX();
@@ -25,7 +26,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 		if(lcdType == LCDTYPE_AUTO_ROT1)
 			lcd->setRotation(1);
 		break;
-
+#endif
 	case LCDTYPE_SSD1306:
 	case LCDTYPE_SSD1306_32:	lcd = new LGFX_SSD1306(lcdType, config_buf, config_size); break;
 	case LCDTYPE_SSD1331:		lcd = new LGFX_SSD1331(lcdType, config_buf, config_size); break;
@@ -33,6 +34,13 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP2807:		lcd = new LGFX_MSP2807(lcdType, config_buf, config_size); break;
 	default:
+		return;
+	}
+	if(lcd->width()==0) {
+		Serial.printf("error\n");
+		lcd->releaseBus();
+		delete lcd;
+		lcd = NULL;
 		return;
 	}
 

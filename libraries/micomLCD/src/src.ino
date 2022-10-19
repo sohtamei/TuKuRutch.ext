@@ -1,6 +1,6 @@
 #define PCMODE
 
-#define mVersion "micomLCD 1.0"
+#define mVersion "lovyanGFX 1.0"
 
 #include "main.h"
 #define RECV_BUFFER 65536
