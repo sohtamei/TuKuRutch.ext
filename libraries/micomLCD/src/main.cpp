@@ -106,6 +106,7 @@ static void onConnect(String ip)
 		lcd->println(ip);
 	}
 	wsServer.listen(PORT_WEBSOCKET);
+	Serial.println(ip);
 }
 
 void _setup(const char* ver)

@@ -454,11 +454,40 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 }
 
 void onMessageCallback(WebsocketsMessage msg) {
-  _packetLen = msg.length();
-  memcpy(buffer, msg.c_str(), _packetLen);
+  int size = msg.length();
+  if(_index+size >= sizeof(buffer)) {
+    _index = 0;
+    return;
+  }
+  memcpy(buffer+_index, msg.c_str(), size);
+  if(_index == 0) {
+    if(buffer[0] != 0xff) {
+      _index = 0;
+      return;
+    } else {
+      switch(buffer[1]) {
+      case 0x55:
+        _packetLen = 3+buffer[2];
+        break;
+      case 0x54:
+        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+        break;
+      default:
+        _index = 0;
+        return;
+      }
+    }
+  }
   comMode = MODE_WS;
-  parseData();
-  _client.sendBinary((char*)_packet_dp, _packetLen);
+  _index += size;
+  if(_index >= _packetLen) {
+    parseData();
+    _client.sendBinary((char*)_packet_dp, _packetLen);
+    _index = 0;
+  } else {
+    const uint8_t buf[] = {0x00};
+    _client.sendBinary((char*)buf, sizeof(buf));
+  }
 }
 
 static void loopWebSocket(void)
