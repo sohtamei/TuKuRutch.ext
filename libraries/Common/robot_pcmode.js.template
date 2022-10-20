@@ -32,7 +32,7 @@ var ext = class {
 
 		return {
 			id: extName,
-			name: extName,
+			name: (typeof this.uiNames !=='undefined') ? this.uiNames[this._locale]: extName,
 			//blockIconURI: IconURI,
 			menuIconURI: IconURI,
 			showStatusButton: true,
@@ -72,7 +72,6 @@ var ext = class {
 {blockType: BlockType.REPORTER, opcode: 'statusWifi', text: ['WiFi status','WiFi接続状態'][this._locale], disableMonitor:true, arguments: {
 }},
 *ESP32*/
-'---',
 
 // BLOCKS
 		];

@@ -130,21 +130,24 @@
 
 	"scratch3funcs":"
 	drawStage(args,util) {
+		this.comlib._runtime.renderer.setDevSize(320,240);
 		const tmpData = this.comlib._runtime.renderer.drawWithMask(util.sequencer.runtime.ioDevices.video._skinId);
-		args.ARG1 = Base64Util.base64ToUint8Array(tmpData);
+		if(typeof tmpData === 'undefined') return;
+		args.ARG1 = Base64Util.base64ToUint8Array(tmpData.base64);
 		console.log('size='+args.ARG1.length);
 
 		return this.sendRecv('drawJpg', args);
 	}
 
 	drawStage2(args,util) {
+		this.comlib._runtime.renderer.setDevSize(Number(args.ARG6),Number(args.ARG7));
 		const maskSkinId = (args.ARG8 == '1') ? -1 : util.sequencer.runtime.ioDevices.video._skinId;
 		const tmpData = this.comlib._runtime.renderer.drawWithMask(maskSkinId,
 								[Number(args.ARG1),Number(args.ARG3)], 
 								[Number(args.ARG2),Number(args.ARG4)], 
-								{width:Number(args.ARG6),height:Number(args.ARG7)},
 								Number(args.ARG5));
-		const args2 = {ARG1:Base64Util.base64ToUint8Array(tmpData)}
+		if(typeof tmpData === 'undefined') return;
+		const args2 = {ARG1:Base64Util.base64ToUint8Array(tmpData.base64)}
 		console.log('size='+args2.ARG1.length);
 
 		return this.sendRecv('drawJpg', args2);
