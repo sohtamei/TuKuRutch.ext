@@ -9,6 +9,7 @@ enum {
 	LCDTYPE_3248S035 = 6,
 	LCDTYPE_ROUNDLCD = 7,
 	LCDTYPE_MSP2807 = 8,
+	LCDTYPE_ATM0177B3A = 9,
 };
 
 const char LcdTypeStr[][16] = {
@@ -21,6 +22,7 @@ const char LcdTypeStr[][16] = {
 	"3248S035",
 	"ROUNDLCD",
 	"MSP2807",
+	"ATM0177B3A",
 };
 
 typedef struct {
@@ -444,23 +446,21 @@ public:
 	}
 };
 
-/*
-// M5StickC
-// https://lang-ship.com/blog/work/m5stickc-st7735/
-class LGFX_M5StickC : public lgfx::LGFX_Device
+class LGFX_ATM0177B3A : public lgfx::LGFX_Device
 {
-	lgfx::Panel_ST7735S	_panel_instance;
+	lgfx::Panel_ILI9163	_panel_instance;
 	lgfx::Bus_SPI		_bus_instance;			// SPIバスのインスタンス
+	lgfx::Light_PWM		_light_instance;
 public:
-	LGFX_M5StickC(int lcdType, uint8_t *config_buf, int config_size)
+	LGFX_ATM0177B3A(int lcdType, uint8_t *config_buf, int config_size)
 	{
 		nvscfg_spi_t nvs = {
-			.sclk = 13,
-			.mosi = 15,
-			.miso = 14,
-			.dc = 23,
-			.cs = 5,
-			.rst = 18,
+			.sclk = 27,
+			.mosi = 26,
+			.miso = -1,
+			.dc = 14,
+			.cs = 13,
+			.rst = 12,
 			.busy = -1,
 			.bl = -1,
 		};
@@ -470,6 +470,7 @@ public:
 
 		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
 					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+		if(ChkFF(nvs.sclk)<0 || ChkFF(nvs.mosi)<0) return;
 
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
@@ -478,9 +479,9 @@ public:
 			cfg.spi_host = SPI2_HOST;			// 使用するSPIを選択  ESP32-S2,C3 : SPI2_HOST or SPI3_HOST / ESP32 : VSPI_HOST or HSPI_HOST
 			// ※ ESP-IDFバージョンアップに伴い、VSPI_HOST , HSPI_HOSTの記述は非推奨になるため、エラーが出る場合は代わりにSPI2_HOST , SPI3_HOSTを使用してください。
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
-			cfg.freq_write = 27000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
+			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
-			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+			cfg.spi_3wire  = false;				// 受信をMOSIピンで行う場合はtrueを設定
 			cfg.use_lock   = true;				// トランザクションロックを使用する場合はtrueを設定
 			cfg.dma_channel = SPI_DMA_CH_AUTO;	// 使用するDMAチャンネルを設定 (0=DMA不使用 / 1=1ch / 2=ch / SPI_DMA_CH_AUTO=自動設定)
 			// ※ ESP-IDFバージョンアップに伴い、DMAチャンネルはSPI_DMA_CH_AUTO(自動設定)が推奨になりました。1ch,2chの指定は非推奨になります。
@@ -499,17 +500,104 @@ public:
 			cfg.pin_rst  = ChkFF(nvs.rst);	// RSTが接続されているピン番号  (-1 = disable)
 			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
 			// ※ 以下の設定値はパネル毎に一般的な初期値が設定されていますので、不明な項目はコメントアウトして試してみてください。
-			cfg.memory_width     =   132;	// ドライバICがサポートしている最大の幅
-			cfg.memory_height    =   162;	// ドライバICがサポートしている最大の高さ
-			cfg.panel_width      =    80;	// 実際に表示可能な幅
+			cfg.memory_width     =   128;	// ドライバICがサポートしている最大の幅
+			cfg.memory_height    =   160;	// ドライバICがサポートしている最大の高さ
+			cfg.panel_width      =   128;	// 実際に表示可能な幅
 			cfg.panel_height     =   160;	// 実際に表示可能な高さ
-			cfg.offset_x         =    26;	// パネルのX方向オフセット量
-			cfg.offset_y         =     1;	// パネルのY方向オフセット量
-			cfg.offset_rotation  =     2;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
-			cfg.dummy_read_pixel =     9;	// ピクセル読出し前のダミーリードのビット数
+			cfg.offset_x         =     0;	// パネルのX方向オフセット量
+			cfg.offset_y         =     0;	// パネルのY方向オフセット量
+			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+			cfg.dummy_read_pixel =     8;	// ピクセル読出し前のダミーリードのビット数
 			cfg.dummy_read_bits  =     1;	// ピクセル以外のデータ読出し前のダミーリードのビット数
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
-			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.rgb_order        =  true;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
+			cfg.dlen_16bit       = false;	// データ長を16bit単位で送信するパネルの場合 trueに設定
+			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
+
+			_panel_instance.config(cfg);
+		}
+		{ // バックライト制御の設定を行います。（必要なければ削除）
+			auto cfg = _light_instance.config();	// バックライト設定用の構造体を取得します。
+
+			cfg.pin_bl = ChkFF(nvs.bl);		// バックライトが接続されているピン番号
+			cfg.invert = false;				// バックライトの輝度を反転させる場合 true
+			cfg.freq   = 44100;				// バックライトのPWM周波数
+			cfg.pwm_channel = PWM_CH;		// 使用するPWMのチャンネル番号
+			_light_instance.config(cfg);
+			_panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
+		}
+		setPanel(&_panel_instance); // 使用するパネルをセットします。
+		init();
+	}
+};
+
+#if 0
+class LGFX_SAINSMART18 : public lgfx::LGFX_Device
+{
+	lgfx::Panel_ST7735S	_panel_instance;
+	lgfx::Bus_SPI		_bus_instance;			// SPIバスのインスタンス
+	lgfx::Light_PWM		_light_instance;
+public:
+	LGFX_SAINSMART18(int lcdType, uint8_t *config_buf, int config_size)
+	{
+		nvscfg_spi_t nvs = {
+			.sclk = 12,
+			.mosi = 14,
+			.miso = -1,
+			.dc = 27,
+			.cs = 25,
+			.rst = 26,
+			.busy = -1,
+			.bl = -1,
+		};
+
+		if(config_size >= sizeof(nvscfg_spi_t))
+			memcpy(&nvs, config_buf, sizeof(nvs));
+
+		Serial.printf("sclk=%d,mosi=%d,miso=%d,dc=%d,cs=%d,rst=%d,busy=%d,bl=%d\n",
+					nvs.sclk, nvs.mosi, nvs.miso, nvs.dc, nvs.cs, nvs.rst, nvs.busy, nvs.bl);
+		if(ChkFF(nvs.sclk)<0 || ChkFF(nvs.mosi)<0) return;
+
+		{ // バス制御の設定を行います。
+			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
+
+// SPIバスの設定
+			cfg.spi_host = SPI2_HOST;			// 使用するSPIを選択  ESP32-S2,C3 : SPI2_HOST or SPI3_HOST / ESP32 : VSPI_HOST or HSPI_HOST
+			// ※ ESP-IDFバージョンアップに伴い、VSPI_HOST , HSPI_HOSTの記述は非推奨になるため、エラーが出る場合は代わりにSPI2_HOST , SPI3_HOSTを使用してください。
+			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
+			cfg.freq_write = 4000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
+			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+			cfg.spi_3wire  = false;				// 受信をMOSIピンで行う場合はtrueを設定
+			cfg.use_lock   = true;				// トランザクションロックを使用する場合はtrueを設定
+			cfg.dma_channel = SPI_DMA_CH_AUTO;	// 使用するDMAチャンネルを設定 (0=DMA不使用 / 1=1ch / 2=ch / SPI_DMA_CH_AUTO=自動設定)
+			// ※ ESP-IDFバージョンアップに伴い、DMAチャンネルはSPI_DMA_CH_AUTO(自動設定)が推奨になりました。1ch,2chの指定は非推奨になります。
+			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
+			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
+			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
+			cfg.pin_dc   = ChkFF(nvs.dc);		// SPIのD/Cピン番号を設定  (-1 = disable)
+		 // SDカードと共通のSPIバスを使う場合、MISOは省略せず必ず設定してください。
+			_bus_instance.config(cfg);			// 設定値をバスに反映します。
+			_panel_instance.setBus(&_bus_instance);		// バスをパネルにセットします。
+		}
+
+		{ // 表示パネル制御の設定を行います。
+			auto cfg = _panel_instance.config();	// 表示パネル設定用の構造体を取得します。
+			cfg.pin_cs   = ChkFF(nvs.cs);	// CSが接続されているピン番号   (-1 = disable)
+			cfg.pin_rst  = ChkFF(nvs.rst);	// RSTが接続されているピン番号  (-1 = disable)
+			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
+			// ※ 以下の設定値はパネル毎に一般的な初期値が設定されていますので、不明な項目はコメントアウトして試してみてください。
+			cfg.memory_width     =   128;	// ドライバICがサポートしている最大の幅
+			cfg.memory_height    =   160;	// ドライバICがサポートしている最大の高さ
+			cfg.panel_width      =   128;	// 実際に表示可能な幅
+			cfg.panel_height     =   160;	// 実際に表示可能な高さ
+			cfg.offset_x         =     0;	// パネルのX方向オフセット量
+			cfg.offset_y         =     0;	// パネルのY方向オフセット量
+			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+			cfg.dummy_read_pixel =     8;	// ピクセル読出し前のダミーリードのビット数
+			cfg.dummy_read_bits  =     1;	// ピクセル以外のデータ読出し前のダミーリードのビット数
+			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
+			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
 			cfg.dlen_16bit       = false;	// データ長を16bit単位で送信するパネルの場合 trueに設定
 			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
@@ -520,4 +608,4 @@ public:
 		init();
 	}
 };
-*/
+#endif

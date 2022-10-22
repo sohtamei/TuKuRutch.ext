@@ -1,0 +1,6 @@
+[submodule "analogRemote"]
+	path = analogRemote
+	url = https://github.com/sohtamei/analogRemote.git
+[submodule "arduinoLib/analogRemote"]
+	path = arduinoLib/analogRemote
+	url = https://github.com/sohtamei/analogRemote.git

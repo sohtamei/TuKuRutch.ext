@@ -103,7 +103,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
 				"monospace12","proportional12","monospace16","proportional16",],
 
-		"lcdType":["no-LCD", "AUTO","AUTO-ROT1","SSD1306","SSD1306_32","SSD1331","3248S035","ROUNDLCD","MSP2807",],
+		"lcdType":["no-LCD", "AUTO","AUTO-ROT1","SSD1306","SSD1306_32","SSD1331","3248S035","ROUNDLCD","MSP2807","ATM0177B3A",],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -113,7 +113,7 @@ void _drawJpg(uint8_t* buf, int size) {
 		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
 		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
 
-		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,"SSD1306":3,"SSD1306_32":4,"SSD1331":5,"3248S035":6,"ROUNDLCD":7,"MSP2807":8,
+		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,"SSD1306":3,"SSD1306_32":4,"SSD1331":5,"3248S035":6,"ROUNDLCD":7,"MSP2807":8,"ATM0177B3A":9,
 	},
 	"translators":{
 		"ja":{
@@ -133,12 +133,13 @@ void _drawJpg(uint8_t* buf, int size) {
 {blockType: BlockType.COMMAND, opcode: 'drawStage', text: 'draw stage', arguments: {
 }},
 
-{blockType: BlockType.COMMAND, opcode: 'drawStage2', text: 'draw stage=([ARG1],[ARG2]) - ([ARG3],[ARG4]) rotete=[ARG5]', arguments: {
+{blockType: BlockType.COMMAND, opcode: 'drawStage2', text: 'draw stage=([ARG1],[ARG2]) - ([ARG3],[ARG4]) rotete=[ARG5] video[ARG6]', arguments: {
     ARG1: { type: ArgumentType.NUMBER, defaultValue:-240 },
     ARG2: { type: ArgumentType.NUMBER, defaultValue:-180 },
     ARG3: { type: ArgumentType.NUMBER, defaultValue:240 },
     ARG4: { type: ArgumentType.NUMBER, defaultValue:180 },
     ARG5: { type: ArgumentType.NUMBER, defaultValue:0 },
+    ARG6: { type: ArgumentType.STRING, defaultValue:'0', menu: 'onoff' },
 }},
 ",
 
@@ -205,7 +206,8 @@ void _drawJpg(uint8_t* buf, int size) {
 	}
 
 	drawStage2(args,util) {
-		const tmpData = this.comlib._runtime.renderer.drawWithMask(util.sequencer.runtime.ioDevices.video._skinId,
+		const maskSkinId = (args.ARG6 == '1') ? -1 : util.sequencer.runtime.ioDevices.video._skinId;
+		const tmpData = this.comlib._runtime.renderer.drawWithMask(maskSkinId,
 								[Number(args.ARG1),Number(args.ARG3)], 
 								[Number(args.ARG2),Number(args.ARG4)], 
 								Number(args.ARG5));

@@ -33,6 +33,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_3248S035:		lcd = new LGFX_3248S035(lcdType, config_buf, config_size); break;
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP2807:		lcd = new LGFX_MSP2807(lcdType, config_buf, config_size); break;
+	case LCDTYPE_ATM0177B3A:	lcd = new LGFX_ATM0177B3A(lcdType, config_buf, config_size); break;
 	default:
 		return;
 	}
