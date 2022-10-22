@@ -8,3 +8,4 @@ xcopy TukurutchEsp       ..\..\Arduino\portable\sketchbook\libraries\TukurutchEs
 xcopy TukurutchEspCamera ..\..\Arduino\portable\sketchbook\libraries\TukurutchEspCamera\    /S /Q /Y
 rem xcopy TukurutchEspCamera2 ..\..\Arduino\portable\sketchbook\libraries\TukurutchEspCamera2\    /S /Q /Y
 pause
+
