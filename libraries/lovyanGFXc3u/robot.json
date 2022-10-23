@@ -1,0 +1,126 @@
+{
+	"name"			: "lovyanGFXc3u",
+	"boardType"		: "esp32:esp32:esp32c3",					// package:platform:board
+	"prefs"			: ["custom_CDCOnBoot=esp32c3_cdc",
+						"custom_CPUFreq=esp32c3_160",
+						"custom_DebugLevel=esp32c3_none",
+						"custom_EventsCore=esp32_1",
+						"custom_FlashFreq=esp32c3_80",
+						"custom_FlashMode=esp32c3_qio",
+						"custom_FlashSize=esp32c3_4M",
+						"custom_LoopCore=esp32_1",
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=esp32c3_huge_app",
+						"custom_UploadSpeed=esp32c3_921600"],
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// ヘッダ (C言語)
+	"header":"
+#define mVersion \"lovyanGFX 1.0\"
+
+#include \"main.h\"
+#define RECV_BUFFER 65536
+
+const lgfx::IFont* fontTbl[] = {
+	NULL,						// 0:
+	&fonts::Font0,				// 1:ascii8
+	&fonts::Font2,				// 2:ascii16
+	NULL,						// 3:
+	&fonts::Font4,				// 4:ascii26
+	NULL,						// 5:
+	&fonts::Font6,				// 6:num48
+	&fonts::Font7,				// 7:7seg48
+	&fonts::Font8,				// 8:num75
+	NULL,						// 9:
+
+	&fonts::lgfxJapanGothic_12,		// 10:
+	&fonts::lgfxJapanGothicP_12,	// 11:
+	&fonts::lgfxJapanGothic_16,		// 12:
+	&fonts::lgfxJapanGothicP_16,	// 13:
+};
+
+void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
+{
+	preferencesLCD.putInt(\"lcdType\", lcdType);
+	preferencesLCD.putBytes(\"config\", config_buf, config_size);
+}
+
+void _drawJpg(uint8_t* buf, int size) {
+	if(!lcd || size<4) return;
+	int x = GetL16(buf+0);
+	int y = GetL16(buf+2);
+	lcd->drawJpg(buf+4, size-4, x, y);
+}
+",
+	// setup処理 (C言語)
+	"setup":"_setup(mVersion);",
+
+	// loop処理 (C言語)
+	"loop":"
+  loopWebSocket();
+  _loop();
+",
+
+	// スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray, b2-byteArray(2byte), b3-byteArray(3byte)
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名       | 初期値         |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+---------------+----------------+----------------------+----------------------------------
+		["-"],					// dummy
+
+		["R", "get config",								"_getLcdConfig",				{"remote":[		"b"],	"func":"sendBin(buffer, _getLcdConfig(buffer))"}],
+		["w", "set config %d.lcdType port=%s",			"setLcdConfig",	"no-LCD"," ",	{"remote":["S","b"],	"func":"_setLcdConfig({0},{1});_setupLCD({0},{1});"}],
+		["w", "set font=%d.font",						"setFont",		"monospace12",	{"remote":["B"],		"func":"if(lcd) lcd->setFont(fontTbl[{0}]);"}],
+		["w", "set rotation=%n",						"setRotation",	0,				{"remote":["B"],		"func":"if(lcd) lcd->setRotation({0});"}],
+		["w", "set text %d.color ,%d.color size=%n",	"setText",	"WHITE","BLACK",2,	{"remote":["S","S","F"],"func":"if(lcd) {lcd->setTextColor({0},{1});lcd->setTextSize({2});}"}],
+		["w", "set cursor at (%n ,%n )",				"setCursor",	0,0,			{"remote":["S","S"],	"func":"if(lcd) lcd->setCursor({0},{1});"}],
+		["w", "print text %s",							"printText",	"テスト",		{"remote":["s"],		"func":"if(lcd) lcd->print({0});"}],
+		["w", "print text %s and return",				"printlnText",	"テスト",		{"remote":["s"],		"func":"if(lcd) lcd->println({0});"}],
+		["w", "draw text %s (%n ,%n )",					"drawString2",	"テスト",0,0,	{"remote":["s","S","S"],"func":"if(lcd) lcd->drawString({0},{1},{2});"}],
+		["w", "draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"ascii16",{"remote":["s","S","S","B"],"func":"if(lcd) lcd->drawString({0},{1},{2},fontTbl[{3}]);"}],
+		["w", "fill screen with %d.color",				"fillScreen",	"BLACK",		{"remote":["S"],		"func":"if(lcd) {lcd->fillScreen({0}); lcd->setCursor(0,0);}"}],
+		["w", "draw jpg %s",							"drawJpg",		"00000000FFD8FFE000104A46494600010101007800780000FFE100224578696600004D4D002A00000008000101120003000000010001000000000000FFDB0043000201010201010202020202020202030503030303030604040305070607070706070708090B0908080A0807070A0D0A0A0B0C0C0C0C07090E0F0D0C0E0B0C0C0CFFDB004301020202030303060303060C0807080C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0CFFC00011080020002003012200021101031101FFC4001F0000010501010101010100000000000000000102030405060708090A0BFFC400B5100002010303020403050504040000017D01020300041105122131410613516107227114328191A1082342B1C11552D1F02433627282090A161718191A25262728292A3435363738393A434445464748494A535455565758595A636465666768696A737475767778797A838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1F2F3F4F5F6F7F8F9FAFFC4001F0100030101010101010101010000000000000102030405060708090A0BFFC400B51100020102040403040705040400010277000102031104052131061241510761711322328108144291A1B1C109233352F0156272D10A162434E125F11718191A262728292A35363738393A434445464748494A535455565758595A636465666768696A737475767778797A82838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9FAFFDA000C03010002110311003F00FDFCAF896DFF006AFF00137C729F54D5AD6CFC6571E1CBABF9C68834EB95D16DBEC2094827F31A48AE2669957CDDE86488095400ACA6BBAFF828F7C765F0F7862CFC116EB248BAE491BEB4140C4F6193BED413C132E36B8208F2C95618941AE4F4EF1A693E21B0B5BAB7BFF326BAB717F2472ED568609155E391C6E2C8195B3F385C640E4E40F8CCF7882542BFB0C3D9F2EF7D55FB5BCBE7BEDA1E563B387866E9D18A72D1B6F64BE5ADDEFBAB2EF776C7D33E3F788BC1BE3992FEF6F3C75E12B38ACA3CDCEAF72FAD6901C3B3379D89A58E38CA901DCB42C022812A6E6CFD4BFB3AFC7ED27E3FF80A2D4ACEF3499351B79AE2D2FED6CAFA3BA586582E25B77652A73E53BC4CC858025197201C81F2F785FE2CE8DE2CF1AAE8DA5DCC97170D14D2C176ABB2CAE5A0789278E29C90AEF0B4F0F99B72A9E6805B2182F7DF026D6CFE0F7C6BFB42DA471FFC24096FA55DA898C89681B2F6ED0A64AC61DA48D5D630A1C3A3B731F3CF95F12559D78C2B45252766D5D6AF6D355F968FC8787CEA75651A389A7CB276B3D6DAAD347AEBA5B567837ED0F65AA78F3F6C1D5B45F1B5C47E1DB49B51B95B6B9495257FB208643692322B32A3CFE4C30AA8258868DCAAC8CD1AE5FC1CF87BA92EA1F0B347BCF0B697E3CF10F8C350B1B1D7B54D7AC85DE9FA0687A669D6975710C68DE5A34F21BDF2D378259C493F9476154FABBF6D7FD89A3FDA5A28F5BD26F23B3F1469F60D64B0DC13F63D5A1DCCCB04C465A3C6F982BA8383312CB205503E4CD4BF697F895FF04FBF1445A77C41B1B3874EF14DADEDF5CC9AB6A3159A410E9DA74625BAB2B98D6E37CECB1DB2FD9763F99239936C2A9339C2AE4F5A9E63770728C9B6A49736F6767DB67D2FADD743D7CB611A789973413536DDED7D5A564FB24D37BF2BBA56DEDEE9FF000500D47C23E04F85DE0FD22487FB1F576BCB88FC312E9B02C634486CF4FB8BCBC731AE3FD0D6D2D9D2589073BE2DABBD6323CEFF00639D5F5AF889FB43E9BE1FBAD3E4D3E6D1AC6C46A50B4C9335A7F66DD5D2BCC76B1077DD27901B23728593047CAB47C05FB48789BFE0A4DA668B0F84BE1FCD6BA08BC9AC6EBC41ABC399351D324C3CD1ACDE427D96D6F6185509447671B1182329AFB7FE027C27B1F83FF0E2CF4FB7D36CF4ED42F156F757FB372B737EE89E7CA5B8DCCCCBD7BE0576472B962F30551A718D37ADD3576ADEEEBD9DEEFB69AD8BCCA8D0AB561271B4E3BB7D754D5BBA56BDECD3BBB3DEDFFFD9",
+																						{"remote":["b2"],		"func":"_drawJpg({0});"}],
+	],
+	"menus": {
+		"onoff":["On","Off"],
+		"color":["BLACK","WHITE","NAVY","DARKGREEN","DARKCYAN","MAROON","PURPLE","OLIVE","LIGHTGREY","DARKGREY","BLUE",
+				"GREEN","CYAN","RED","MAGENTA","YELLOW","ORANGE","GREENYELLOW","PINK","TRANSPARENT"],
+
+		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
+				"monospace12","proportional12","monospace16","proportional16",],
+
+		"lcdType":["no-LCD", "AUTO","AUTO-ROT1","SSD1306","SSD1306_32","SSD1331","3248S035","ROUNDLCD","MSP2807","ATM0177B3A",],
+	},
+	"values":{
+		"On":1,"Off":0,
+		"BLACK":0x0000,"WHITE":0xFFFF,"NAVY":0x000F,"DARKGREEN":0x03E0,"DARKCYAN":0x03EF,"MAROON":0x7800,"PURPLE":0x780F,"OLIVE":0x7BE0,"LIGHTGREY":0xD69A,"DARKGREY":0x7BEF,"BLUE":0x001F,
+		"GREEN":0x07E0,"CYAN":0x07FF,"RED":0xF800,"MAGENTA":0xF81F,"YELLOW":0xFFE0,"ORANGE":0xFDA0,"GREENYELLOW":0xB7E0,"PINK":0xFE19,"TRANSPARENT":0x0120,
+
+		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
+		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
+
+		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,"SSD1306":3,"SSD1306_32":4,"SSD1331":5,"3248S035":6,"ROUNDLCD":7,"MSP2807":8,"ATM0177B3A":9,
+	},
+	"translators":{
+		"ja":{
+		}
+	},
+
+	"scratch3constructor":"",
+
+	"scratch3blocks":"",
+
+	"scratch3menus":"",
+
+	"scratch3funcs":"",
+
+	"sort"			: 51,										// メニュー上の表示順序
+}

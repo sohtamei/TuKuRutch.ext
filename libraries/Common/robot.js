@@ -63,7 +63,7 @@
 	var _rxBuf = [];
 	var _packetLen = 3;
 	function processData(bytes) {
-		if(_rxBuf.length == 0 && bytes.length >= 2 && bytes[0] == 0xff && bytes[1] == 0x55)
+		if(_rxBuf.length == 0 && bytes.length >= 2 && bytes[0] == 0xff && (bytes[1] == 0x55||bytes[1] == 0x54))
 			checkDevName = false;
 
 		if(checkDevName) {
@@ -84,22 +84,30 @@
 			_rxBuf.push(c);
 			switch(_rxBuf.length) {
 			case 1:
-				_packetLen = 3;
+				_packetLen = 4;
 				if(c != 0xff) 
 					_rxBuf = [];
 				break;
 			case 2:
-				if(c != 0x55) 
+				if(c != 0x55 && c != 0x54)
 					_rxBuf = [];
 				break;
 			case 3:
-				_packetLen = 3+c;
+				if(_rxBuf[1] == 0x55)
+					_packetLen = 3+c;
+				break;
+			case 4:
+				if(_rxBuf[1] == 0x54)
+					_packetLen = 4+_rxBuf[2]+(c<<8);
 				break;
 			}
 
 			if(_rxBuf.length >= _packetLen) {
 				if(_packetLen == 3) {
 					responseValue();
+				} else if(_rxBuf[1] == 0x54) {
+					var value = readBytes(_rxBuf, 4, _packetLen-4);	break;
+					responseValue(0,value);
 				} else {
 					var value = 0;
 					switch(_rxBuf[3]) {

@@ -86,8 +86,13 @@ public:
 		};
 	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_i2c_t nvs = {
-			.sda = 0,
-			.scl = 1,
+			.sda = 6,
+			.scl = 7,
+		};
+	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+		nvscfg_i2c_t nvs = {
+			.sda = 4,
+			.scl = 5,
 		};
 	#else
 		nvscfg_i2c_t nvs = {0};
