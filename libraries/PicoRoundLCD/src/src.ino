@@ -82,15 +82,17 @@ void setup()
     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
       Serial.begin(19200);
       _bleSetup();
+    #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+      delay(500);
     #endif
     _setup(mVersion);
       _Serial.println(F("PC mode: " mVersion));
 }
 
 #ifdef RECV_BUFFER
-static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
 #else
-static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
@@ -353,7 +355,7 @@ static void parseData()
         case 4: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
         case 5: _tone(P_BUZZER,1000,100); callOK(); break;
         case 6: sendByte((_getSw(getByte(0)))); break;
-        case 11: lcd.setTextColor(getShort(0));lcd.setTextSize(getByte(1));; callOK(); break;
+        case 11: lcd.setTextColor(getShort(0),TFT_BLACK);lcd.setTextSize(getByte(1));; callOK(); break;
         case 12: lcd.setCursor(getShort(0),getShort(1));; callOK(); break;
         case 13: lcd.print(getString(0));; callOK(); break;
         case 14: lcd.println(getString(0));; callOK(); break;
@@ -484,11 +486,40 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 }
 
 void onMessageCallback(WebsocketsMessage msg) {
-      _packetLen = msg.length();
-      memcpy(buffer, msg.c_str(), _packetLen);
+      int size = msg.length();
+      if(_index+size >= sizeof(buffer)) {
+            _index = 0;
+            return;
+      }
+      memcpy(buffer+_index, msg.c_str(), size);
+      if(_index == 0) {
+            if(buffer[0] != 0xff) {
+                  _index = 0;
+                  return;
+            } else {
+                  switch(buffer[1]) {
+                      case 0x55:
+                        _packetLen = 3+buffer[2];
+                        break;
+                      case 0x54:
+                        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+                        break;
+                      default:
+                        _index = 0;
+                        return;
+                  }
+            }
+      }
       comMode = MODE_WS;
-      parseData();
-      _client.sendBinary((char*)_packet_dp, _packetLen);
+      _index += size;
+      if(_index >= _packetLen) {
+            parseData();
+            _client.sendBinary((char*)_packet_dp, _packetLen);
+            _index = 0;
+      } else {
+        const uint8_t buf[] = {0x00};
+            _client.sendBinary((char*)buf, sizeof(buf));
+      }
 }
 
 static void loopWebSocket(void)

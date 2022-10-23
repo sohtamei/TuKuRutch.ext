@@ -1,6 +1,5 @@
 {
 	"name"			: "PicoRoundLCD",
-	"boardType"		: "esp32:esp32:esp32c3",					// package:platform:board
 	"boardType"		: "arduino:mbed_rp2040:pico",				// package:platform:board
 
 	// C言語記述注意 : " を使うときは \" とすること

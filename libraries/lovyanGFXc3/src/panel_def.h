@@ -74,11 +74,25 @@ class LGFX_SSD1306 : public lgfx::LGFX_Device
 public:
 	LGFX_SSD1306(int lcdType, uint8_t *config_buf, int config_size)
 	{
+	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_i2c_t nvs = {
 			.sda = 21,
 			.scl = 22,
 		};
-
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_i2c_t nvs = {
+			.sda = 8,
+			.scl = 9,
+		};
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+		nvscfg_i2c_t nvs = {
+			.sda = 0,
+			.scl = 1,
+		};
+	#else
+		nvscfg_i2c_t nvs = {0};
+		return;
+	#endif
 		if(config_size >= sizeof(nvscfg_i2c_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
@@ -119,17 +133,43 @@ class LGFX_SSD1331 : public lgfx::LGFX_Device
 public:
 	LGFX_SSD1331(int lcdType, uint8_t *config_buf, int config_size)
 	{
+	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = {
-			.sclk = 32,
-			.mosi = 33,
+			.sclk = 25,
+			.mosi = 26,
 			.miso = -1,
-			.dc = 26,
-			.cs = 27,
-			.rst = 25,
+			.dc   = 14,
+			.cs   = 12,
+			.rst  = 27,
 			.busy = -1,
-			.bl = -1,
+			.bl   = -1,
 		};
-
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_spi_t nvs = {
+			.sclk = 9,
+			.mosi = 10,
+			.miso = -1,
+			.dc   = 12,
+			.cs   = 13,
+			.rst  = 11,
+			.busy = -1,
+			.bl   = -1,
+		};
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+		nvscfg_spi_t nvs = {
+			.sclk = 5,
+			.mosi = 6,
+			.miso = -1,
+			.dc   = 8,
+			.cs   = 10,
+			.rst  = 27,
+			.busy = -1,
+			.bl   = -1,
+		};
+	#else
+		nvscfg_spi_t nvs = {0};
+		return;
+	#endif
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
@@ -196,9 +236,9 @@ class LGFX_3248S035 : public lgfx::LGFX_Device
 public:
 	LGFX_3248S035(int lcdType, uint8_t *config_buf, int config_size)
 	{
-		#if !defined(CONFIG_IDF_TARGET_ESP32)
+	#if !defined(CONFIG_IDF_TARGET_ESP32)
 		return;
-		#endif
+	#endif
 		{ // バス制御の設定を行います。
 			auto cfg = _bus_instance.config();	// バス設定用の構造体を取得します。
 
@@ -269,30 +309,46 @@ class LGFX_ROUNDLCD : public lgfx::LGFX_Device
 public:
 	LGFX_ROUNDLCD(int lcdType, uint8_t *config_buf, int config_size)
 	{
-#if defined(CONFIG_IDF_TARGET_ESP32)
+	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = {
 			.sclk = 14,
 			.mosi = 12,
 			.miso = -1,
-			.dc = 16,
-			.cs = 17,
-			.rst = 15,
+			.dc   = 16,
+			.cs   = 17,
+			.rst  = 15,
 			.busy = -1,
-			.bl = 13,
+			.bl   = 13,
 		};
-#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_spi_t nvs = {0};
+		return;
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = {
 			.sclk = 4,
 			.mosi = 6,
 			.miso = -1,
-			.dc = 1,
-			.cs = 7,
-			.rst = 0,
+			.dc   = 1,
+			.cs   = 7,
+			.rst  = 0,
 			.busy = -1,
-			.bl = 10,
+			.bl   = 10,
 		};
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-#endif
+	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+		nvscfg_spi_t nvs = {
+			.sclk = 18,
+			.mosi = 19,
+			.miso = -1,
+			.dc   = 11,
+			.cs   = 13,
+			.rst  = 12,
+			.busy = -1,
+			.bl   = 10,
+		};
+	#else
+		nvscfg_spi_t nvs = {0};
+		return;
+	#endif
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
@@ -368,17 +424,43 @@ class LGFX_MSP2807 : public lgfx::LGFX_Device
 public:
 	LGFX_MSP2807(int lcdType, uint8_t *config_buf, int config_size)
 	{
+	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = {
 			.sclk = 25,
 			.mosi = 26,
 			.miso = 32,
-			.dc = 27,
-			.cs = 12,
-			.rst = 14,
+			.dc   = 27,
+			.cs   = 12,
+			.rst  = 14,
 			.busy = -1,
-			.bl = 33,
+			.bl   = 33,
 		};
-
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_spi_t nvs = {
+			.sclk = 9,
+			.mosi = 10,
+			.miso = 3,
+			.dc   = 11,
+			.cs   = 13,
+			.rst  = 12,
+			.busy = -1,
+			.bl   = 46,
+		};
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+		nvscfg_spi_t nvs = {
+			.sclk = 5,
+			.mosi = 6,
+			.miso = 1,
+			.dc   = 7,
+			.cs   = 10,
+			.rst  = 8,
+			.busy = -1,
+			.bl   = 4,
+		};
+	#else
+		nvscfg_spi_t nvs = {0};
+		return;
+	#endif
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
@@ -454,17 +536,43 @@ class LGFX_ATM0177B3A : public lgfx::LGFX_Device
 public:
 	LGFX_ATM0177B3A(int lcdType, uint8_t *config_buf, int config_size)
 	{
+	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = {
 			.sclk = 27,
 			.mosi = 26,
 			.miso = -1,
-			.dc = 14,
-			.cs = 13,
-			.rst = 12,
+			.dc   = 14,
+			.cs   = 13,
+			.rst  = 12,
 			.busy = -1,
-			.bl = -1,
+			.bl   = -1,
 		};
-
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_spi_t nvs = {
+			.sclk = 11,
+			.mosi = 10,
+			.miso = -1,
+			.dc   = 12,
+			.cs   = 8,
+			.rst  = 13,
+			.busy = -1,
+			.bl   = -1,
+		};
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+		nvscfg_spi_t nvs = {
+			.sclk = 7,
+			.mosi = 6,
+			.miso = -1,
+			.dc   = 8,
+			.cs   = 0,
+			.rst  = 10,
+			.busy = -1,
+			.bl   = -1,
+		};
+	#else
+		nvscfg_spi_t nvs = {0};
+		return;
+	#endif
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
 
@@ -545,11 +653,11 @@ public:
 			.sclk = 12,
 			.mosi = 14,
 			.miso = -1,
-			.dc = 27,
-			.cs = 25,
-			.rst = 26,
+			.dc   = 27,
+			.cs   = 25,
+			.rst  = 26,
 			.busy = -1,
-			.bl = -1,
+			.bl   = -1,
 		};
 
 		if(config_size >= sizeof(nvscfg_spi_t))

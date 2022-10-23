@@ -78,6 +78,8 @@ void setup()
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   Serial.begin(19200);
   _bleSetup();
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  delay(500);
 #endif
 // SETUP
 
