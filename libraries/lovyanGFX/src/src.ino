@@ -36,6 +36,12 @@ void _drawJpg(uint8_t* buf, int size) {
     	lcd->drawJpg(buf+4, size-4, x, y);
 }
 
+#include "src.update.js.h"
+int _getExtJs(uint8_t* buf) {
+    	memcpy(buf, updateJS, sizeof(updateJS));
+    	return sizeof(updateJS);
+}
+
 #include <Wire.h>
 
 #if defined(__AVR_ATmega328P__)
@@ -145,6 +151,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'s','S','S','B',},
   {'S',},
   {'2',},
+  {},
 };
 
 enum {
@@ -388,6 +395,7 @@ static void parseData()
         case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[getByte(3)]);; callOK(); break;
     case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
         case 12: _drawJpg(getBufLen2(0));; callOK(); break;
+        case 13: sendBin2(buffer, _getExtJs(buffer)); break;
         #if defined(ESP32)
           case 0x81: Wire.end(); Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
@@ -783,6 +791,17 @@ void sendBin(uint8_t* buf, uint8_t num)
       *dp++ = RSP_BUF;
       *dp++ = num;
       _write(buffer, 5+num);
+}
+
+void sendBin2(uint8_t* buf, uint16_t num)
+{
+          memmove(buffer+4, buf, num);
+          uint8_t* dp = buffer;
+          *dp++ = 0xff;
+          *dp++ = 0x54;
+          *dp++ = (num);
+          *dp++ = (num)>>8;
+          _write(buffer, 4+num);
 }
 
 //### CUSTOMIZED ###

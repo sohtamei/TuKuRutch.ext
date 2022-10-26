@@ -726,6 +726,17 @@ void sendBin(uint8_t* buf, uint8_t num)
   _write(buffer, 5+num);
 }
 
+void sendBin2(uint8_t* buf, uint16_t num)
+{
+      memmove(buffer+4, buf, num);
+      uint8_t* dp = buffer;
+      *dp++ = 0xff;
+      *dp++ = 0x54;
+      *dp++ = (num);
+      *dp++ = (num)>>8;
+      _write(buffer, 4+num);
+}
+
 //### CUSTOMIZED ###
 #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
 static void sendRemote(void)
