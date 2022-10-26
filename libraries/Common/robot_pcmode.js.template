@@ -38,6 +38,7 @@ var ext = class {
 			//blockIconURI: IconURI,
 			menuIconURI: IconURI,
 			showStatusButton: true,
+			color1:'#0FBD8C',color2:'#0DA57A',color3:'#0B8E69',
 			blocks: this.get_blocks(),
 			menus: this.get_menus(),
 		};
