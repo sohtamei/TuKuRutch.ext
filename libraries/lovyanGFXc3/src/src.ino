@@ -23,12 +23,6 @@ const lgfx::IFont* fontTbl[] = {
     	&fonts::lgfxJapanGothicP_16,	// 13:
 };
 
-void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
-{
-    	preferencesLCD.putInt("lcdType", lcdType);
-    	preferencesLCD.putBytes("config", config_buf, config_size);
-}
-
 void _drawJpg(uint8_t* buf, int size) {
     	if(!lcd || size<4) return;
     	int x = GetL16(buf+0);

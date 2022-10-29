@@ -46,12 +46,6 @@ const lgfx::IFont* fontTbl[] = {
 	&fonts::lgfxJapanGothicP_16,	// 13:
 };
 
-void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
-{
-	preferencesLCD.putInt(\"lcdType\", lcdType);
-	preferencesLCD.putBytes(\"config\", config_buf, config_size);
-}
-
 void _drawJpg(uint8_t* buf, int size) {
 	if(!lcd || size<4) return;
 	int x = GetL16(buf+0);
@@ -110,7 +104,10 @@ int _getExtJs(uint8_t* buf) {
 		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
 				"monospace12","proportional12","monospace16","proportional16",],
 
-		"lcdType":["no-LCD", "AUTO","AUTO-ROT1","SSD1306","SSD1306_32","SSD1331","3248S035","ROUNDLCD","MSP2807","ATM0177B3A",],
+		"lcdType":["no-LCD", "AUTO","AUTO-ROT1","SSD1306","SSD1306_32",
+				"QT095B","MSP0961","MSP1141","MSP1308","MSP1541","GMT177","MSP2008",
+				"MSP1443","MSP1803","MSP2202","MSP2401_2402","MSP2806_2807","MSP3217_3218","MSP3520_3521","MSP4020_4021","MSP4022_4023",
+				"3248S035","ROUNDLCD","MSP2807","ATM0177B3A",],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -120,7 +117,10 @@ int _getExtJs(uint8_t* buf) {
 		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
 		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
 
-		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,"SSD1306":3,"SSD1306_32":4,"SSD1331":5,"3248S035":6,"ROUNDLCD":7,"MSP2807":8,"ATM0177B3A":9,
+		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,"SSD1306":3,"SSD1306_32":4,
+		"QT095B":5,"MSP0961":10,"MSP1141":11,"MSP1308":12,"MSP1541":13,"GMT177":14,"MSP2008":15,
+		"MSP1443":16,"MSP1803":17,"MSP2202":18,"MSP2401_2402":19,"MSP2806_2807":8,"MSP3217_3218":20,"MSP3520_3521":21,"MSP4020_4021":22,"MSP4022_4023":23,
+		"3248S035":6,"ROUNDLCD":7,"MSP2807":8,"ATM0177B3A":9,
 	},
 	"translators":{
 		"ja":{

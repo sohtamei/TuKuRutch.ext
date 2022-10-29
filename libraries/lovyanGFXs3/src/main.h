@@ -6,19 +6,19 @@
 #include <LovyanGFX.hpp>
 #include <LGFX_AUTODETECT.hpp>
 
-#include <TukurutchEsp.h>
-#include <Preferences.h>
-
-extern WebsocketsServer wsServer;
-extern Preferences preferencesLCD;
+#if defined(ESP32)
+  #include <TukurutchEsp.h>
+  extern WebsocketsServer wsServer;
+#else
+  #include <stdio.h>
+#endif
 
 void _setup(const char* ver);
 void _loop(void);
 
-#define NVSCONFIG_MAX  12
-
 void _setupLCD(int lcdType, uint8_t *config_buf, int config_size);
 int _getLcdConfig(uint8_t* buf);
+void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size);
 
 extern lgfx::LGFX_Device *lcd;
 

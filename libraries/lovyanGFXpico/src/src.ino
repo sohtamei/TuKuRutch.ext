@@ -494,7 +494,9 @@ void loop()
       if(blePeri_enable) blePeripheral.poll();
     #endif
     
+    #if defined(ESP32)
       loopWebSocket();
+    #endif
       _loop();
     
 }
