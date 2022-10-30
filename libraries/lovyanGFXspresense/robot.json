@@ -1,6 +1,10 @@
 {
-	"name"			: "lovyanGFXpico",
-	"boardType"		: "arduino:mbed_rp2040:pico",				// package:platform:board
+	"name"			: "lovyanGFXspresense",
+	"boardType"		: "SPRESENSE:spresense:spresense",					// package:platform:board
+	"prefs"			: ["custom_Core=spresense_Main",
+						"custom_Debug=spresense_Disabled",
+						"custom_Memory=spresense_768",
+						"custom_UploadSpeed=spresense_115200"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -36,10 +40,11 @@ void _drawJpg(uint8_t* buf, int size) {
 	lcd->drawJpg(buf+4, size-4, x, y);
 }
 
-#include \"src.update.js.h\"
+//#include \"src.update.js.h\"
 int _getExtJs(uint8_t* buf) {
-	memcpy(buf, updateJS, sizeof(updateJS));
-	return sizeof(updateJS);
+//	memcpy(buf, updateJS, sizeof(updateJS));
+//	return sizeof(updateJS);
+	return 0;
 }
 ",
 	// setup処理 (C言語)

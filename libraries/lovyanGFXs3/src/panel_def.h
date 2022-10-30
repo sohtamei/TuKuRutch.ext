@@ -328,7 +328,7 @@ public:
 			cfg.panel_height     =   160;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
-			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
 			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
 			_panel_instance.config(cfg);
@@ -393,7 +393,7 @@ public:
 			cfg.panel_height     =   240;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
-			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
 			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
 			_panel_instance.config(cfg);
@@ -459,7 +459,7 @@ public:
 			cfg.panel_height     =   240;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     0;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
-			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
 			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
 			_panel_instance.config(cfg);
@@ -589,7 +589,7 @@ public:
 			cfg.panel_height     =   240;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     0;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
-			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
 			cfg.bus_shared       = false;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
 			_panel_instance.config(cfg);
@@ -1186,16 +1186,7 @@ class LGFX_SAINSMART18 : public lgfx::LGFX_Device
 public:
 	LGFX_SAINSMART18(int lcdType, uint8_t *config_buf, int config_size)
 	{
-		nvscfg_spi_t nvs = {
-			.sclk = 12,
-			.mosi = 14,
-			.miso = -1,
-			.dc   = 27,
-			.cs   = 25,
-			.rst  = 26,
-			.busy = -1,
-			.bl   = -1,
-		};
+		nvscfg_spi_t nvs = { .sclk=12, .mosi=14, .miso=-1, .dc=27, .cs=25, .rst=26, .busy=-1, .bl=-1, };
 
 		if(config_size >= sizeof(nvscfg_spi_t))
 			memcpy(&nvs, config_buf, sizeof(nvs));
@@ -1225,7 +1216,7 @@ public:
 			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
 			cfg.panel_width      =   128;	// 実際に表示可能な幅
 			cfg.panel_height     =   160;	// 実際に表示可能な高さ
-			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+			cfg.offset_rotation  =     0;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
 			cfg.invert           = false;	// パネルの明暗が反転してしまう場合 trueに設定
 			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定

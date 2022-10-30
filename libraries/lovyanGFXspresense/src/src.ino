@@ -30,10 +30,11 @@ void _drawJpg(uint8_t* buf, int size) {
     	lcd->drawJpg(buf+4, size-4, x, y);
 }
 
-#include "src.update.js.h"
+//#include "src.update.js.h"
 int _getExtJs(uint8_t* buf) {
-    	memcpy(buf, updateJS, sizeof(updateJS));
-    	return sizeof(updateJS);
+    //	memcpy(buf, updateJS, sizeof(updateJS));
+    //	return sizeof(updateJS);
+    	return 0;
 }
 
 #include <Wire.h>
