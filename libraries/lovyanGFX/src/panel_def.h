@@ -1185,7 +1185,7 @@ public:
 
 class LGFX_SQUARE : public lgfx::LGFX_Device
 {
-	lgfx::Panel_GC9A01	_panel_instance;
+	lgfx::Panel_ST7789	_panel_instance;
 #if defined(ESP32)
 	lgfx::Bus_SPI		_bus_spi;			// SPIバスのインスタンス
 	lgfx::Light_PWM		_light_instance;
@@ -1234,7 +1234,7 @@ public:
 			cfg.pin_rst  = ChkFF(nvs.rst);	// RSTが接続されているピン番号  (-1 = disable)
 			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
 			cfg.panel_width      =   240;	// 実際に表示可能な幅
-			cfg.panel_height     =   320;	// 実際に表示可能な高さ
+			cfg.panel_height     =   280;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
 			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
