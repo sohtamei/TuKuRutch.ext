@@ -79,6 +79,8 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 
 	// other
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
+	case LCDTYPE_ROUNDXIAO:		lcd = new LGFX_ROUNDXIAO(lcdType, config_buf, config_size); break;
+	case LCDTYPE_SQUARE:		lcd = new LGFX_SQUARE(lcdType, config_buf, config_size); break;
 	case LCDTYPE_ATM0177B3A:	lcd = new LGFX_ATM0177B3A(lcdType, config_buf, config_size); break;
 
 	// micom+LCD
