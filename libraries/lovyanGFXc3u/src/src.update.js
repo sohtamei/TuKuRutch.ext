@@ -252,6 +252,8 @@ lcdType: { acceptReporters: true, items: [
 { text: 'ROUNDLCD', value: '7' },
 { text: 'ROUNDXIAO', value: '24' },
 { text: 'SQUARE', value: '25' },
+{ text: '128TFT', value: '26' },
+{ text: 'TTGO_TDISP', value: '27' },
 { text: 'ATM0177B3A', value: '9' },
 ]},
 
