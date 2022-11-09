@@ -14,7 +14,7 @@ enum {
 	// type1
 	LCDTYPE_MSP0961 = 10,
 	LCDTYPE_MSP1141 = 11,
-	LCDTYPE_MSP1308 = 12,
+	LCDTYPE_MSP1308_GMT130 = 12,
 	LCDTYPE_MSP1541 = 13,
 	LCDTYPE_GMT177 = 14,
 	LCDTYPE_MSP2008 = 15,
@@ -49,7 +49,7 @@ const char LcdTypeStr[][16] = {
 
 	"MSP0961",		// 10
 	"MSP1141",
-	"MSP1308",
+	"MSP1308_GMT130",
 	"MSP1541",
 	"GMT177",
 	"MSP2008",
@@ -337,7 +337,7 @@ public:
 			cfg.panel_width      =    80;	// 実際に表示可能な幅
 			cfg.panel_height     =   160;	// 実際に表示可能な高さ
 			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
-			cfg.offset_x         =    28;
+			cfg.offset_x         =    26;
 			cfg.offset_y         =     1;
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
 			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
@@ -428,8 +428,8 @@ public:
 	}
 };
 
-// MSP1308/GMT130	MSP1541
-class LGFX_MSP1308 : public lgfx::LGFX_Device
+// MSP1308_GMT130/GMT130	MSP1541
+class LGFX_MSP1308_GMT130 : public lgfx::LGFX_Device
 {
 	lgfx::Panel_ST7789	_panel_instance;
 #if defined(ESP32)
@@ -437,7 +437,7 @@ class LGFX_MSP1308 : public lgfx::LGFX_Device
 	lgfx::Light_PWM		_light_instance;
 #endif
 public:
-	LGFX_MSP1308(int lcdType, uint8_t *config_buf, int config_size)
+	LGFX_MSP1308_GMT130(int lcdType, uint8_t *config_buf, int config_size)
 	{
 	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = { .sclk=33, .mosi=25, .miso=-1, .dc=27, .cs=-1, .rst=26, .busy=-1, .bl=14, };

@@ -235,7 +235,7 @@ lcdType: { acceptReporters: true, items: [
 { text: 'QT095B', value: '5' },
 { text: 'MSP0961', value: '10' },
 { text: 'MSP1141', value: '11' },
-{ text: 'MSP1308', value: '12' },
+{ text: 'MSP1308_GMT130', value: '12' },
 { text: 'MSP1541', value: '13' },
 { text: 'GMT177', value: '14' },
 { text: 'MSP2008', value: '15' },
@@ -252,6 +252,8 @@ lcdType: { acceptReporters: true, items: [
 { text: 'ROUNDLCD', value: '7' },
 { text: 'ROUNDXIAO', value: '24' },
 { text: 'SQUARE', value: '25' },
+{ text: '128TFT', value: '26' },
+{ text: 'TTGO_TDISP', value: '27' },
 { text: 'ATM0177B3A', value: '9' },
 ]},
 

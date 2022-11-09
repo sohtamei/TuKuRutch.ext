@@ -58,7 +58,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_MSP0961:		lcd = new LGFX_MSP0961(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP1141:		lcd = new LGFX_MSP1141(lcdType, config_buf, config_size); break;
 
-	case LCDTYPE_MSP1308:		lcd = new LGFX_MSP1308(lcdType, config_buf, config_size); break;
+	case LCDTYPE_MSP1308_GMT130:lcd = new LGFX_MSP1308_GMT130(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP1541:		lcd = new LGFX_MSP1541(lcdType, config_buf, config_size); break;
 
 	case LCDTYPE_GMT177:		lcd = new LGFX_GMT177(lcdType, config_buf, config_size); break;

@@ -236,5 +236,5 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
 		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
 	},
 
-	"sort"			: 51,										// メニュー上の表示順序
+	"sort"			: 61,										// メニュー上の表示順序
 }

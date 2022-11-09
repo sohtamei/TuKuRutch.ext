@@ -58,8 +58,8 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_MSP0961:		lcd = new LGFX_MSP0961(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP1141:		lcd = new LGFX_MSP1141(lcdType, config_buf, config_size); break;
 
-	case LCDTYPE_MSP1308:
-	case LCDTYPE_MSP1541:		lcd = new LGFX_MSP1308(lcdType, config_buf, config_size); break;
+	case LCDTYPE_MSP1308_GMT130:lcd = new LGFX_MSP1308_GMT130(lcdType, config_buf, config_size); break;
+	case LCDTYPE_MSP1541:		lcd = new LGFX_MSP1541(lcdType, config_buf, config_size); break;
 
 	case LCDTYPE_GMT177:		lcd = new LGFX_GMT177(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP2008:		lcd = new LGFX_MSP2008(lcdType, config_buf, config_size); break;
@@ -81,11 +81,13 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
 	case LCDTYPE_ROUNDXIAO:		lcd = new LGFX_ROUNDXIAO(lcdType, config_buf, config_size); break;
 	case LCDTYPE_SQUARE:		lcd = new LGFX_SQUARE(lcdType, config_buf, config_size); break;
+	case LCDTYPE_128TFT:		lcd = new LGFX_128TFT(lcdType, config_buf, config_size); break;
 	case LCDTYPE_ATM0177B3A:	lcd = new LGFX_ATM0177B3A(lcdType, config_buf, config_size); break;
 
 	// micom+LCD
 #if defined(CONFIG_IDF_TARGET_ESP32)
 	case LCDTYPE_3248S035:		lcd = new LGFX_3248S035(lcdType, config_buf, config_size); break;
+	case LCDTYPE_TTGO_TDISP:	lcd = new LGFX_TTGO_TDISP(lcdType, config_buf, config_size); break;
 #endif
 
 	default:
