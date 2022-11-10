@@ -51,6 +51,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	// i2c
 	case LCDTYPE_SSD1306:
 	case LCDTYPE_SSD1306_32:	lcd = new LGFX_SSD1306(lcdType, config_buf, config_size); break;
+	case LCDTYPE_SH110X:		lcd = new LGFX_SH110X(lcdType, config_buf, config_size); break;
 #endif
 
 	// Type1
@@ -167,7 +168,10 @@ void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 {
 #if defined(ESP32)
 	preferencesLCD.putInt("lcdType", lcdType);
-	preferencesLCD.putBytes("config", config_buf, config_size);
+	if(config_size)
+		preferencesLCD.putBytes("config", config_buf, config_size);
+	else
+		preferencesLCD.remove("config");
 #elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	uint8_t buf[FLASH_PAGE_SIZE];
 

@@ -232,6 +232,7 @@ lcdType: { acceptReporters: true, items: [
 { text: 'AUTO-ROT1', value: '2' },
 { text: 'SSD1306', value: '3' },
 { text: 'SSD1306_32', value: '4' },
+{ text: 'SH110X', value: '28' },
 { text: 'QT095B', value: '5' },
 { text: 'MSP0961', value: '10' },
 { text: 'MSP1141', value: '11' },

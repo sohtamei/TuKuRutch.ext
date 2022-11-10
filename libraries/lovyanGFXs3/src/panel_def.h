@@ -33,6 +33,8 @@ enum {
 	LCDTYPE_SQUARE = 25,
 	LCDTYPE_128TFT = 26,
 	LCDTYPE_TTGO_TDISP = 27,
+
+	LCDTYPE_SH110X = 28,
 };
 
 const char LcdTypeStr[][16] = {
@@ -67,6 +69,8 @@ const char LcdTypeStr[][16] = {
 	"SQUARE",
 	"128TFT",
 	"TTGO_TDISP",
+
+	"SH110X",
 };
 
 typedef struct {
@@ -221,6 +225,54 @@ public:
 			auto cfg = _panel_instance.config();
 			cfg.panel_width		= 128;		// 実際に表示可能な幅
 			cfg.panel_height	= (lcdType==LCDTYPE_SSD1306_32)?32:64;
+											// 実際に表示可能な高さ
+			_panel_instance.config(cfg);
+		}
+		setPanel(&_panel_instance);	// 使用するパネルをセット
+		init();
+	}
+};
+
+class LGFX_SH110X : public lgfx::LGFX_Device
+{
+	lgfx::Panel_SH110x	_panel_instance;
+	lgfx::Bus_I2C		_bus_i2c;
+public:
+	LGFX_SH110X(int lcdType, uint8_t *config_buf, int config_size)
+	{
+	#if defined(CONFIG_IDF_TARGET_ESP32)
+		nvscfg_i2c_t nvs = { .sda=21, .scl=22, };
+	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+		nvscfg_i2c_t nvs = { .sda=8,  .scl=9, };
+	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+		nvscfg_i2c_t nvs = { .sda=6,  .scl=7, };
+	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+		nvscfg_i2c_t nvs = { .sda=4,  .scl=5, };
+	#else
+		nvscfg_i2c_t nvs = {0};
+		return;
+	#endif
+		if(config_size >= sizeof(nvscfg_i2c_t))
+			memcpy(&nvs, config_buf, sizeof(nvs));
+
+		if(ChkFF(nvs.sda)<0 || ChkFF(nvs.scl)<0) return;
+
+		{ // バス制御の設定
+			auto cfg = _bus_i2c.config();
+			cfg.i2c_port	= 0;				// 使用するI2Cポートを選択 (0 or 1)
+			cfg.freq_write	= 400000;			// 送信時のクロック
+			cfg.freq_read	= 400000;			// 受信時のクロック
+			cfg.pin_sda		= ChkFF(nvs.sda);	// SDAを接続しているピン番号
+			cfg.pin_scl		= ChkFF(nvs.scl);	// SCLを接続しているピン番号
+			cfg.i2c_addr	= 0x3C;				// I2Cデバイスのアドレス
+			_bus_i2c.config(cfg);			// 設定値をバスに反映
+			_panel_instance.setBus(&_bus_i2c);
+		}
+
+		{ // 表示パネル制御の設定
+			auto cfg = _panel_instance.config();
+			cfg.panel_width		= 128;		// 実際に表示可能な幅
+			cfg.panel_height	= 128;
 											// 実際に表示可能な高さ
 			_panel_instance.config(cfg);
 		}
