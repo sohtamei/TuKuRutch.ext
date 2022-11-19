@@ -1,5 +1,6 @@
 {
 	"name"			: "M5Atom",
+	"scratch3ext"	: "AtomMateForToio",						// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -9,6 +10,10 @@
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_1500000"],
+
+	"scratch3burn"	: [
+			{"name":"M5Atom", "type":"esp32", "baudrate":750000, "binPath":"M5Atom"},
+	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -48,6 +53,10 @@
 		["-"],//["w", "play tone on note %d.note beat %d.beats","Buzzer",	 	 "C4","Half",	{"remote":["S","S"],	"func":"_tone({0},{1});"}],
 		["-"],//["w", "Beep",									"Beep",							{"remote":[],			"func":"_beep();"}],
 		["B", "%d.button is pressed",					"getSw",			"buttonA",	{"remote":["B","B"],	"func":"_getSw({0})"}],
+		["-"],
+		["w", "init TOF %n",							"initTOF",			1,			{"remote":["B"],		"func":"initTOF({0});"}],
+		["R", "get TOF %n",								"_getTOF",			0,			{"remote":["B",	"S"],	"func":"getTOF({0})"}],
+		["R", "get TOFs",								"_getTOFs",						{"remote":[		"b"],	"func":"sendBin(buffer, getTOFs(buffer))"}],//, "hide":true
 	],
 	"menus": {
 		"onoff":["On","Off"],
