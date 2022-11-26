@@ -104,8 +104,13 @@ int  quadCrawler_SW(void);
 void quadCrawler_digitalWrite(uint8_t pin, uint8_t data);
 uint8_t quadCrawler_digitalRead(uint8_t pin);
 
+void quadCrawler_setMotion(uint8_t* buf, int size);
+
 //#define LIDAR_ENABLED
 void _respLidar();
 void loopLidar();
+
+#define GetL16(a) (((a)[1]<<8) | (a)[0])
+#define SetL16(a, b) ((a)[1] = (b)>>8,  (a)[0] = ((b) & 0xFF))
 
 #endif  // quadCrawler_h

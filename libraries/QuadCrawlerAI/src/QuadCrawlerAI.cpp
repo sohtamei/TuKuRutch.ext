@@ -89,6 +89,8 @@ enum {
 	MotionNeutral1,
 
 	MotionWalk,
+
+	MotionVmd,
 };
 
 static uint8_t cur_com = COM_STOP;
@@ -96,6 +98,12 @@ static uint8_t cur_com = COM_STOP;
 static uint8_t  motionState = MotionOff;
 static uint32_t motionStart = 0;
 static uint16_t motionDur = quadCrawler_fast;
+
+#define VMD_FRAME_SIZE 10
+#define VMD_FRAME_MAX  200
+static uint8_t  motionVmdBuf[VMD_FRAME_MAX][VMD_FRAME_SIZE];
+static uint16_t motionVmdNum = 0;
+static uint16_t motionVmdIndex = 0;
 
 //---------------------------------------------------------
 
@@ -419,6 +427,23 @@ void quadCrawler_servoLoop(void)
 		}
 		break;
 
+	case MotionVmd: {
+		if(elapsed < (GetL16(motionVmdBuf[motionVmdIndex]+0) * 1000UL) / 30)
+			break;
+
+		motionVmdIndex++;
+		if(motionVmdIndex >= motionVmdNum) {
+			motionNeutral();
+			break;
+		}
+		int speed = ((GetL16(motionVmdBuf[motionVmdIndex]+0) - GetL16(motionVmdBuf[motionVmdIndex-1]+0)) * 1000UL) / 30;
+		int8_t* motion = (int8_t*)motionVmdBuf[motionVmdIndex]+2;
+		for(int i = 0; i < 8; i++) {
+			if(motion[i] != INV)
+				setTarget(i, motion[i], speed);
+		}
+		break;
+	  }
 	default:
 		break;
 	}
@@ -726,6 +751,23 @@ uint8_t quadCrawler_digitalRead(uint8_t pin)
 {
 	mcp.pinMode(pin+8, INPUT);
 	return mcp.digitalRead(pin+8);
+}
+
+void quadCrawler_setMotion(uint8_t* buf, int size)
+{
+	motionVmdNum = size/VMD_FRAME_SIZE;
+	if(motionVmdNum > VMD_FRAME_MAX) motionVmdNum = VMD_FRAME_MAX;
+	memcpy(motionVmdBuf, buf, motionVmdNum*VMD_FRAME_SIZE);
+
+	for(int i = 0; i < 8; i++) {
+		_set_servo(i, (int8_t)motionVmdBuf[0][2+i]);
+		delay(10);
+	}
+
+	motionVmdIndex = 1;
+	int speed = ((GetL16(motionVmdBuf[motionVmdIndex]+0) - GetL16(motionVmdBuf[motionVmdIndex-1]+0)) * 1000UL) / 30;
+
+	setTargets((int8_t*)motionVmdBuf[motionVmdIndex]+2, speed, MotionVmd);
 }
 
 // Lidar -----------------

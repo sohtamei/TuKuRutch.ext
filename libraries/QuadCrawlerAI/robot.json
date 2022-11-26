@@ -75,6 +75,8 @@
 		["-"],	// ブロック区切り
 
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"quadCrawler_LED({0});"}],
+		["w", "set motion %s",							"setMotion",	"0000ead3ead3ead3ead31d007fd37f7f7fd37f7f3b007fd37f7f7fd37f7f4a007f007f7f7f007f7f59007fa67f7f7fa67f7f5f007fa67f7f7fa67f7f68007fa67f7f7fa67f7f72007f007f7f7f007f7f7f007f2d7f7f7fa67f7f8b007fa67f7f7f2d7f7f98007fd37f7f7fa67f7f",
+																						{"remote":["b2"],		"func":"quadCrawler_setMotion({0});"}],
 
 		// enum
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
