@@ -25,6 +25,7 @@
 #include <TukurutchEsp.h>
 #include \"main.h\"
 #include <TukurutchEspCamera.h>
+#define RECV_BUFFER 5000
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",

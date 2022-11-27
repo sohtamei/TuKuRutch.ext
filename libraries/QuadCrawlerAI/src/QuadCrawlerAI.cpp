@@ -755,6 +755,7 @@ uint8_t quadCrawler_digitalRead(uint8_t pin)
 
 void quadCrawler_setMotion(uint8_t* buf, int size)
 {
+	cur_com = COM_POSE;
 	motionVmdNum = size/VMD_FRAME_SIZE;
 	if(motionVmdNum > VMD_FRAME_MAX) motionVmdNum = VMD_FRAME_MAX;
 	memcpy(motionVmdBuf, buf, motionVmdNum*VMD_FRAME_SIZE);
