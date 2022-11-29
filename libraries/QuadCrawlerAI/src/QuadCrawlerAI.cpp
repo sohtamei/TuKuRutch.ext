@@ -180,7 +180,7 @@ static void setTargetLoop(void)
 	for(i = 0; i < 8; i++) {
 		if(timeDur[i] == 0) continue;
 
-		int16_t elapsed = cur - timeStart[i];
+		int32_t elapsed = (cur - timeStart[i]) & 0x7FFFFFFF;
 		if(elapsed > timeDur[i]) continue;
 
 		int32_t k256 = (elapsed*256L)/timeDur[i];
@@ -442,6 +442,7 @@ void quadCrawler_servoLoop(void)
 			if(motion[i] != INV)
 				setTarget(i, motion[i], speed);
 		}
+	//	Serial.printf("%d %d %d %d %d %d %d %d\n", motion[0], motion[1], motion[2], motion[3], motion[4], motion[5], motion[6], motion[7]);
 		break;
 	  }
 	default:
@@ -761,7 +762,9 @@ void quadCrawler_setMotion(uint8_t* buf, int size)
 	memcpy(motionVmdBuf, buf, motionVmdNum*VMD_FRAME_SIZE);
 
 	for(int i = 0; i < 8; i++) {
-		_set_servo(i, (int8_t)motionVmdBuf[0][2+i]);
+		int deg = (int8_t)motionVmdBuf[0][2+i];
+		_set_servo(i, deg);
+		servoEnd[i] = deg;
 		delay(10);
 	}
 
