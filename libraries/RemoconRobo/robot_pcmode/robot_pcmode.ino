@@ -1,5 +1,3 @@
-// copyright to SohtaMei 2019.
-
 #define PCMODE
 
 #define mVersion "RemoconRobo1.2"
@@ -53,11 +51,26 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 #define getBufLen2(n) (buffer+5),(_packetLen-5)
 
-#define LEDC_BUZZER  15
-#define LEDC_PWM_START 2
-#define LEDC_PWM_END   7
+#if defined(ESP32)
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  #define LEDC_BUZZER   15
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   7
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  #define LEDC_BUZZER    7   // by hajimef
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   6
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+  #define LEDC_BUZZER    7
+  #define LEDC_PWM_START 2
+  #define LEDC_PWM_END   6
+#else
+  #pragma message "unsupported device"
+#endif
+#endif
+
 /*
- * LEDC Chan to Group/Channel/Timer Mapping
+ * LEDC Chan to Group/Channel/Timer Mapping (ESP32)
 ** ledc: 0  => Group: 0, Channel: 0, Timer: 0 //CameraWebServer
 ** ledc: 1  => Group: 0, Channel: 1, Timer: 0
 ** ledc: 2  => Group: 0, Channel: 2, Timer: 1 x
@@ -86,6 +99,8 @@ void setup()
     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
       Serial.begin(19200);
       _bleSetup();
+    #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+      delay(500);
     #endif
     
     Serial.begin(115200);
@@ -101,9 +116,9 @@ void setup()
 }
 
 #ifdef RECV_BUFFER
-static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
 #else
-static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
@@ -238,7 +253,7 @@ static void digiWrite(uint8_t* buf, int num)
 
 static int _analogRead(uint8_t port, uint16_t count)
 {
-    #if defined(ESP32)
+    #if 0//defined(ESP32)
       return getAdc1(port,count);
     #else
       pinMode(port, INPUT);
@@ -249,11 +264,13 @@ static int _analogRead(uint8_t port, uint16_t count)
         sum += analogRead(port);
     
      #if defined(__AVR_ATmega328P__)
-      return ((sum / count) * 625UL) / 128;	// 1024->5000
+      return ((sum / count) * 625UL) / 128;		// 1024->5000
      #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
-      return ((sum / count) * 825UL) / 256;	// 1024->3300
+      return ((sum / count) * 825UL) / 256;		// 1024->3300
+     #elif defined(ESP32)
+      return ((sum / count) * 825UL) / 1024;	// 4096->3300  by hajimef
      #else
-      return ((sum / count) * 825UL) / 256;	// 1024->3300
+      return ((sum / count) * 825UL) / 256;		// 1024->3300
      #endif
     #endif
 }
@@ -384,7 +401,7 @@ static void parseData()
         case 21: sendByte((pinMode(A0+getByte(0),INPUT),digitalRead(A0+getByte(0)))); break;
         case 23: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin[getByte(0)]); srvClass[getByte(0)].write(getByte(1));; callOK(); break;
         #if defined(ESP32)
-          case 0x81: Wire.begin(getByte(0),getByte(1)); callOK(); break;
+          case 0x81: Wire.end(); Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
           case 0x81: Wire.begin(); callOK(); break;
         #endif
@@ -569,11 +586,40 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 }
 
 void onMessageCallback(WebsocketsMessage msg) {
-      _packetLen = msg.length();
-      memcpy(buffer, msg.c_str(), _packetLen);
+      int size = msg.length();
+      if(_index+size >= sizeof(buffer)) {
+            _index = 0;
+            return;
+      }
+      memcpy(buffer+_index, msg.c_str(), size);
+      if(_index == 0) {
+            if(buffer[0] != 0xff) {
+                  _index = 0;
+                  return;
+            } else {
+                  switch(buffer[1]) {
+                      case 0x55:
+                        _packetLen = 3+buffer[2];
+                        break;
+                      case 0x54:
+                        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+                        break;
+                      default:
+                        _index = 0;
+                        return;
+                  }
+            }
+      }
       comMode = MODE_WS;
-      parseData();
-      _client.sendBinary((char*)_packet_dp, _packetLen);
+      _index += size;
+      if(_index >= _packetLen) {
+            parseData();
+            _client.sendBinary((char*)_packet_dp, _packetLen);
+            _index = 0;
+      } else {
+        const uint8_t buf[] = {0x00};
+            _client.sendBinary((char*)buf, sizeof(buf));
+      }
 }
 
 static void loopWebSocket(void)
@@ -808,6 +854,17 @@ void sendBin(uint8_t* buf, uint8_t num)
       *dp++ = RSP_BUF;
       *dp++ = num;
       _write(buffer, 5+num);
+}
+
+void sendBin2(uint8_t* buf, uint16_t num)
+{
+          memmove(buffer+4, buf, num);
+          uint8_t* dp = buffer;
+          *dp++ = 0xff;
+          *dp++ = 0x54;
+          *dp++ = (num);
+          *dp++ = (num)>>8;
+          _write(buffer, 4+num);
 }
 
 //### CUSTOMIZED ###
