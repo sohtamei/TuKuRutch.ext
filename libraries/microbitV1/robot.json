@@ -3,7 +3,6 @@
 	"boardType"		: "sandeepmistry:nRF5:BBCmicrobit",			// package:platform:board
 
 	"sort"			: 41,										// メニュー上の表示順序
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_softdevice=BBCmicrobit_s110"],
 
 	// C言語記述注意 : " を使うときは \" とすること
