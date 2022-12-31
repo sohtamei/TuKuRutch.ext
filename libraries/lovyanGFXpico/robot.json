@@ -1,6 +1,16 @@
 {
 	"name"			: "lovyanGFXpico",
-	"boardType"		: "arduino:mbed_rp2040:pico",				// package:platform:board
+	"boardType"		: "rp2040:rp2040:rpipico",				// package:platform:board
+	"prefs"			: ["custom_dbglvl=rpipico_None",
+						"custom_dbgport=rpipico_Disabled",
+						"custom_exceptions=rpipico_Disabled",
+						"custom_flash=rpipico_2097152_0",
+						"custom_freq=rpipico_133",
+						"custom_ipstack=rpipico_ipv4only",
+						"custom_opt=rpipico_Small",
+						"custom_rtti=rpipico_Disabled",
+						"custom_stackprotect=rpipico_Disabled",
+						"custom_usbstack=rpipico_picosdk"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 

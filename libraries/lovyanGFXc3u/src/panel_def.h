@@ -79,14 +79,14 @@ typedef struct {
 } nvscfg_i2c_t;
 
 typedef struct {
-	uint8_t sclk;
-	uint8_t mosi;
-	uint8_t miso;
-	uint8_t dc;
-	uint8_t cs;
-	uint8_t rst;
-	uint8_t busy;
-	uint8_t bl;
+	int8_t sclk;
+	int8_t mosi;
+	int8_t miso;
+	int8_t dc;
+	int8_t cs;
+	int8_t rst;
+	int8_t busy;
+	int8_t bl;
 } nvscfg_spi_t;
 
 #if defined(CONFIG_IDF_TARGET_ESP32)

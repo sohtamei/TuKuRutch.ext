@@ -38,7 +38,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	}
 
 	switch(lcdType) {
-#if defined(CONFIG_IDF_TARGET_ESP32)
+#if defined(ESP32)
 	case LCDTYPE_AUTO:
 	case LCDTYPE_AUTO_ROT1:
 		lcd = new LGFX();
@@ -47,7 +47,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 			lcd->setRotation(1);
 		break;
 #endif
-#if defined(ESP32)
+#if defined(ESP32) //|| defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	// i2c
 	case LCDTYPE_SSD1306:
 	case LCDTYPE_SSD1306_32:	lcd = new LGFX_SSD1306(lcdType, config_buf, config_size); break;
