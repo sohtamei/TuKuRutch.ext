@@ -1,3 +1,4 @@
+#if defined(CONFIG_IDF_TARGET_ESP32)
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "esp_err.h"
@@ -62,3 +63,4 @@ void camera_disable_out_clock()
 {
     ledc_stop(LEDC_LOW_SPEED_MODE, g_ledc_channel, 0);
 }
+#endif // CONFIG_IDF_TARGET_ESP32

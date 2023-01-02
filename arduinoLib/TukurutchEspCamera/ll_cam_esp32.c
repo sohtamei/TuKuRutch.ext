@@ -1,3 +1,4 @@
+#if defined(CONFIG_IDF_TARGET_ESP32)
 // Copyright 2010-2020 Espressif Systems (Shanghai) PTE LTD
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -530,3 +531,4 @@ esp_err_t ll_cam_set_sample_mode(cam_obj_t *cam, pixformat_t pix_format, uint32_
     I2S0.fifo_conf.rx_fifo_mod = sampling_mode;
     return ESP_OK;
 }
+#endif // CONFIG_IDF_TARGET_ESP32
