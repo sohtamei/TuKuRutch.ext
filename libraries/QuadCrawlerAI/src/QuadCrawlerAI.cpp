@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
-#include "Adafruit_MCP23017.h"
+#include "Adafruit_MCP23X17.h"
 #include <Wire.h>
 #include <Preferences.h>
 #include "QuadCrawlerAI.h"
@@ -26,7 +26,7 @@
 static Preferences preferencesQC;
 static int8_t calib[8] = {0,0,0,0,0,0,0,0};
 
-Adafruit_MCP23017 mcp;
+Adafruit_MCP23X17 mcp;
 
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 #define SERVO_MIN 90L   // Min pulse length out of 4096 (実測 75)
@@ -703,7 +703,7 @@ void quadCrawler_init(void)
 	Wire.begin(P_SDA,P_SCL);
 	delay(100);
 
-    mcp.begin();
+    mcp.begin_I2C();
 	mcp.pinMode(PE_Motor_EN, OUTPUT);
 	mcp.digitalWrite(PE_Motor_EN, HIGH);
 	mcp.pinMode(PE_LED, OUTPUT);
