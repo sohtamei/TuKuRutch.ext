@@ -20,10 +20,10 @@
 						"custom_UploadSpeed=esp32s3_921600"],
 
 	"scratch3burn"	: [
-			{"name":"DevkitC_ESP32", "type":"esp32", "baudrate":921600, "binPath":"esp32"},
-			{"name":"DevkitC_S3", "type":"esp32s3", "baudrate":921600, "binPath":"esp32S3DevkitC"},
-			{"name":"generic_ESP32_921600", "type":"esp32", "baudrate":921600, "binPath":"esp32"},
-			{"name":"generic_ESP32_115200", "type":"esp32", "baudrate":115200, "binPath":"esp32"},
+			{"name":"DevkitC_ESP32",        "type":"esp32", "baudrate":921600, "binPath":"esp32"},
+			{"name":"DevkitC_S3.uart",    "type":"esp32s3", "baudrate":921600, "binPath":"esp32S3DevkitC"},
+			{"name":"generic_ESP32.921600", "type":"esp32", "baudrate":921600, "binPath":"esp32"},
+			{"name":"generic_ESP32.115200", "type":"esp32", "baudrate":115200, "binPath":"esp32"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

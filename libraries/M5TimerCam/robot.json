@@ -12,11 +12,13 @@
 						"custom_UploadSpeed=esp32_1500000"],
 
 	"scratch3burn"	: [
-			{"name":"M5Camera",   "type":"esp32", "baudrate":921600, "binPath":"M5CameraCar"},
-			{"name":"ESP32_CAM",  "type":"esp32", "baudrate":921600, "binPath":"esp32cam"},
-			{"name":"UnitCam",    "type":"esp32", "baudrate":921600, "binPath":"unitCam"},
-			{"name":"M5TimerCam", "type":"esp32", "baudrate":1500000, "binPath":"M5TimerCam"},
-			{"name":"testXclkIssue","type":"esp32", "baudrate":115200, "binPath":"testCamWifi"},
+			{"name":"M5TimerCam",     "type":"esp32",   "baudrate":1500000, "binPath":"M5TimerCam"},
+			{"name":"M5Camera",       "type":"esp32",   "baudrate":921600, "binPath":"M5CameraCar"},
+			{"name":"ESP32S3cam.uart","type":"esp32s3", "baudrate":921600, "binPath":"esp32s3cam"},
+			{"name":"ESP32S3cam.usb", "type":"esp32s3u","baudrate":921600, "binPath":"esp32s3ucam"},
+			{"name":"ESP32_CAM",      "type":"esp32",   "baudrate":921600, "binPath":"esp32cam"},
+			{"name":"UnitCam",        "type":"esp32",   "baudrate":921600, "binPath":"unitCam"},
+			{"name":"testXclkIssue",  "type":"esp32",   "baudrate":115200, "binPath":"testCam"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

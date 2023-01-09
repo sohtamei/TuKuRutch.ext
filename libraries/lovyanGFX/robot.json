@@ -15,8 +15,12 @@
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [
-			{"name":"lovyanGFX.esp32", "type":"esp32", "baudrate":921600, "binPath":"lovyanGFX"},
-			{"name":"lovyanGFX.esp32_750000", "type":"esp32", "baudrate":750000, "binPath":"lovyanGFX"},
+			{"name":"lovyanGFX.esp32",        "type":"esp32", "baudrate":921600, "binPath":"lovyanGFX"},
+			{"name":"lovyanGFX.esp32.750000", "type":"esp32", "baudrate":750000, "binPath":"lovyanGFX"},
+			{"name":"lovyanGFX.esp32s3.uart", "type":"esp32s3", "baudrate":921600, "binPath":"lovyanGFXs3"},
+			{"name":"lovyanGFX.esp32s3.usb",  "type":"esp32s3u","baudrate":921600, "binPath":"lovyanGFXs3u"},
+			{"name":"lovyanGFX.esp32c3.uart", "type":"esp32c3", "baudrate":921600, "binPath":"lovyanGFXc3"},
+			{"name":"lovyanGFX.esp32c3.usb",  "type":"esp32c3u","baudrate":921600, "binPath":"lovyanGFXc3u"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
