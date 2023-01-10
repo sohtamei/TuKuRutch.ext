@@ -51,7 +51,11 @@ var ext = class {
 	get_blocks() {
 		this.flashList = [
 {name:'lovyanGFX.esp32', type:'esp32', baudrate:921600},
-{name:'lovyanGFX.esp32_750000', type:'esp32', baudrate:750000},
+{name:'lovyanGFX.esp32.750000', type:'esp32', baudrate:750000},
+{name:'lovyanGFX.esp32s3.uart', type:'esp32s3', baudrate:921600},
+{name:'lovyanGFX.esp32s3.usb', type:'esp32s3u', baudrate:921600},
+{name:'lovyanGFX.esp32c3.uart', type:'esp32c3', baudrate:921600},
+{name:'lovyanGFX.esp32c3.usb', type:'esp32c3u', baudrate:921600},
 		];
 
 		this._blocks = [
@@ -250,6 +254,7 @@ lcdType: { acceptReporters: true, items: [
 { text: 'MSP4020_4021', value: '22' },
 { text: 'MSP4022_4023', value: '23' },
 { text: '3248S035', value: '6' },
+{ text: '1732S019', value: '29' },
 { text: 'ROUNDLCD', value: '7' },
 { text: 'ROUNDXIAO', value: '24' },
 { text: 'SQUARE', value: '25' },

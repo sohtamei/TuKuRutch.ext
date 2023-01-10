@@ -19,6 +19,7 @@
 			{"name":"ESP32_CAM",      "type":"esp32",   "baudrate":921600, "binPath":"esp32cam"},
 			{"name":"UnitCam",        "type":"esp32",   "baudrate":921600, "binPath":"unitCam"},
 			{"name":"testXclkIssue",  "type":"esp32",   "baudrate":115200, "binPath":"testCam"},
+			{"name":"testXclkS3.uart","type":"esp32s3", "baudrate":921600, "binPath":"testCamS3"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
