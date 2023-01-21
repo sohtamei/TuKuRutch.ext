@@ -91,6 +91,8 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_TTGO_TDISP:	lcd = new LGFX_TTGO_TDISP(lcdType, config_buf, config_size); break;
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 	case LCDTYPE_1732S019:		lcd = new LGFX_1732S019(lcdType, config_buf, config_size); break;
+#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+	case LCDTYPE_RP2040LCD128:	lcd = new LGFX_RP2040LCD128(lcdType, config_buf, config_size); break;
 #endif
 
 	default:

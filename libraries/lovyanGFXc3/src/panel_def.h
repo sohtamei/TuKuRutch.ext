@@ -36,6 +36,7 @@ enum {
 
 	LCDTYPE_SH110X = 28,
 	LCDTYPE_1732S019 = 29,
+	LCDTYPE_RP2040LCD128 = 30,
 };
 
 const char LcdTypeStr[][16] = {
@@ -73,6 +74,7 @@ const char LcdTypeStr[][16] = {
 
 	"SH110X",		// 28
 	"1732S019",
+	"RP2040LCD128",
 };
 
 typedef struct {
@@ -119,7 +121,7 @@ typedef struct {
   typedef int spi_host_device_t;
   #define PWM_CH  7
   int ChkFF(int a) {
-    const uint8_t availables[] = {0,1,2,3,4,5,6,7,8,9, 10,11,12,13,14,15,16,17,18,19, 20,21,22, 26,27,28,};
+    const uint8_t availables[] = {0,1,2,3,4,5,6,7,8,9, 10,11,12,13,14,15,16,17,18,19, 20,21,22,23,24,25,26,27,28,29};
     for(int i=0; i<sizeof(availables); i++)
       if(a == availables[i]) return a;
     return -1;
@@ -142,10 +144,12 @@ spi_host_device_t getSpiCh(int sclk, int mosi)
 	case 2:
 	case 6:
 	case 18:
+	case 22:
 		sclk_ch = 0;
 		break;
 	case 10:
 	case 14:
+	case 26:
 		sclk_ch = 1;
 		break;
 	}
@@ -154,10 +158,12 @@ spi_host_device_t getSpiCh(int sclk, int mosi)
 	case 3:
 	case 7:
 	case 19:
+	case 23:
 		mosi_ch = 0;
 		break;
 	case 11:
 	case 15:
+	case 27:
 		mosi_ch = 1;
 		break;
 	}
@@ -1553,6 +1559,76 @@ public:
 		init();
 	}
 };
+
+#if defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+// SDA	6
+// SCL	7
+
+class LGFX_RP2040LCD128 : public lgfx::LGFX_Device
+{
+	lgfx::Panel_GC9A01	_panel_instance;
+#if defined(ESP32)
+	lgfx::Bus_SPI		_bus_spi;			// SPIバスのインスタンス
+	lgfx::Light_PWM		_light_instance;
+#endif
+public:
+	LGFX_RP2040LCD128(int lcdType, uint8_t *config_buf, int config_size)
+	{
+		nvscfg_spi_t nvs = { .sclk=10, .mosi=11, .miso=-1, .dc=8, .cs=9, .rst=12, .busy=-1, .bl=25, };
+
+	//	if(config_size >= sizeof(nvscfg_spi_t))
+	//		memcpy(&nvs, config_buf, sizeof(nvs));
+
+		spi_host_device_t spi_ch = getSpiCh(nvs.sclk, nvs.mosi);
+		if(spi_ch < 0) return;
+
+		{ // バス制御の設定を行います。
+			auto cfg = _bus_spi.config();	// バス設定用の構造体を取得します。
+			cfg.spi_host = spi_ch;				// 使用するSPIを選択  ESP32-S2,C3 : SPI2_HOST or SPI3_HOST / ESP32 : VSPI_HOST or HSPI_HOST
+			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
+			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
+			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
+			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
+			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
+			cfg.pin_dc   = ChkFF(nvs.dc);		// SPIのD/Cピン番号を設定  (-1 = disable)
+		 // SDカードと共通のSPIバスを使う場合、MISOは省略せず必ず設定してください。
+			_bus_spi.config(cfg);			// 設定値をバスに反映します。
+			_panel_instance.setBus(&_bus_spi);		// バスをパネルにセットします。
+		}
+
+		{ // 表示パネル制御の設定を行います。
+			auto cfg = _panel_instance.config();	// 表示パネル設定用の構造体を取得します。
+			cfg.pin_cs   = ChkFF(nvs.cs);	// CSが接続されているピン番号   (-1 = disable)
+			cfg.pin_rst  = ChkFF(nvs.rst);	// RSTが接続されているピン番号  (-1 = disable)
+			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
+			cfg.panel_width      =   240;	// 実際に表示可能な幅
+			cfg.panel_height     =   240;	// 実際に表示可能な高さ
+			cfg.offset_rotation  =     0;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
+			cfg.invert           =  true;	// パネルの明暗が反転してしまう場合 trueに設定
+			cfg.rgb_order        = false;	// パネルの赤と青が入れ替わってしまう場合 trueに設定
+			cfg.bus_shared       =  true;	// SDカードとバスを共有している場合 trueに設定(drawJpgFile等でバス制御を行います)
+			_panel_instance.config(cfg);
+		}
+	#if defined(ESP32)
+		{ // バックライト制御の設定を行います。（必要なければ削除）
+			auto cfg = _light_instance.config();	// バックライト設定用の構造体を取得します。
+			cfg.pin_bl = ChkFF(nvs.bl);		// バックライトが接続されているピン番号
+			cfg.invert = false;				// バックライトの輝度を反転させる場合 true
+			cfg.freq   = 44100;				// バックライトのPWM周波数
+			cfg.pwm_channel = PWM_CH;		// 使用するPWMのチャンネル番号
+			_light_instance.config(cfg);
+			_panel_instance.setLight(&_light_instance);	// バックライトをパネルにセットします。
+		}
+	#else
+		setPortHi(nvs.bl);
+	#endif
+		setPanel(&_panel_instance); // 使用するパネルをセットします。
+		init();
+	}
+};
+#endif	// RP2040
 
 #if 0
 class LGFX_SAINSMART18 : public lgfx::LGFX_Device

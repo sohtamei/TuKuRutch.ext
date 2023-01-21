@@ -261,6 +261,7 @@ lcdType: { acceptReporters: true, items: [
 { text: '128TFT', value: '26' },
 { text: 'TTGO_TDISP', value: '27' },
 { text: 'ATM0177B3A', value: '9' },
+{ text: 'RP2040LCD128', value: '30' },
 ]},
 
 onoff: { acceptReporters: true, items: [
