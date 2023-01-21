@@ -1345,8 +1345,7 @@ public:
 		nvscfg_spi_t nvs = {0};
 		return;
 	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-		nvscfg_spi_t nvs = {0};
-		return;
+		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=36, .cs=14, .rst=35, .busy=-1, .bl=48, };
 	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = { .sclk= 8, .mosi=10, .miso=-1, .dc= 2, .cs=20, .rst= 3, .busy=-1, .bl= 4, };
 	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
@@ -1574,7 +1573,7 @@ class LGFX_RP2040LCD128 : public lgfx::LGFX_Device
 public:
 	LGFX_RP2040LCD128(int lcdType, uint8_t *config_buf, int config_size)
 	{
-		nvscfg_spi_t nvs = { .sclk=10, .mosi=11, .miso=-1, .dc=8, .cs=9, .rst=12, .busy=-1, .bl=25, };
+		nvscfg_spi_t nvs = { .sclk=10, .mosi=11, .miso=-1, .dc= 8, .cs= 9, .rst=12, .busy=-1, .bl=25, };
 
 	//	if(config_size >= sizeof(nvscfg_spi_t))
 	//		memcpy(&nvs, config_buf, sizeof(nvs));

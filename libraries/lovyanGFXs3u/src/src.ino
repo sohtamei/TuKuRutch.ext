@@ -491,7 +491,7 @@ static void parseData()
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
           case 0x8b: callOK(); break;
         #if defined(CAMERA_ENABLED)
-          case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        //case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
         #endif
           case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
         #if defined(ESP32)

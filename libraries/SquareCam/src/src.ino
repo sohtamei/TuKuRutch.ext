@@ -1,6 +1,6 @@
 #define PCMODE
 
-#define mVersion "lovyanGFX 1.0"
+#define mVersion "SquareCam1.0"
 
 #include "main.h"
 #define RECV_BUFFER 65536
@@ -28,12 +28,6 @@ void _drawJpg(uint8_t* buf, int size) {
     	int x = GetL16(buf+0);
     	int y = GetL16(buf+2);
     	lcd->drawJpg(buf+4, size-4, x, y);
-}
-
-#include "src.update.js.h"
-int _getExtJs(uint8_t* buf) {
-    	memcpy(buf, updateJS, sizeof(updateJS));
-    	return sizeof(updateJS);
 }
 
 #include <Wire.h>
@@ -134,7 +128,7 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {'S','b',},
+  {},
   {'B',},
   {'B',},
   {'S','S','F',},
@@ -145,7 +139,6 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'s','S','S','B',},
   {'S',},
   {'2',},
-  {},
 };
 
 enum {
@@ -462,7 +455,6 @@ static void parseData()
     
       switch(cmd){
         case 1: sendBin(buffer, _getLcdConfig(buffer)); break;
-        case 2: _setLcdConfig(getShort(0),getBufLen(1));_setupLCD(getShort(0),getBufLen(1));; callOK(); break;
         case 3: if(lcd) lcd->setFont(fontTbl[getByte(0)]);; callOK(); break;
         case 4: if(lcd) lcd->setRotation(getByte(0));; callOK(); break;
     case 5: if(lcd) {lcd->setTextColor(getShort(0),getShort(1));lcd->setTextSize(getFloat(2));}; callOK(); break;
@@ -473,7 +465,6 @@ static void parseData()
         case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[getByte(3)]);; callOK(); break;
     case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
         case 12: _drawJpg(getBufLen2(0));; callOK(); break;
-        case 13: sendBin2(buffer, _getExtJs(buffer)); break;
         #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
