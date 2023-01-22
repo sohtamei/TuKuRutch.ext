@@ -11,7 +11,7 @@
 						"custom_FlashSize=esp32s3_4M",
 						"custom_LoopCore=esp32s3_1",
 						"custom_MSCOnBoot=esp32s3_default",
-						"custom_PSRAM=esp32s3_enabled",				// opiだとNG 2023/1/22
+						"custom_PSRAM=esp32s3_opi",
 						"custom_PartitionScheme=esp32s3_huge_app",
 						"custom_USBMode=esp32s3_default",
 						"custom_UploadMode=esp32s3_cdc",

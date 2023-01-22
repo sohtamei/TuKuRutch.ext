@@ -74,9 +74,11 @@ void espcamera_setup(void)
 	//                      for larger pre-allocated frame buffer.
 	if(config.pixel_format == PIXFORMAT_JPEG){
 		if(psramFound()){
-			config.jpeg_quality = 10;
-			config.fb_count = 2;
-			config.grab_mode = CAMERA_GRAB_LATEST;
+			Serial.println("found psram");
+		//	config.jpeg_quality = 10;
+		//	config.fb_count = 2;
+		//	config.grab_mode = CAMERA_GRAB_LATEST;
+			config.frame_size = FRAMESIZE_SVGA;
 		} else {
 			// Limit the frame size when PSRAM is not available
 			config.frame_size = FRAMESIZE_SVGA;
