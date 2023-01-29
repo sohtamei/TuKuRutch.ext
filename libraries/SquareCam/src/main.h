@@ -27,6 +27,7 @@ extern lgfx::LGFX_Device *lcd;
 //#define DEVICE_UNITCAM
 //#define QCAI
 //#define DEVICE_CAMERATCH32
-  #define CAMERA_MODEL_ESP32S3_EYE
+//#define CAMERA_MODEL_ESP32S3_EYE
+  #define CAMERA_MODEL_SQUARE_CAM
 #define XCLK_FREQ 8000000
 #endif  // main_h

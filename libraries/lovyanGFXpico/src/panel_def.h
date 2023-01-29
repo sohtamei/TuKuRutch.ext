@@ -1382,7 +1382,11 @@ public:
 			cfg.pin_busy = ChkFF(nvs.busy);	// BUSYが接続されているピン番号 (-1 = disable)
 			cfg.panel_width      =   240;	// 実際に表示可能な幅
 			cfg.panel_height     =   280;	// 実際に表示可能な高さ
+		#if defined(CONFIG_IDF_TARGET_ESP32S3)
+			cfg.offset_rotation  =     3;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+		#else
 			cfg.offset_rotation  =     1;	// 回転方向の値のオフセット 0~7 (4~7は上下反転)
+		#endif
 			cfg.offset_x         =     0;
 			cfg.offset_y         =    20;
 			cfg.readable         = false;	// データ読出しが可能な場合 trueに設定
