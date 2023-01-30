@@ -50,11 +50,13 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 #if defined(ESP32) //|| defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	// i2c
 	case LCDTYPE_SSD1306:
-	case LCDTYPE_SSD1306_32:	lcd = new LGFX_SSD1306(lcdType, config_buf, config_size); break;
+	case LCDTYPE_SSD1306_32:
+	case LCDTYPE_SSD1306_6432:	lcd = new LGFX_SSD1306(lcdType, config_buf, config_size); break;
 	case LCDTYPE_SH110X:		lcd = new LGFX_SH110X(lcdType, config_buf, config_size); break;
 #endif
 
 	// Type1
+	case LCDTYPE_085TFT_SPI:	lcd = new LGFX_085TFT_SPI(lcdType, config_buf, config_size); break;
 	case LCDTYPE_QT095B:		lcd = new LGFX_QT095B(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP0961:		lcd = new LGFX_MSP0961(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP1141:		lcd = new LGFX_MSP1141(lcdType, config_buf, config_size); break;

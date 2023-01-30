@@ -109,7 +109,7 @@ void setup()
       MCUSR = 0;
       wdt_disable();
     #elif defined(ESP32)
-      ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
+    
     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
       Serial.begin(19200);
       _bleSetup();
