@@ -145,6 +145,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'s','S','S','B',},
   {'S',},
   {'2',},
+  {'B',},
   {},
 };
 
@@ -473,7 +474,8 @@ static void parseData()
         case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[getByte(3)]);; callOK(); break;
     case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
         case 12: _drawJpg(getBufLen2(0));; callOK(); break;
-        case 13: sendBin2(buffer, _getExtJs(buffer)); break;
+        case 13: lcd->setBrightness(getByte(0));; callOK(); break;
+        case 14: sendBin2(buffer, _getExtJs(buffer)); break;
         #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
