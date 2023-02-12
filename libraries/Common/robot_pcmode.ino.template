@@ -280,7 +280,7 @@ static void digiWrite(uint8_t* buf, int num)
   }
 }
 
-static int _analogRead(uint8_t port, uint16_t count)
+int _analogRead(uint8_t port, uint16_t count)
 {
 #if 0//defined(ESP32)
   return getAdc1(port,count);

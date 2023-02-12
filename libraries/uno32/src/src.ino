@@ -1,8 +1,7 @@
 #define PCMODE
 
-#define mVersion "uno32 1.0"  // マイコン拡張名＋version
+#define mVersion "uno 1.0"
 
-#include "TukurutchEsp.h"
 #include "main.h"
 
 #include <Wire.h>
@@ -34,6 +33,7 @@ enum {
 #define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
 #define getBufLen2(n) (buffer+5),(_packetLen-5)
 
+#if defined(ESP32)
 #if defined(CONFIG_IDF_TARGET_ESP32)
   #define LEDC_BUZZER   15
   #define LEDC_PWM_START 2
@@ -48,6 +48,7 @@ enum {
   #define LEDC_PWM_END   6
 #else
   #pragma message "unsupported device"
+#endif
 #endif
 
 /*
@@ -76,19 +77,21 @@ void setup()
       MCUSR = 0;
       wdt_disable();
     #elif defined(ESP32)
-      ledcSetup(LEDC_BUZZER, 5000/*Hz*/, 13/*bit*/);
+    
     #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
       Serial.begin(19200);
       _bleSetup();
+    #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+      delay(500);
     #endif
     _setup(mVersion);
       _Serial.println(F("PC mode: " mVersion));
 }
 
 #ifdef RECV_BUFFER
-static uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
 #else
-static uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
+uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
@@ -166,14 +169,98 @@ static const PROGMEM char ArgTypesTbl3[][ARG_NUM] = {
 #define CMD3_MIN   0xFB
 #define CMD3_MAX  (CMD3_MIN + sizeof(ArgTypesTbl3)/sizeof(ArgTypesTbl3[0]) - 1)
 
+#if defined(NRF51_SERIES) || defined(NRF52_SERIES)
+  #include <SlowSoftWire.h>
+
+  class _Wire {
+        private:
+          uint8_t softI2C;
+          SlowSoftWire *softWire;
+    
+        public:
+          _Wire() {
+                softWire = NULL;
+                softI2C = 0;
+          }
+      ~_Wire() {;}
+    
+          void begin() { 
+                Wire.begin();
+                softI2C = 0;
+          }
+    
+          void begin(int sda, int scl) {
+                if((sda == 20 && scl == 19) || (sda == 0 && scl == 0)) {
+                      Wire.begin();
+                      softI2C = 0;
+                } else {
+                      if(softWire) delete softWire;
+                      softWire = new SlowSoftWire(sda, scl, true);
+                      softI2C = 1;
+                }
+          }
+    
+          void end() {
+                if(softI2C == 0) Wire.end();
+                else if(softWire) {
+                      delete softWire;
+                      softWire = NULL;
+                }
+          }
+    
+          void beginTransmission(int adrs) {
+                if(softI2C == 0)  Wire.beginTransmission(adrs);
+                else if(softWire) softWire->beginTransmission(adrs);
+          }
+    
+          uint8_t endTransmission(void) {
+                if(softI2C == 0)  return Wire.endTransmission();
+                else if(softWire) return softWire->endTransmission();
+          }
+    
+          uint8_t endTransmission(uint8_t flag) {
+                if(softI2C == 0)  return Wire.endTransmission(flag);
+                else if(softWire) return softWire->endTransmission(flag);
+          }
+    
+          uint8_t requestFrom(int adrs, int num) {
+                if(softI2C == 0)  return Wire.requestFrom(adrs, num);
+                else if(softWire) return softWire->requestFrom(adrs, num);
+          }
+    
+          size_t write(uint8_t data) {
+                if(softI2C == 0)  return Wire.write(data);
+                else if(softWire) return softWire->write(data);
+          }
+    
+          size_t write(const uint8_t *buf, size_t num) {
+                if(softI2C == 0)  return Wire.write(buf, num);
+                else if(softWire) return softWire->write(buf, num);
+          }
+    
+          int available(void) {
+                if(softI2C == 0)  return Wire.available();
+                else if(softWire) return softWire->available();
+          }
+    
+          int read(void) {
+                if(softI2C == 0)  return Wire.read();
+                else if(softWire) return softWire->read();
+          }
+  };
+  _Wire _Wire;
+#else
+  #define _Wire Wire
+#endif
+
 static void sendWireRead(int adrs, int num)
 {
-      Wire.requestFrom(adrs, num);
-      if(Wire.available() < num) {
+      _Wire.requestFrom(adrs, num);
+      if(_Wire.available() < num) {
             callOK();
       } else {
             for(int i = 0; i < num; i++)
-              buffer[i] = Wire.read();
+              buffer[i] = _Wire.read();
             sendBin(buffer, num);
       }
 }
@@ -183,8 +270,8 @@ static void sendWireScan(void)
       int num = 0;
       int i;
       for(i = 0; i < 127; i++) {
-            Wire.beginTransmission(i);
-            int ret = Wire.endTransmission();
+            _Wire.beginTransmission(i);
+            int ret = _Wire.endTransmission();
             if(!ret) buffer[num++] = i;
       }
       sendBin(buffer, num);
@@ -199,7 +286,7 @@ static void digiWrite(uint8_t* buf, int num)
       }
 }
 
-static int _analogRead(uint8_t port, uint16_t count)
+int _analogRead(uint8_t port, uint16_t count)
 {
     #if 0//defined(ESP32)
       return getAdc1(port,count);
@@ -337,13 +424,13 @@ static void parseData()
         case 2: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
         case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        #if defined(ESP32)
-          case 0x81: Wire.end(); Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
+        #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
+          case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else
-          case 0x81: Wire.begin(); callOK(); break;
+          case 0x81: _Wire.begin(); callOK(); break;
         #endif
-          case 0x82: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); sendByte(Wire.endTransmission()); break;
-          case 0x83: Wire.beginTransmission(getByte(0)); Wire.write(getBufLen(1)); Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
+          case 0x82: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); sendByte(_Wire.endTransmission()); break;
+          case 0x83: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); _Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
           case 0x84: sendWireRead(getByte(0),getByte(1)); break;
           case 0x85: sendWireScan(); break;
         
@@ -354,7 +441,7 @@ static void parseData()
           case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
           case 0x8b: callOK(); break;
         #if defined(CAMERA_ENABLED)
-          case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
+        //case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
         #endif
           case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
         #if defined(ESP32)
@@ -464,11 +551,40 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 }
 
 void onMessageCallback(WebsocketsMessage msg) {
-      _packetLen = msg.length();
-      memcpy(buffer, msg.c_str(), _packetLen);
+      int size = msg.length();
+      if(_index+size >= sizeof(buffer)) {
+            _index = 0;
+            return;
+      }
+      memcpy(buffer+_index, msg.c_str(), size);
+      if(_index == 0) {
+            if(buffer[0] != 0xff) {
+                  _index = 0;
+                  return;
+            } else {
+                  switch(buffer[1]) {
+                      case 0x55:
+                        _packetLen = 3+buffer[2];
+                        break;
+                      case 0x54:
+                        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+                        break;
+                      default:
+                        _index = 0;
+                        return;
+                  }
+            }
+      }
       comMode = MODE_WS;
-      parseData();
-      _client.sendBinary((char*)_packet_dp, _packetLen);
+      _index += size;
+      if(_index >= _packetLen) {
+            parseData();
+            _client.sendBinary((char*)_packet_dp, _packetLen);
+            _index = 0;
+      } else {
+        const uint8_t buf[] = {0x00};
+            _client.sendBinary((char*)buf, sizeof(buf));
+      }
 }
 
 static void loopWebSocket(void)
@@ -476,6 +592,7 @@ static void loopWebSocket(void)
       if(!wsServer.available()) return;
       if(wsServer.poll()) {
             connected = 1;
+            _index = 0;
             Serial.println("connected");
             _client = wsServer.accept();
             _client.onMessage(onMessageCallback);
@@ -516,6 +633,7 @@ static void _bleSetup() {
 }
 
 static void _bleConnected(BLECentral& central) {
+      _index = 0;
       Serial.println(F("Connected"));
 }
 
@@ -525,12 +643,42 @@ static void _bleDisconnected(BLECentral& central) {
 
 static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
       //Serial.print(F("R:")); _dump(_rxChar.value(), _rxChar.valueLength());
-      _packetLen =_rxChar.valueLength();
-      memcpy(buffer, _rxChar.value(), _packetLen);
+      int size = _rxChar.valueLength();
+      if(_index+size >= sizeof(buffer)) {
+            _index = 0;
+            return;
+      }
+      memcpy(buffer+_index, _rxChar.value(), size);
+      if(_index == 0) {
+            if(buffer[0] != 0xff) {
+                  _index = 0;
+                  return;
+            } else {
+                  switch(buffer[1]) {
+                      case 0x55:
+                        _packetLen = 3+buffer[2];
+                        break;
+                      case 0x54:
+                        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+                        break;
+                      default:
+                        _index = 0;
+                        return;
+                  }
+            }
+      }
       comMode = MODE_BLE;
-      parseData();
-      //Serial.print(F("W:")); _dump((uint8_t*)buffer, _packetLen);
-      _txChar.setValue((uint8_t*)_packet_dp, _packetLen);
+      _index += size;
+      if(_index >= _packetLen) {
+            parseData();
+            //Serial.print(F("W:")); _dump((uint8_t*)_packet_dp, _packetLen);
+            _txChar.setValue(_packet_dp, _packetLen);
+            _index = 0;
+      } else {
+        const uint8_t buf[] = {0x00};
+            //Serial.print(F("W:")); _dump(buf, sizeof(buf));
+            _txChar.setValue(buf, sizeof(buf));
+      }
 }
 /*
 static void _dump(const uint8_t* buf, int size)
@@ -703,6 +851,17 @@ void sendBin(uint8_t* buf, uint8_t num)
       *dp++ = RSP_BUF;
       *dp++ = num;
       _write(buffer, 5+num);
+}
+
+void sendBin2(uint8_t* buf, uint16_t num)
+{
+          memmove(buffer+4, buf, num);
+          uint8_t* dp = buffer;
+          *dp++ = 0xff;
+          *dp++ = 0x54;
+          *dp++ = (num);
+          *dp++ = (num)>>8;
+          _write(buffer, 4+num);
 }
 
 //### CUSTOMIZED ###

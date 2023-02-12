@@ -6,7 +6,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"uno1.0\"		// マイコン拡張名＋version
+#define mVersion \"uno 1.0\"
 #include \"main.h\"
 ",
 	// setup処理 (C言語)

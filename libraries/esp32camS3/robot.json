@@ -1,5 +1,5 @@
 {
-	"name"			: "esp32s3cam",							// マイコン拡張定義	
+	"name"			: "esp32camS3",									// マイコン拡張定義	
 	"boardType"		: "esp32:esp32:esp32s3",						// package:platform:board
 	"prefs"			: ["custom_CDCOnBoot=esp32s3_default",
 						"custom_CPUFreq=esp32s3_240",
@@ -20,7 +20,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"esp32s3cam1.0\"
+#define mVersion \"esp32cam1.0\"
 
 #include <TukurutchEsp.h>
 #include \"main.h\"

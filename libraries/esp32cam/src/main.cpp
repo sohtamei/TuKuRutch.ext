@@ -20,10 +20,8 @@ void onConnect(String ip)
 void _setup(const char* ver)
 {
 	Serial.begin(115200);
-
-	digitalWrite(32, 0); pinMode(32, OUTPUT); /*CAM PWR*/ \
-	digitalWrite(4, 0); pinMode(4, OUTPUT); /*FLASH*/ \
-	// io-2,4,12,13,14,15
+	digitalWrite(32, 0); pinMode(32, OUTPUT); /*CAM PWR*/
+	digitalWrite(4, 0); pinMode(4, OUTPUT); /*FLASH*/
 	espcamera_setup();
 
 	initWifi(ver, false, onConnect);

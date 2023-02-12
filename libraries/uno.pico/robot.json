@@ -1,22 +1,16 @@
 {
-	"name"			: "uno32",									// マイコン拡張定義	
-	"scratch3ext"	: "uno",									// scratch3 ext名[,SupportCamera]
-	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
-	"prefs"			: ["custom_CPUFreq=esp32_240",
-						"custom_DebugLevel=esp32_none",
-						"custom_EventsCore=esp32_1",
-						"custom_FlashFreq=esp32_80",
-						"custom_FlashMode=esp32_qio",
-						"custom_FlashSize=esp32_4M",
-						"custom_LoopCore=esp32_1",
-						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_921600"],
-
-	"scratch3burn"	: [											// binary定義
-			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
-			{"name":"uno32", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
-	],
+	"name"			: "uno.pico",							// マイコン拡張定義	
+	"boardType"		: "rp2040:rp2040:rpipico",				// package:platform:board
+	"prefs"			: ["custom_dbglvl=rpipico_None",
+						"custom_dbgport=rpipico_Disabled",
+						"custom_exceptions=rpipico_Disabled",
+						"custom_flash=rpipico_2097152_0",
+						"custom_freq=rpipico_133",
+						"custom_ipstack=rpipico_ipv4only",
+						"custom_opt=rpipico_Small",
+						"custom_rtti=rpipico_Disabled",
+						"custom_stackprotect=rpipico_Disabled",
+						"custom_usbstack=rpipico_tinyusb"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -31,7 +25,6 @@
 
 	// loop処理 (C言語)
 	"loop":"
-  loopWebSocket();
   _loop();
 ",
 
@@ -88,5 +81,5 @@
 		}
 	},
 
-	"sort"			: 10,
+	"sort"			: 11,
 }

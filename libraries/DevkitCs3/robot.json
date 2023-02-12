@@ -30,7 +30,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"esp32S3DevkitC 1.0\"  // マイコン拡張名＋version
+#define mVersion \"DevkitC 1.0\"
 #include \"TukurutchEsp.h\"
 #include \"main.h\"
 ",
