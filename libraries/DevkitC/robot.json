@@ -1,6 +1,5 @@
 {
-	"name"			: "esp32",									// マイコン拡張定義	
-	"scratch3ext"	: "esp32",									// scratch3 ext名[,SupportCamera]
+	"name"			: "DevkitC",								// マイコン拡張定義	
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
