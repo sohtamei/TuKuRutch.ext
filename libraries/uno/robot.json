@@ -7,13 +7,16 @@
 	// ヘッダ (C言語)
 	"header":"
 #define mVersion \"uno 1.0\"
+
 #include \"main.h\"
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
 
 	// loop処理 (C言語)
-	"loop":"_loop();",
+	"loop":"
+  _loop();
+",
 
 	// ブロック定義
 	"blockSpecs": [

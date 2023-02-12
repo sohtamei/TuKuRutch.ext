@@ -282,9 +282,6 @@ static void digiWrite(uint8_t* buf, int num)
 
 int _analogRead(uint8_t port, uint16_t count)
 {
-#if 0//defined(ESP32)
-  return getAdc1(port,count);
-#else
   pinMode(port, INPUT);
   if(count == 0) count = 1;
   int i;
@@ -301,7 +298,6 @@ int _analogRead(uint8_t port, uint16_t count)
  #else
   return ((sum / count) * 825UL) / 256;		// 1024->3300
  #endif
-#endif
 }
 
 void _tone(uint8_t port, int16_t freq, int16_t ms)
