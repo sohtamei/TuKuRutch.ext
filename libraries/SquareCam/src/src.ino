@@ -131,6 +131,11 @@ void _setPwmFreq(int16_t pwm_freq, uint8_t pwm_bits)
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   #include <BLEPeripheral.h>
   static BLEPeripheral blePeripheral = BLEPeripheral();
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  #include <Adafruit_TinyUSB.h>
+  #include <MIDI.h>
+  Adafruit_USBD_MIDI usb_midi;
+  MIDI_CREATE_INSTANCE(Adafruit_USBD_MIDI, usb_midi, MIDI);
 #endif
 
 #if defined(_SAMD21_)
@@ -149,7 +154,7 @@ RSP_STRING  = 6,
 RSP_BUF     = 7,
 };
 
-#define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)
+#define getBufLen(n) (buffer+4+offsetIdx[n]+1),*(buffer+4+offsetIdx[n]+0)  // 第1引数 *buf, 第2引数 size
 #define getBufLen2(n) (buffer+5),(_packetLen-5)
 
 #if defined(ESP32)
@@ -201,7 +206,10 @@ void setup()
   Serial.begin(19200);
   _bleSetup();
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-  delay(500);
+      MIDI.begin(MIDI_CHANNEL_OMNI);
+      MIDI.setHandleSystemExclusive(handleSystemExclusive);
+      while( !TinyUSBDevice.mounted() ) delay(1);
+      MIDI.turnThruOff();
 #endif
 
   _setup(mVersion);
@@ -217,6 +225,11 @@ uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
 static uint16_t _packetLen = 4;
+
+#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  uint8_t EncBuffer[293];  // 256/7*8
+  int EncSize = 0;
+#endif
 
 #define ARG_NUM  16
 #define ITEM_NUM (sizeof(ArgTypesTbl)/sizeof(ArgTypesTbl[0]))
@@ -246,6 +259,7 @@ enum {
     MODE_UART,
     MODE_WS,
     MODE_BLE,
+    MODE_MIDI,
 };
 uint8_t comMode = MODE_INVALID;
 
@@ -258,6 +272,11 @@ void _write(uint8_t* dp, int count)
   } else
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   if(comMode == MODE_BLE) {
+        _packet_dp = dp;
+        _packetLen = count;
+  } else
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  if(comMode == MODE_MIDI) {
         _packet_dp = dp;
         _packetLen = count;
   } else
@@ -420,11 +439,8 @@ static void digiWrite(uint8_t* buf, int num)
   }
 }
 
-static int _analogRead(uint8_t port, uint16_t count)
+int _analogRead(uint8_t port, uint16_t count)
 {
-#if 0//defined(ESP32)
-  return getAdc1(port,count);
-#else
   pinMode(port, INPUT);
   if(count == 0) count = 1;
   int i;
@@ -441,7 +457,6 @@ static int _analogRead(uint8_t port, uint16_t count)
  #else
   return ((sum / count) * 825UL) / 256;		// 1024->3300
  #endif
-#endif
 }
 
 void _tone(uint8_t port, int16_t freq, int16_t ms)
@@ -671,6 +686,8 @@ void loop()
   readWifi();
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   if(blePeri_enable) blePeripheral.poll();
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  MIDI.read();
 #endif
 
   loopWebSocket();
@@ -825,7 +842,61 @@ static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
         _txChar.setValue(buf, sizeof(buf));
   }
 }
-/*
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+
+void handleSystemExclusive(byte* buf, unsigned size)
+{
+  midiDecdata(buf, size);
+  comMode = MODE_MIDI;
+  parseData();
+  midiEncdata(_packet_dp, _packetLen);
+  MIDI.sendSysEx(EncSize, EncBuffer/*, false*/);
+}
+
+void midiEncdata(uint8_t* buf, int size)
+{
+  if(buf[0] != 0xff && buf[1] != 0x55) return;
+
+  buf += 2;
+  size -= 2;
+  EncSize = (size*8 + 6)/7;
+  for(int i = 0; i < EncSize*7; i+=7) {
+        int shift = i % 8;
+        int offset = (i-shift)/8;
+        int tmp2 = buf[offset];
+        if(offset+1 < size) {
+              tmp2 += buf[offset+1] << 8;
+        }
+        EncBuffer[i/7] = (tmp2 >> shift) & 0x7f;
+  }
+  _dump(EncBuffer, EncSize);  // debug
+  return;
+}
+
+void midiDecdata(uint8_t* buf, int size)
+{
+  if(buf[0] != 0xf0 && buf[size-1] != 0xf7) return;
+
+  buf += 1;
+  size -= 2;
+  _packetLen = 2 + (size*7)/8;
+  for(int i = 0; i < (_packetLen-2)*8; i+=8) {
+        int shift = i % 7;
+        int offset = (i-shift)/7;
+        int tmp2 = buf[offset];
+        if(offset+1 < size) {
+              tmp2 += buf[offset+1] << 7;
+        }
+        buffer[2+i/8] = (tmp2 >> shift) & 0xff;
+  }
+  buffer[0] = 0xff;
+  buffer[1] = 0x55;
+  _dump(buffer, _packetLen);  // debug
+  return;
+}
+#endif
+
+//*
 static void _dump(const uint8_t* buf, int size)
 {
   int i;
@@ -836,8 +907,7 @@ static void _dump(const uint8_t* buf, int size)
   }
   Serial.println();
 }
-*/
-#endif
+//*/
 
 union floatConv { 
   float _float;
