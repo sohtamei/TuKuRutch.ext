@@ -237,7 +237,7 @@ static uint8_t offsetIdx[ARG_NUM] = {0};
 static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {},
   {},
-  {},
+  {'S','b',},
   {'B',},
   {'B',},
   {'S','S','F',},
@@ -570,6 +570,7 @@ static void parseData()
 
   switch(cmd){
     case 1: sendBin(buffer, _getLcdConfig(buffer)); break;
+    case 2: _setLcdConfig(getShort(0),getBufLen(1));/*_setupLCD(getShort(0),getBufLen(1));*/; callOK(); break;
     case 3: if(lcd) lcd->setFont(fontTbl[getByte(0)]);; callOK(); break;
     case 4: if(lcd) lcd->setRotation(getByte(0));; callOK(); break;
 case 5: if(lcd) {lcd->setTextColor(getShort(0),getShort(1));lcd->setTextSize(getFloat(2));}; callOK(); break;

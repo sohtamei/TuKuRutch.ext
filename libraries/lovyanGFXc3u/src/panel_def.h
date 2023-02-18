@@ -1273,8 +1273,7 @@ public:
 	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = { .sclk=14, .mosi=12, .miso=-1, .dc=16, .cs=17, .rst=15, .busy=-1, .bl=13, };
 	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-		nvscfg_spi_t nvs = {0};
-		return;
+		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };
 	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = { .sclk= 4, .mosi= 6, .miso=-1, .dc= 1, .cs= 7, .rst= 0, .busy=-1, .bl=10, };
 	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)

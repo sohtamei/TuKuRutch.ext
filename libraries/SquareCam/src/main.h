@@ -12,7 +12,9 @@ extern WebsocketsServer wsServer;
 void _setup(const char* ver);
 void _loop(void);
 
+void _setupLCD(int lcdType, uint8_t *config_buf, int config_size);
 int _getLcdConfig(uint8_t* buf);
+void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size);
 
 extern lgfx::LGFX_Device *lcd;
 
