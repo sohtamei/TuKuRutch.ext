@@ -14,8 +14,9 @@
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [											// binary定義
-			{"name":"uno", "type":"atmega328", "baudrate":115200, "binPath":"uno"},
-			{"name":"uno32", "type":"esp32", "baudrate":921600, "binPath":"uno32"},
+			{"name":"uno",         "type":"atmega328", "baudrate":115200, "binPath":"uno"},
+			{"name":"uno32",       "type":"esp32",     "baudrate":921600, "binPath":"uno32"},
+			{"name":"uno32s3.usb", "type":"esp32s3u",  "baudrate":921600, "binPath":"uno32s3u"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -25,6 +26,7 @@
 #define mVersion \"uno 1.0\"
 
 #include \"main.h\"
+void setNeoPixel(int c, int level) {}
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -49,8 +51,9 @@
 
 		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
 		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
-		["R", "Sensor %d.sensor average %n times,discharge %d.onoff","getAnalogAve",1,4,"Off",	{"remote":["B","S","B",	"S"],"func":"_getAdc1({0},{1},{2})"}],
+		["R", "Sensor %d.sensor average %n times,discharge %n","getAnalogAve",	1,4,4,		{"remote":["B","S","B",	"S"],"func":"_getAdc1({0},{1},{2})"}],
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
+		["w", "set led color %d.color %n",					"setNeoPixel",		"White",10,	{"remote":["L","B"],"func":"setNeoPixel({0},{1});"}],
 	],
 
 	// メニュー定義
@@ -62,6 +65,7 @@
 		"led"		:[1,2,3,4,5,6],
 		"sensor"	:[1,2,3,4],
 		"sw"		:[1,2,3],
+		"color"		:["Black","Red","Green","Blue","Purple","Yellow","Lightblue","White",],
 	},
 
     // ラベル定義
@@ -70,6 +74,7 @@
 		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
 		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
 		"On":1,"Off":0,
+		"Black":0x000000,"Red":0xFF0000,"Green":0x00FF00,"Blue":0x0000FF,"Purple":0xFF00FF,"Yellow":0xFFFF00,"Lightblue":0x00FFFF,"White":0xFFFFFF,
 	},
 
 	// 翻訳定義
@@ -78,13 +83,15 @@
 			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
 			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
+			"Black":"黒","Red":"赤","Green":"緑","Blue":"青","Purple":"紫","Yellow":"黄","Lightblue":"水色","White":"白",
 
 			"set LED %d.led %d.onoff"				:"LED %d.led を %d.onoff",
 			"play tone %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
 			"play tone %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
 			"play tone %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
-			"Sensor %d.sensor average %n times,discharge %d.onoff":"センサ %d.sensor の %n 回平均 放電 %d.onoff",
+			"Sensor %d.sensor average %n times,discharge %n":"センサ %d.sensor の %n 回平均 放充電 %n",
 			"SW %d.sw"								:"スイッチ %d.sw",
+			"set led color %d.color %n"				:"LED 色 %d.color %n",
 		}
 	},
 

@@ -44,6 +44,7 @@ uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 		digitalWrite(ch, LOW);
 		delay(1);
 		pinMode(ch, INPUT);
+		delay(discharge);
 	}
 	return _analogRead(ch, count);
 }

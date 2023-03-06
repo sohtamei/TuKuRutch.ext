@@ -3,7 +3,6 @@
 #define mVersion "uno 1.0"
 
 #include "main.h"
-void setNeoPixel(int c, int level) {}
 
 #include <Wire.h>
 
@@ -119,7 +118,6 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'S','S',},
   {'B','S','B',},
   {'B',},
-  {'L','B',},
 };
 
 enum {
@@ -441,7 +439,6 @@ static void parseData()
         case 2: _tone(P_BUZZER,getShort(0),getShort(1));; callOK(); break;
         case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
         case 4: sendByte((_getSw(getByte(0)))); break;
-        case 5: setNeoPixel(getLong(0),getByte(1));; callOK(); break;
         #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else

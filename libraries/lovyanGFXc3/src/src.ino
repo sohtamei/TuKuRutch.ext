@@ -29,12 +29,13 @@ void _drawJpg(uint8_t* buf, int size) {
     	int y = GetL16(buf+2);
     	lcd->drawJpg(buf+4, size-4, x, y);
 }
-
+/*
 #include "src.update.js.h"
 int _getExtJs(uint8_t* buf) {
     	memcpy(buf, updateJS, sizeof(updateJS));
     	return sizeof(updateJS);
 }
+*/
 
 #include <Wire.h>
 
@@ -159,7 +160,6 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'S',},
   {'2',},
   {'B',},
-  {},
 };
 
 enum {
@@ -490,7 +490,6 @@ static void parseData()
     case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
         case 12: _drawJpg(getBufLen2(0));; callOK(); break;
         case 13: lcd->setBrightness(getByte(0));; callOK(); break;
-        case 14: sendBin2(buffer, _getExtJs(buffer)); break;
         #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
           case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
         #else

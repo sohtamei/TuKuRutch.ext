@@ -31,7 +31,7 @@ struct port {uint8_t sig; uint8_t gnd;};
   #define P_GND  0
   const uint8_t sensorTable[] = {27, 26, 28};
   const struct port ledTable[] = {{25,0}, {20,21},};
-  const struct port swTable[] = {{26,17},{16,14},{12,5}};
+  const struct port swTable[] = {{24,0},/*{16,14},{12,5}*/};
 #endif
 
 uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
@@ -44,6 +44,7 @@ uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 		digitalWrite(ch, LOW);
 		delay(1);
 		pinMode(ch, INPUT);
+		delay(discharge);
 	}
 	return _analogRead(ch, count);
 }
