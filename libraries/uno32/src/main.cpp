@@ -2,6 +2,12 @@
 #include <Arduino.h>
 #include "main.h"
 
+
+#if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+#include <Preferences.h>
+Preferences preferencesHIST;
+#endif
+
 #if defined(ESP32)
   WebsocketsServer wsServer;
 #else
@@ -75,6 +81,41 @@ uint8_t _getSw(uint8_t idx)
 	return digitalRead(swTable[idx].sig) ? 0: 1;
 }
 
+#if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+uint8_t cmdHistNVP[512] = {0};
+int cmdHistNVP_num = 0;
+
+uint8_t cmdHist[512] = {0};
+int cmdHist_count = 0;
+int cmdHist_last = 0;
+
+void _regHist()
+{
+	if(comMode == 0) return;	// don't register MODE_INVALID
+
+	uint32_t last = cmdHist_last;
+	cmdHist_last = millis();
+	if(((cmdHist_last - last) & 0x7FFFFFFF) > 1000) cmdHist_count = 0;;
+
+	int size = getCurPacket(cmdHist+cmdHist_count, sizeof(cmdHist)-cmdHist_count);
+	cmdHist_count += size;
+}
+
+void _saveHist()
+{
+	if(cmdHist_count == 0 || ((millis() - cmdHist_last) & 0x7FFFFFFF) < 1000) {
+		if(cmdHistNVP_num != cmdHist_count || memcmp(cmdHistNVP, cmdHist, cmdHist_count)){
+			cmdHistNVP_num = cmdHist_count;
+			memcpy(cmdHistNVP, cmdHist, cmdHist_count);
+			preferencesHIST.putBytes("cmdHistNVP", cmdHistNVP, cmdHistNVP_num);
+			Serial.println(cmdHistNVP_num);
+		}
+	}
+	cmdHist_count = 0;
+	cmdHist_last = 0;
+}
+#endif // ESP32,RP2040
+
 #if defined(ESP32)
 void onConnect(String ip)
 {
@@ -90,22 +131,44 @@ void onConnect(String ip)
 
 void _setup(const char* ver)
 {
+	Serial.begin(115200);
 	_setLED(1,0);
 	if(P_GND) {
 		pinMode(P_GND, OUTPUT);
 		digitalWrite(P_GND, LOW);
 	}
-
 #if defined(__AVR_ATmega328P__)
 	pinMode(P_BUZZER, OUTPUT);
 #endif
 	_tone(P_BUZZER, T_C5, 100);
-	Serial.begin(115200);
+
 #if defined(ESP32)
 	initWifi(ver, false, onConnect);
 #endif
+
+#if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+	preferencesHIST.begin("histConfig", false);
+	cmdHistNVP_num = preferencesHIST.getBytes("cmdHistNVP", cmdHistNVP, sizeof(cmdHistNVP));
+	Serial.println(cmdHistNVP_num);
+#endif
 }
 
+int state = 0;
 void _loop(void)
 {
+#if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+	if(comMode == 0) {			// when comMode = MODE_INVALID
+		int level = _getAdc1(1,4,4);
+		if(state == 0) {
+			if(level > 600) {
+				playbackPackets(cmdHistNVP, cmdHistNVP_num);
+				state = 1;
+			}
+		} else {
+			if(level < 500) {
+				state = 0;
+			}
+		}
+	}
+#endif
 }

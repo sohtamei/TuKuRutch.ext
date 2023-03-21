@@ -4,7 +4,7 @@
 	"prefs"			: ["custom_dbglvl=rpipico_None",
 						"custom_dbgport=rpipico_Disabled",
 						"custom_exceptions=rpipico_Disabled",
-						"custom_flash=rpipico_2097152_0",
+						"custom_flash=rpipico_2097152_65536",
 						"custom_freq=rpipico_133",
 						"custom_ipstack=rpipico_ipv4only",
 						"custom_opt=rpipico_Small",
@@ -57,11 +57,12 @@ void setNeoPixel(int c, int level)
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
 
-		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_setLED({0},{1});"}],
-		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_tone(P_BUZZER,{0},{1});"}],
+		["w", "set LED %d.led %d.onoff",					"setLED",			1,"On",		{"remote":["B","B"],	"func":"_regHist();_setLED({0},{1});"}],
+		["w", "play tone %d.noteJ2 beat %d.beats",			"BuzzerJ2",		  "C4","Half",	{"remote":["S","S"],	"func":"_regHist();_tone(P_BUZZER,{0},{1});"}],
 		["R", "Sensor %d.sensor average %n times,discharge %n","getAnalogAve",	1,4,4,		{"remote":["B","S","B",	"S"],"func":"_getAdc1({0},{1},{2})"}],
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
-		["w", "set led color %d.color %n",					"setNeoPixel",		"White",10,	{"remote":["L","B"],"func":"setNeoPixel({0},{1});"}],
+		["w", "set led color %d.color %n",					"setNeoPixel",		"White",10,	{"remote":["L","B"],	"func":"_regHist();setNeoPixel({0},{1});"}],
+		["w", "save hist",									"saveHist",						{"remote":[],			"func":"_saveHist();"}],
 	],
 
 	// メニュー定義
@@ -100,6 +101,7 @@ void setNeoPixel(int c, int level)
 			"Sensor %d.sensor average %n times,discharge %n":"センサ %d.sensor の %n 回平均 放充電 %n",
 			"SW %d.sw"								:"スイッチ %d.sw",
 			"set led color %d.color %n"				:"LED 色 %d.color %n",
+			"save hist"								:"動作を記憶",
 		}
 	},
 

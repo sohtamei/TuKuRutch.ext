@@ -25,4 +25,11 @@ uint8_t _getSw(uint8_t idx);
 void _tone(uint8_t port, int16_t freq, int16_t ms);
 int _analogRead(uint8_t port, uint16_t count);
 
+void _regHist();
+void _saveHist();
+
+extern uint8_t comMode;
+void playbackPackets(uint8_t* buf, int size);
+int getCurPacket(uint8_t* buf, int size);
+
 #endif  // main_h

@@ -6,23 +6,13 @@
 lgfx::LGFX_Device *lcd = NULL;
 
 #define NVSCONFIG_MAX  12
+#include <Preferences.h>
+Preferences preferencesLCD;
 
 #if defined(ESP32)
-  #include <Preferences.h>
-
   WebsocketsServer wsServer;
-  Preferences preferencesLCD;
-
 #elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-  #include <hardware/flash.h>
-  #include <hardware/irq.h>
-  #include <hardware/sync.h>
 
-  #define FLASH_BASE 0x1F0000
-  const uint8_t* flashLCD = (const uint8_t*)(XIP_BASE + FLASH_BASE);
-  #define FLASHLCD_LCDTYPE			0x0
-  #define FLASHLCD_CONFIG_SIZE		0x2
-  #define FLASHLCD_CONFIG			0x4
 #else
   #error
 #endif
@@ -124,11 +114,7 @@ int _getLcdConfig(uint8_t* buf)
 
 	SetL16(buf+0, lcd->width());
 	SetL16(buf+2, lcd->height());
-#if defined(ESP32)
 	int lcdType = preferencesLCD.getInt("lcdType", -1);
-#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-	int lcdType = GetL16(flashLCD+FLASHLCD_LCDTYPE);
-#endif
 	SetL16(buf+4, lcdType);
 
 	lgfx::IBus* bus = lcd->panel()->bus();
@@ -172,24 +158,11 @@ int _getLcdConfig(uint8_t* buf)
 
 void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 {
-#if defined(ESP32)
 	preferencesLCD.putInt("lcdType", lcdType);
 	if(config_size)
 		preferencesLCD.putBytes("config", config_buf, config_size);
 	else
 		preferencesLCD.remove("config");
-#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-	uint8_t buf[FLASH_PAGE_SIZE];
-
-	SetL16(buf+FLASHLCD_LCDTYPE, lcdType);
-	SetL16(buf+FLASHLCD_CONFIG_SIZE, config_size);
-	memcpy(buf+FLASHLCD_CONFIG, config_buf, config_size);
-
-	uint32_t status = save_and_disable_interrupts();
-	flash_range_erase(FLASH_BASE, FLASH_SECTOR_SIZE);
-	flash_range_program(FLASH_BASE, buf, FLASH_PAGE_SIZE);
-	restore_interrupts(status);
-#endif
 }
 
 #if defined(ESP32)
@@ -212,7 +185,6 @@ void _setup(const char* ver)
 		uint8_t config[NVSCONFIG_MAX];
 		memset(config, 0xFF, NVSCONFIG_MAX);
 
-	#if defined(ESP32)
 		preferencesLCD.begin("lcdConfig", false);
 
 		int lcdType = preferencesLCD.getInt("lcdType", -1);
@@ -221,16 +193,6 @@ void _setup(const char* ver)
 			break;
 		}
 		int config_size = preferencesLCD.getBytes("config", config, NVSCONFIG_MAX);
-
-	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-		delay(400);
-		int lcdType = GetL16(flashLCD+FLASHLCD_LCDTYPE);
-		if(lcdType < 0 || lcdType >= sizeof(LcdTypeStr)/sizeof(LcdTypeStr[0])) break;
-
-		int config_size = GetL16(flashLCD+FLASHLCD_CONFIG_SIZE);
-		if(config_size < 0 || config_size > NVSCONFIG_MAX) break;
-		memcpy(config, flashLCD+FLASHLCD_CONFIG, config_size);
-	#endif
 		Serial.print("type=");
 		Serial.println(LcdTypeStr[lcdType]);
 		Serial.print("size=");

@@ -135,7 +135,7 @@ uint8_t buffer[RECV_BUFFER];  // 0xFF,0x55,len,cmd,
 uint8_t buffer[256];  // 0xFF,0x55,len,cmd,
 #endif
 static uint8_t* _packet_dp = buffer;
-static uint16_t _packetLen = 4;
+/*static*/ uint16_t _packetLen = 4;
 
 #if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
   uint8_t EncBuffer[293];  // 256/7*8
@@ -747,21 +747,53 @@ static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
 }
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 
-void handleSystemExclusive(byte* buf, unsigned size)
-{
-      midiDecdata(buf, size);
+void handleSystemExclusive(byte* buf, unsigned size) {
       comMode = MODE_MIDI;
-      parseData();
-      midiEncdata(_packet_dp, _packetLen);
-      MIDI.sendSysEx(EncSize, EncBuffer/*, false*/);
+      memcpy(EncBuffer+EncSize, buf, size);
+      EncSize += size;
+      if(buf[size-1] != 0xF7) return;
+    
+      if(_index+((size-2)*7)/8 >= sizeof(buffer)) {
+            _index = 0;
+            return;
+      }
+      size = midiDecdata(EncBuffer, EncSize, buffer+_index);
+      EncSize = 0;
+      if(_index == 0) {
+            if(buffer[0] != 0xff) {
+                  _index = 0;
+                  return;
+            } else {
+                  switch(buffer[1]) {
+                      case 0x55:
+                        _packetLen = 3+buffer[2];
+                        break;
+                      case 0x54:
+                        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+                        break;
+                      default:
+                        _index = 0;
+                        return;
+                  }
+            }
+      }
+    
+      _index += size;
+      if(_index >= _packetLen) {
+            parseData();
+            midiEncdata(_packet_dp, _packetLen);
+            MIDI.sendSysEx(EncSize, EncBuffer/*, false*/);
+            _index = 0;
+            EncSize = 0;
+      } else {
+        const uint8_t buf[] = {0x00};
+            MIDI.sendSysEx(sizeof(buf), buf/*, false*/);
+      }
 }
 
 void midiEncdata(uint8_t* buf, int size)
 {
-      if(buf[0] != 0xff && buf[1] != 0x55) return;
-    
-      buf += 2;
-      size -= 2;
+      _dump(buf, size);  // debug
       EncSize = (size*8 + 6)/7;
       for(int i = 0; i < EncSize*7; i+=7) {
             int shift = i % 8;
@@ -772,30 +804,29 @@ void midiEncdata(uint8_t* buf, int size)
             }
             EncBuffer[i/7] = (tmp2 >> shift) & 0x7f;
       }
-      _dump(EncBuffer, EncSize);  // debug
+      //_dump(EncBuffer, EncSize);  // debug
       return;
 }
 
-void midiDecdata(uint8_t* buf, int size)
+int midiDecdata(uint8_t* buf, int size, uint8_t* plain)
 {
-      if(buf[0] != 0xf0 && buf[size-1] != 0xf7) return;
-    
+      //_dump(buf, size);  // debug
+      //if(buf[0] != 0xf0 && buf[size-1] != 0xf7) return;
+        
       buf += 1;
       size -= 2;
-      _packetLen = 2 + (size*7)/8;
-      for(int i = 0; i < (_packetLen-2)*8; i+=8) {
+      int plainSize = (size*7)/8;
+      for(int i = 0; i < plainSize*8; i+=8) {
             int shift = i % 7;
             int offset = (i-shift)/7;
             int tmp2 = buf[offset];
             if(offset+1 < size) {
                   tmp2 += buf[offset+1] << 7;
             }
-            buffer[2+i/8] = (tmp2 >> shift) & 0xff;
+            plain[i/8] = (tmp2 >> shift) & 0xff;
       }
-      buffer[0] = 0xff;
-      buffer[1] = 0x55;
-      _dump(buffer, _packetLen);  // debug
-      return;
+      _dump(plain, plainSize);  // debug
+      return plainSize;
 }
 #endif
 

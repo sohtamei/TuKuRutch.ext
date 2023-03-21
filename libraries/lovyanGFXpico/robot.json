@@ -4,7 +4,7 @@
 	"prefs"			: ["custom_dbglvl=rpipico_None",
 						"custom_dbgport=rpipico_Disabled",
 						"custom_exceptions=rpipico_Disabled",
-						"custom_flash=rpipico_2097152_0",
+						"custom_flash=rpipico_2097152_65536",
 						"custom_freq=rpipico_133",
 						"custom_ipstack=rpipico_ipv4only",
 						"custom_opt=rpipico_Small",
