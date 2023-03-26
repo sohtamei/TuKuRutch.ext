@@ -153,12 +153,12 @@ void _setup(const char* ver)
 #endif
 }
 
-int state = 0;
+int state = 1;
 void _loop(void)
 {
 #if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	if(comMode == 0) {			// when comMode = MODE_INVALID
-		int level = _getAdc1(1,4,4);
+		int level = _getAdc1(1,4,8);	// id, count, discharge
 		if(state == 0) {
 			if(level > 600) {
 				playbackPackets(cmdHistNVP, cmdHistNVP_num);
