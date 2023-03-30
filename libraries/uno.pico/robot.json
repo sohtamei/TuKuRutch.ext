@@ -37,6 +37,8 @@ void setNeoPixel(int c, int level)
 	"setup":"
   pixels.begin();
   pixels.clear();
+  setNeoPixel(0x000000, 0);
+  setNeoPixel(0x000000, 0);
   _setup(mVersion);
 ",
 

@@ -82,10 +82,10 @@ uint8_t _getSw(uint8_t idx)
 }
 
 #if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-uint8_t cmdHistNVP[512] = {0};
+uint8_t cmdHistNVP[1024] = {0};
 int cmdHistNVP_num = 0;
 
-uint8_t cmdHist[512] = {0};
+uint8_t cmdHist[1024] = {0};
 int cmdHist_count = 0;
 int cmdHist_last = 0;
 

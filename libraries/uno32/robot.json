@@ -97,5 +97,8 @@ void setNeoPixel(int c, int level) {}
 		}
 	},
 
+	"scratch3constructor":"
+		this.uiNames = ['uno','ウノ'];
+",
 	"sort"			: 10,
 }
