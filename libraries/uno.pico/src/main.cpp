@@ -38,6 +38,7 @@ struct port {uint8_t sig; uint8_t gnd;};
   const uint8_t sensorTable[] = {27, 26, 28};
   const struct port ledTable[] = {{25,0}, {20,21},};
   const struct port swTable[] = {{24,0},/*{16,14},{12,5}*/};
+  void setNeoPixel(int c, int level);
 #endif
 
 uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
@@ -95,7 +96,7 @@ void _regHist()
 
 	uint32_t last = cmdHist_last;
 	cmdHist_last = millis();
-	if(((cmdHist_last - last) & 0x7FFFFFFF) > 1000) cmdHist_count = 0;;
+	if(((cmdHist_last - last) & 0x7FFFFFFF) > 4000) cmdHist_count = 0;;
 
 	int size = getCurPacket(cmdHist+cmdHist_count, sizeof(cmdHist)-cmdHist_count);
 	cmdHist_count += size;
@@ -103,7 +104,7 @@ void _regHist()
 
 void _saveHist()
 {
-	if(cmdHist_count == 0 || ((millis() - cmdHist_last) & 0x7FFFFFFF) < 1000) {
+	if(cmdHist_count != 0 && ((millis() - cmdHist_last) & 0x7FFFFFFF) < 4000) {
 		if(cmdHistNVP_num != cmdHist_count || memcmp(cmdHistNVP, cmdHist, cmdHist_count)){
 			cmdHistNVP_num = cmdHist_count;
 			memcpy(cmdHistNVP, cmdHist, cmdHist_count);
@@ -111,6 +112,9 @@ void _saveHist()
 			Serial.println(cmdHistNVP_num);
 		}
 	}
+#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+	setNeoPixel(0x000000, 0);
+#endif
 	cmdHist_count = 0;
 	cmdHist_last = 0;
 }
@@ -162,6 +166,9 @@ void _loop(void)
 		if(state == 0) {
 			if(level > 600) {
 				playbackPackets(cmdHistNVP, cmdHistNVP_num);
+			#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+				setNeoPixel(0x000000, 0);
+			#endif
 				state = 1;
 			}
 		} else {

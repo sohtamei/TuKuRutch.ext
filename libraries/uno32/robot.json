@@ -59,7 +59,7 @@ void setNeoPixel(int c, int level) {}
 
 	// メニュー定義
 	"menus": {
-		"noteJ2":["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5",],
+		"noteJ2":["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5","rest"],
 		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
 
 		"onoff"		:["On","Off"],
@@ -72,8 +72,8 @@ void setNeoPixel(int c, int level) {}
     // ラベル定義
 	"values":{
 		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
-		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,
-		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,"Zero":0,
+		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,"rest":0,
+		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,
 		"On":1,"Off":0,
 		"Black":0x000000,"Red":0xFF0000,"Green":0x00FF00,"Blue":0x0000FF,"Purple":0xFF00FF,"Yellow":0xFFFF00,"Lightblue":0x00FFFF,"White":0xFFFFFF,
 	},
@@ -82,7 +82,7 @@ void setNeoPixel(int c, int level) {}
 	"translators":{
 		"ja":{
 			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
-			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", 
+			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", "rest":"休符",
 			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
 			"Black":"黒","Red":"赤","Green":"緑","Blue":"青","Purple":"紫","Yellow":"黄","Lightblue":"水色","White":"白",
 
