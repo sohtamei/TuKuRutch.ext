@@ -186,7 +186,6 @@ void _setup(const char* ver)
 		memset(config, 0xFF, NVSCONFIG_MAX);
 
 		preferencesLCD.begin("lcdConfig", false);
-
 		int lcdType = preferencesLCD.getInt("lcdType", -1);
 		if(lcdType < 0) {
 			Serial.println("not configured");

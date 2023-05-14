@@ -1,3 +1,4 @@
+#include "sdkconfig.h"
 #if defined(CONFIG_IDF_TARGET_ESP32)
 // Copyright 2010-2020 Espressif Systems (Shanghai) PTE LTD
 //

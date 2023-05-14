@@ -1,3 +1,4 @@
+#include "sdkconfig.h"
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #include "driver/gpio.h"
 #include "driver/ledc.h"

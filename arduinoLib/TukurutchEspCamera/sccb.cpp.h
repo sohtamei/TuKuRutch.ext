@@ -6,7 +6,7 @@
  * SCCB (I2C like) driver.
  *
  */
-#ifndef I2C_WIRE
+#if !defined(I2C_WIRE) && !defined(I2C_WIRE1)
 #include <stdbool.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -188,7 +188,7 @@ uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
     }
     return ret == ESP_OK ? 0 : -1;
 }
-#else I2C_WIRE
+#elif defined(I2C_WIRE)
 #include <Wire.h>
 #include "sccb.h"
 
@@ -250,5 +250,72 @@ uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
   Wire.endTransmission();
   return 0;
 }
+#elif defined(I2C_WIRE1)
+#include <Wire.h>
+#include "sccb.h"
 
+int SCCB_Init(int pin_sda, int pin_scl)
+{
+    Wire1.begin(pin_sda, pin_scl);
+    return 0;
+}
+
+int SCCB_Deinit(void)
+{
+    return 0;
+}
+
+uint8_t SCCB_Probe()
+{
+    uint8_t slave_addr = 0x30;
+    Wire1.beginTransmission(slave_addr);
+    int ret = Wire1.endTransmission();
+    if(!ret)
+        return slave_addr;
+
+    slave_addr = 0x21;
+    Wire1.beginTransmission(slave_addr);
+    ret = Wire1.endTransmission();
+    if(!ret)
+        return slave_addr;
+    return 0x3c;
+}
+
+uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
+{
+  Wire1.beginTransmission(slv_addr);
+  Wire1.write(reg);
+  Wire1.endTransmission(false);
+  Wire1.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
+  return Wire1.read();
+}
+
+uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
+{
+  Wire1.beginTransmission(slv_addr);
+  Wire1.write(reg>>8);
+  Wire1.write(reg&0xFF);
+  Wire1.endTransmission(false);
+  Wire1.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
+  return Wire1.read();
+}
+
+uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
+{
+  Wire1.beginTransmission(slv_addr);
+  Wire1.write(reg);
+  Wire1.write(data);
+  Wire1.endTransmission();
+  return 0;
+}
+
+uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
+{
+  Wire1.beginTransmission(slv_addr);
+  Wire1.write(reg>>8);
+  Wire1.write(reg&0xFF);
+  Wire1.write(data);
+  Wire1.endTransmission();
+  return 0;
+}
 #endif // I2C_WIRE

@@ -310,5 +310,5 @@ void _setPwmFreq(int16_t pwm_freq, uint8_t pwm_bits)
 	}
 ",
 
-	"sort"			: 30,										// メニュー上の表示順序
+	"sort"			: 32,										// メニュー上の表示順序
 }

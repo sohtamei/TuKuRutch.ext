@@ -63,8 +63,12 @@ void espcamera_setup(void)
 	config.pin_reset = RESET_GPIO_NUM;
 	config.xclk_freq_hz = XCLK_FREQ;
 	config.frame_size = FRAMESIZE_UXGA;
+  #if defined(CAMERA_MODEL_CORES3)
+	config.pixel_format = PIXFORMAT_YUV422;	// GC0308
+  #else
 	config.pixel_format = PIXFORMAT_JPEG; // for streaming
-	//config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
+  #endif
+//	config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
 	config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
 	config.fb_location = CAMERA_FB_IN_PSRAM;
 	config.jpeg_quality = 12;
@@ -86,9 +90,10 @@ void espcamera_setup(void)
 		}
 	} else {
 		// Best option for face detection/recognition
-		config.frame_size = FRAMESIZE_240X240;
+	//	config.frame_size = FRAMESIZE_240X240;
+		config.frame_size = FRAMESIZE_HVGA;
 #if CONFIG_IDF_TARGET_ESP32S3
-	config.fb_count = 2;
+	//	config.fb_count = 2;
 #endif
 	}
 
