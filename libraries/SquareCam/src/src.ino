@@ -6,28 +6,28 @@
 #define RECV_BUFFER 65536
 
 const lgfx::IFont* fontTbl[] = {
-    	NULL,						// 0:
-    	&fonts::Font0,				// 1:ascii8
-    	&fonts::Font2,				// 2:ascii16
-    	NULL,						// 3:
-    	&fonts::Font4,				// 4:ascii26
-    	NULL,						// 5:
-    	&fonts::Font6,				// 6:num48
-    	&fonts::Font7,				// 7:7seg48
-    	&fonts::Font8,				// 8:num75
-    	NULL,						// 9:
-    
-    	&fonts::lgfxJapanGothic_12,		// 10:
-    	&fonts::lgfxJapanGothicP_12,	// 11:
-    	&fonts::lgfxJapanGothic_16,		// 12:
-    	&fonts::lgfxJapanGothicP_16,	// 13:
+	NULL,						// 0:
+	&fonts::Font0,				// 1:ascii8
+	&fonts::Font2,				// 2:ascii16
+	NULL,						// 3:
+	&fonts::Font4,				// 4:ascii26
+	NULL,						// 5:
+	&fonts::Font6,				// 6:num48
+	&fonts::Font7,				// 7:7seg48
+	&fonts::Font8,				// 8:num75
+	NULL,						// 9:
+
+	&fonts::lgfxJapanGothic_12,		// 10:
+	&fonts::lgfxJapanGothicP_12,	// 11:
+	&fonts::lgfxJapanGothic_16,		// 12:
+	&fonts::lgfxJapanGothicP_16,	// 13:
 };
 
 void _drawJpg(uint8_t* buf, int size) {
-    	if(!lcd || size<4) return;
-    	int x = GetL16(buf+0);
-    	int y = GetL16(buf+2);
-    	lcd->drawJpg(buf+4, size-4, x, y);
+	if(!lcd || size<4) return;
+	int x = GetL16(buf+0);
+	int y = GetL16(buf+2);
+	lcd->drawJpg(buf+4, size-4, x, y);
 }
 
 /*
@@ -64,24 +64,24 @@ const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
 int16_t _speed[2] = {0,0};
 void _setMotor(uint8_t index, int16_t speed)
 {
-      if(index >= 2) return;
-      _speed[index] = speed;
-      digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
-    
-      uint32_t pwm = (speed<0) ? -speed: speed;
-      pwm = (pwm * (1<<_pwm_bits)) / 100;
-      if(pwm > (1<<_pwm_bits)-1) pwm = (1<<_pwm_bits)-1;
-    
-      if(speed > 0) {
-            ledcWrite(motorTable[index*2+0].ledc, pwm);
-            ledcWrite(motorTable[index*2+1].ledc, 0);
-      } else if(speed < 0) {
-            ledcWrite(motorTable[index*2+0].ledc, 0);
-            ledcWrite(motorTable[index*2+1].ledc, pwm);
-      } else {
-            ledcWrite(motorTable[index*2+0].ledc, 0);
-            ledcWrite(motorTable[index*2+1].ledc, 0);
-      }
+  if(index >= 2) return;
+  _speed[index] = speed;
+  digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
+
+  uint32_t pwm = (speed<0) ? -speed: speed;
+  pwm = (pwm * (1<<_pwm_bits)) / 100;
+  if(pwm > (1<<_pwm_bits)-1) pwm = (1<<_pwm_bits)-1;
+
+  if(speed > 0) {
+    ledcWrite(motorTable[index*2+0].ledc, pwm);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  } else if(speed < 0) {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, pwm);
+  } else {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  }
 }
 
 struct { int16_t L; int16_t R;} static const dir_table[7] = {
@@ -102,9 +102,9 @@ void _setCar(uint8_t direction, int16_t speed, int16_t duration)
   _setMotor(1, speed * dir_table[direction].R);
 
   if(duration) {
-        delay(duration);
-        _setMotor(0, 0);
-        _setMotor(1, 0);
+    delay(duration);
+    _setMotor(0, 0);
+    _setMotor(1, 0);
  }
 }
 
@@ -113,13 +113,13 @@ void _setPwmFreq(int16_t pwm_freq, uint8_t pwm_bits)
   digitalWrite(P_STBY, 0);
   pinMode(P_STBY, OUTPUT);
   for(int i = 0; i < 4; i++) {
-        if(ledcSetup(motorTable[i].ledc, pwm_freq/*Hz*/, pwm_bits/*bit*/)) {
-              if(i==0) _pwm_bits = pwm_bits;
-        } else {
-              if(i==0) Serial.println("error");
-        }
-        ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
-        ledcWrite(motorTable[i].ledc, 0);
+    if(ledcSetup(motorTable[i].ledc, pwm_freq/*Hz*/, pwm_bits/*bit*/)) {
+      if(i==0) _pwm_bits = pwm_bits;
+    } else {
+      if(i==0) Serial.println("error");
+    }
+    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
+    ledcWrite(motorTable[i].ledc, 0);
   }
 }
 
@@ -206,10 +206,11 @@ void setup()
   Serial.begin(19200);
   _bleSetup();
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-      MIDI.begin(MIDI_CHANNEL_OMNI);
-      MIDI.setHandleSystemExclusive(handleSystemExclusive);
-      while( !TinyUSBDevice.mounted() ) delay(1);
-      MIDI.turnThruOff();
+  MIDI.begin(MIDI_CHANNEL_OMNI);
+  MIDI.setHandleSystemExclusive(handleSystemExclusive);
+  for(int i = 0; i < 20 && !TinyUSBDevice.mounted(); i++)
+    delay(100);
+  MIDI.turnThruOff();
 #endif
 
   _setup(mVersion);
@@ -267,21 +268,23 @@ void _write(uint8_t* dp, int count)
 {
 #if defined(ESP32)
   if(comMode == MODE_WS) {
-        _packet_dp = dp;
-        _packetLen = count;
+    _packet_dp = dp;
+    _packetLen = count;
   } else
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   if(comMode == MODE_BLE) {
-        _packet_dp = dp;
-        _packetLen = count;
+    _packet_dp = dp;
+    _packetLen = count;
   } else
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
   if(comMode == MODE_MIDI) {
-        _packet_dp = dp;
-        _packetLen = count;
+    _packet_dp = dp;
+    _packetLen = count;
   } else
 #endif
+  if(comMode == MODE_UART) {
     _Serial.write(dp, count);
+  }
 }
 
 void _println(const char* mes)
@@ -332,73 +335,73 @@ static const PROGMEM char ArgTypesTbl3[][ARG_NUM] = {
 
     public:
       _Wire() {
-            softWire = NULL;
-            softI2C = 0;
+        softWire = NULL;
+        softI2C = 0;
       }
       ~_Wire() {;}
 
       void begin() { 
-            Wire.begin();
-            softI2C = 0;
+        Wire.begin();
+        softI2C = 0;
       }
 
       void begin(int sda, int scl) {
-            if((sda == 20 && scl == 19) || (sda == 0 && scl == 0)) {
-                  Wire.begin();
-                  softI2C = 0;
-            } else {
-                  if(softWire) delete softWire;
-                  softWire = new SlowSoftWire(sda, scl, true);
-                  softI2C = 1;
-            }
+        if((sda == 20 && scl == 19) || (sda == 0 && scl == 0)) {
+          Wire.begin();
+          softI2C = 0;
+        } else {
+          if(softWire) delete softWire;
+          softWire = new SlowSoftWire(sda, scl, true);
+          softI2C = 1;
+        }
       }
 
       void end() {
-            if(softI2C == 0) Wire.end();
-            else if(softWire) {
-                  delete softWire;
-                  softWire = NULL;
-            }
+        if(softI2C == 0) Wire.end();
+        else if(softWire) {
+          delete softWire;
+          softWire = NULL;
+        }
       }
 
       void beginTransmission(int adrs) {
-            if(softI2C == 0)  Wire.beginTransmission(adrs);
-            else if(softWire) softWire->beginTransmission(adrs);
+        if(softI2C == 0)  Wire.beginTransmission(adrs);
+        else if(softWire) softWire->beginTransmission(adrs);
       }
 
       uint8_t endTransmission(void) {
-            if(softI2C == 0)  return Wire.endTransmission();
-            else if(softWire) return softWire->endTransmission();
+        if(softI2C == 0)  return Wire.endTransmission();
+        else if(softWire) return softWire->endTransmission();
       }
 
       uint8_t endTransmission(uint8_t flag) {
-            if(softI2C == 0)  return Wire.endTransmission(flag);
-            else if(softWire) return softWire->endTransmission(flag);
+        if(softI2C == 0)  return Wire.endTransmission(flag);
+        else if(softWire) return softWire->endTransmission(flag);
       }
 
       uint8_t requestFrom(int adrs, int num) {
-            if(softI2C == 0)  return Wire.requestFrom(adrs, num);
-            else if(softWire) return softWire->requestFrom(adrs, num);
+        if(softI2C == 0)  return Wire.requestFrom(adrs, num);
+        else if(softWire) return softWire->requestFrom(adrs, num);
       }
 
       size_t write(uint8_t data) {
-            if(softI2C == 0)  return Wire.write(data);
-            else if(softWire) return softWire->write(data);
+        if(softI2C == 0)  return Wire.write(data);
+        else if(softWire) return softWire->write(data);
       }
 
       size_t write(const uint8_t *buf, size_t num) {
-            if(softI2C == 0)  return Wire.write(buf, num);
-            else if(softWire) return softWire->write(buf, num);
+        if(softI2C == 0)  return Wire.write(buf, num);
+        else if(softWire) return softWire->write(buf, num);
       }
 
       int available(void) {
-            if(softI2C == 0)  return Wire.available();
-            else if(softWire) return softWire->available();
+        if(softI2C == 0)  return Wire.available();
+        else if(softWire) return softWire->available();
       }
 
       int read(void) {
-            if(softI2C == 0)  return Wire.read();
-            else if(softWire) return softWire->read();
+        if(softI2C == 0)  return Wire.read();
+        else if(softWire) return softWire->read();
       }
   };
   _Wire _Wire;
@@ -410,11 +413,11 @@ static void sendWireRead(int adrs, int num)
 {
   _Wire.requestFrom(adrs, num);
   if(_Wire.available() < num) {
-        callOK();
+    callOK();
   } else {
-        for(int i = 0; i < num; i++)
-          buffer[i] = _Wire.read();
-        sendBin(buffer, num);
+    for(int i = 0; i < num; i++)
+      buffer[i] = _Wire.read();
+    sendBin(buffer, num);
   }
 }
 
@@ -423,9 +426,9 @@ static void sendWireScan(void)
   int num = 0;
   int i;
   for(i = 0; i < 127; i++) {
-        _Wire.beginTransmission(i);
-        int ret = _Wire.endTransmission();
-        if(!ret) buffer[num++] = i;
+    _Wire.beginTransmission(i);
+    int ret = _Wire.endTransmission();
+    if(!ret) buffer[num++] = i;
   }
   sendBin(buffer, num);
 }
@@ -434,8 +437,8 @@ static void digiWrite(uint8_t* buf, int num)
 {
   int i;
   for(i = 0; i < num; i+= 2) {
-        pinMode(buf[i+0], OUTPUT);
-        digitalWrite(buf[i+0], buf[i+1]);
+    pinMode(buf[i+0], OUTPUT);
+    digitalWrite(buf[i+0], buf[i+1]);
   }
 }
 
@@ -480,16 +483,16 @@ static void _setPwm(uint8_t port, uint16_t data)
 {
   int i;
   for(i = LEDC_PWM_START; i <= LEDC_PWM_END; i++) {
-        if(ledc2port[i] == port+1) {
-              ledcWrite(i, data);
-              return;
-        } else if(ledc2port[i] == 0) {
-              ledc2port[i] = port+1;
-              ledcSetup(i, 50/*Hz*/, 12/*bit*/);
-              ledcAttachPin(port, i);
-              ledcWrite(i, data);
-              return;
-        }
+    if(ledc2port[i] == port+1) {
+      ledcWrite(i, data);
+      return;
+    } else if(ledc2port[i] == 0) {
+      ledc2port[i] = port+1;
+      ledcSetup(i, 50/*Hz*/, 12/*bit*/);
+      ledcAttachPin(port, i);
+      ledcWrite(i, data);
+      return;
+    }
   }
 }
 #else
@@ -515,15 +518,15 @@ static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
     _setPwm(buf[i+0], buf[i+1]|(buf[i+2]<<8));
 
   if(duration) {
-        delay(duration);
-    
-        uint16_t data = 0;
-        switch(mode) {
-            case 0: data = 0; break;
-            case 1: data = PWM_NEUTRAL; break;
-        }
-        for(i = 0; i < num; i += 3)
-          _setPwm(buf[i+0], data);
+    delay(duration);
+
+    uint16_t data = 0;
+    switch(mode) {
+    case 0: data = 0; break;
+    case 1: data = PWM_NEUTRAL; break;
+    }
+    for(i = 0; i < num; i += 3)
+      _setPwm(buf[i+0], data);
   }
 }
 
@@ -531,115 +534,115 @@ static void parseData()
 {
   uint8_t cmd;
   if(buffer[1] == 0x54) {
-        cmd = buffer[4];
+    cmd = buffer[4];
   } else if(buffer[1] == 0x55) {
-      cmd = buffer[3];
-      const PROGMEM char *ArgTypes = NULL;
-      if(cmd < ITEM_NUM) {
-             ArgTypes = ArgTypesTbl[cmd];
-        
-      } else if(cmd >= CMD_MIN && cmd <= CMD_MAX) {
-             ArgTypes = ArgTypesTbl2[cmd-CMD_MIN];
-        
-      } else if(cmd >= CMD3_MIN && cmd <= CMD3_MAX) {
-             ArgTypes = ArgTypesTbl3[cmd-CMD3_MIN];
+  cmd = buffer[3];
+  const PROGMEM char *ArgTypes = NULL;
+  if(cmd < ITEM_NUM) {
+     ArgTypes = ArgTypesTbl[cmd];
+
+  } else if(cmd >= CMD_MIN && cmd <= CMD_MAX) {
+     ArgTypes = ArgTypesTbl2[cmd-CMD_MIN];
+
+  } else if(cmd >= CMD3_MIN && cmd <= CMD3_MAX) {
+     ArgTypes = ArgTypesTbl3[cmd-CMD3_MIN];
+  }
+
+  uint8_t i;
+  memset(offsetIdx, 0, sizeof(offsetIdx));
+  if(ArgTypes) {
+    uint16_t offset = 0;
+    for(i = 0; i < ARG_NUM; i++) {
+      uint8_t type = pgm_read_byte(ArgTypes+i);
+      if(type == 0) break;
+      offsetIdx[i] = offset;
+      switch(type) {
+      case 'B': offset += 1; break;
+      case 'S': offset += 2; break;
+      case 'L': offset += 4; break;
+      case 'F': offset += 4; break;
+      case 'D': offset += 8; break;
+      case 's': offset += strlen((char*)buffer+4+offset)+1; break;
+      case 'b': offset += buffer[4+offset]+1; break;
+      default: break;
       }
-    
-      uint8_t i;
-      memset(offsetIdx, 0, sizeof(offsetIdx));
-      if(ArgTypes) {
-            uint16_t offset = 0;
-            for(i = 0; i < ARG_NUM; i++) {
-                  uint8_t type = pgm_read_byte(ArgTypes+i);
-                  if(type == 0) break;
-                  offsetIdx[i] = offset;
-                  switch(type) {
-                      case 'B': offset += 1; break;
-                      case 'S': offset += 2; break;
-                      case 'L': offset += 4; break;
-                      case 'F': offset += 4; break;
-                      case 'D': offset += 8; break;
-                      case 's': offset += strlen((char*)buffer+4+offset)+1; break;
-                      case 'b': offset += buffer[4+offset]+1; break;
-                      default: break;
-                  }
-                  if(4+offset > _packetLen) return;
-            }
-      }
+      if(4+offset > _packetLen) return;
+    }
+  }
   }
 
   switch(cmd){
-    case 1: sendBin(buffer, _getLcdConfig(buffer)); break;
-    case 2: _setLcdConfig(getShort(0),getBufLen(1));/*_setupLCD(getShort(0),getBufLen(1));*/; callOK(); break;
-    case 3: if(lcd) lcd->setFont(fontTbl[getByte(0)]);; callOK(); break;
-    case 4: if(lcd) lcd->setRotation(getByte(0));; callOK(); break;
+case 1: sendBin(buffer, _getLcdConfig(buffer)); break;
+case 2: _setLcdConfig(getShort(0),getBufLen(1));/*_setupLCD(getShort(0),getBufLen(1));*/; callOK(); break;
+case 3: if(lcd) lcd->setFont(fontTbl[getByte(0)]);; callOK(); break;
+case 4: if(lcd) lcd->setRotation(getByte(0));; callOK(); break;
 case 5: if(lcd) {lcd->setTextColor(getShort(0),getShort(1));lcd->setTextSize(getFloat(2));}; callOK(); break;
-    case 6: if(lcd) lcd->setCursor(getShort(0),getShort(1));; callOK(); break;
-    case 7: if(lcd) lcd->print(getString(0));; callOK(); break;
-    case 8: if(lcd) lcd->println(getString(0));; callOK(); break;
-    case 9: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2));; callOK(); break;
-    case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[getByte(3)]);; callOK(); break;
+case 6: if(lcd) lcd->setCursor(getShort(0),getShort(1));; callOK(); break;
+case 7: if(lcd) lcd->print(getString(0));; callOK(); break;
+case 8: if(lcd) lcd->println(getString(0));; callOK(); break;
+case 9: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2));; callOK(); break;
+case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[getByte(3)]);; callOK(); break;
 case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
-    case 12: _drawJpg(getBufLen2(0));; callOK(); break;
-    case 13: _setCar(getByte(0),getShort(1),getShort(2));; callOK(); break;
-    case 14: _setMotor(getByte(0),getShort(1));; callOK(); break;
-    case 15: _setCar(0,0,0);; callOK(); break;
-    case 16: _setPwmFreq(getShort(0),getByte(1));; callOK(); break;
-    #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
-      case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
-    #else
-      case 0x81: _Wire.begin(); callOK(); break;
-    #endif
-      case 0x82: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); sendByte(_Wire.endTransmission()); break;
-      case 0x83: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); _Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
-      case 0x84: sendWireRead(getByte(0),getByte(1)); break;
-      case 0x85: sendWireScan(); break;
-    
-      case 0x86: digiWrite(getBufLen(0)); callOK(); break;
-      case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
-      case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
-      case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
-      case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
-      case 0x8b: callOK(); break;
-    #if defined(CAMERA_ENABLED)
-    //case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
-    #endif
-      case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
-    #if defined(ESP32)
-      // WiFi設定
-      case 0xFB: sendString(statusWifi()); break;
-      case 0xFC: sendString(scanWifi()); break;
-      case 0xFD: sendByte(connectWifi(getString(0),getString(1))); break;
-    #endif
-      case 0xFE:  // firmware name
-        _println("PC mode: " mVersion "\r\n");
-        break;
-    
-      case 0xFF:  // software reset
-      #if defined(__AVR_ATmega328P__)
-        wdt_enable(WDTO_15MS);
-        while(1);
-      #elif defined(_SAMD21_)
-        NVIC_SystemReset();
-      #elif defined(ESP32)
-        ESP.restart();
-      #endif
-        break;
-    
-        //### CUSTOMIZED ###
-    #ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
-      #define CMD_CHECKREMOTEKEY  0x80
-      case CMD_CHECKREMOTEKEY: sendRemote(); break;
-    #endif
-      default: callOK(); break;
+case 12: _drawJpg(getBufLen2(0));; callOK(); break;
+case 13: _setCar(getByte(0),getShort(1),getShort(2));; callOK(); break;
+case 14: _setMotor(getByte(0),getShort(1));; callOK(); break;
+case 15: _setCar(0,0,0);; callOK(); break;
+case 16: _setPwmFreq(getShort(0),getByte(1));; callOK(); break;
+#if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
+  case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
+#else
+  case 0x81: _Wire.begin(); callOK(); break;
+#endif
+  case 0x82: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); sendByte(_Wire.endTransmission()); break;
+  case 0x83: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); _Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
+  case 0x84: sendWireRead(getByte(0),getByte(1)); break;
+  case 0x85: sendWireScan(); break;
+
+  case 0x86: digiWrite(getBufLen(0)); callOK(); break;
+  case 0x87: pinMode(getByte(0),INPUT); sendByte(digitalRead(getByte(0))); break;
+  case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
+  case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
+  case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
+  case 0x8b: callOK(); break;
+#if defined(CAMERA_ENABLED)
+//case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
+#endif
+  case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
+#if defined(ESP32)
+  // WiFi設定
+  case 0xFB: sendString(statusWifi()); break;
+  case 0xFC: sendString(scanWifi()); break;
+  case 0xFD: sendByte(connectWifi(getString(0),getString(1))); break;
+#endif
+  case 0xFE:  // firmware name
+    _println("PC mode: " mVersion "\r\n");
+    break;
+
+  case 0xFF:  // software reset
+  #if defined(__AVR_ATmega328P__)
+    wdt_enable(WDTO_15MS);
+    while(1);
+  #elif defined(_SAMD21_)
+    NVIC_SystemReset();
+  #elif defined(ESP32)
+    ESP.restart();
+  #endif
+    break;
+
+    //### CUSTOMIZED ###
+#ifdef REMOTE_ENABLE	// check remoconRoboLib.h or quadCrawlerRemocon.h
+  #define CMD_CHECKREMOTEKEY  0x80
+  case CMD_CHECKREMOTEKEY: sendRemote(); break;
+#endif
+  default: callOK(); break;
   }
 }
 
 int16_t _readUart(void)
 {
   if(_Serial.available()>0) {
-        comMode = MODE_UART;
-        return _Serial.read();
+    comMode = MODE_UART;
+    return _Serial.read();
   }
   return -1;
 }
@@ -650,37 +653,37 @@ void loop()
 {
   int16_t c;
   while((c=_readUart()) >= 0) {
-        //_Serial.printf("%02x",c);  // for debug
-        buffer[_index++] = c;
-        
-        switch(_index) {
-            case 1:
-              _packetLen = 4;
-              if(c != 0xff)
-                _index = 0;
-              break;
-            case 2:
-              if(c != 0x55 && c != 0x54)
-                _index = 0;
-              break;
-            case 3:
-              if(buffer[1] == 0x55) {
-                    _packetLen = 3+c;
-              }
-              break;
-            case 4:
-              if(buffer[1] == 0x54) {
-                    _packetLen = 4+buffer[2]+(c<<8);
-              }
-              break;
-        }
-        if(_index >= _packetLen) {
-              parseData();
-              _index = 0;
-        }
-        if(_index >= sizeof(buffer)) {
-              _index = 0;
-        }
+    //_Serial.printf("%02x",c);  // for debug
+    buffer[_index++] = c;
+    
+    switch(_index) {
+    case 1:
+      _packetLen = 4;
+      if(c != 0xff)
+        _index = 0;
+      break;
+    case 2:
+      if(c != 0x55 && c != 0x54)
+        _index = 0;
+      break;
+    case 3:
+      if(buffer[1] == 0x55) {
+        _packetLen = 3+c;
+      }
+      break;
+    case 4:
+      if(buffer[1] == 0x54) {
+        _packetLen = 4+buffer[2]+(c<<8);
+      }
+      break;
+    }
+    if(_index >= _packetLen) {
+      parseData();
+      _index = 0;
+    }
+    if(_index >= sizeof(buffer)) {
+      _index = 0;
+    }
   }
 
 #if defined(ESP32)
@@ -702,51 +705,51 @@ static WebsocketsClient _client;
 
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
-        Serial.println("Connnection Opened");
+    Serial.println("Connnection Opened");
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-        Serial.println("Connnection Closed");
-        connected = 0;
+    Serial.println("Connnection Closed");
+    connected = 0;
   } else if(event == WebsocketsEvent::GotPing) {
-        Serial.println("Got a Ping!");
+    Serial.println("Got a Ping!");
   } else if(event == WebsocketsEvent::GotPong) {
-        Serial.println("Got a Pong!");
+    Serial.println("Got a Pong!");
   }
 }
 
 void onMessageCallback(WebsocketsMessage msg) {
   int size = msg.length();
   if(_index+size >= sizeof(buffer)) {
-        _index = 0;
-        return;
+    _index = 0;
+    return;
   }
   memcpy(buffer+_index, msg.c_str(), size);
   if(_index == 0) {
-        if(buffer[0] != 0xff) {
-              _index = 0;
-              return;
-        } else {
-              switch(buffer[1]) {
-                  case 0x55:
-                    _packetLen = 3+buffer[2];
-                    break;
-                  case 0x54:
-                    _packetLen = 4+buffer[2]+(buffer[3]<<8);
-                    break;
-                  default:
-                    _index = 0;
-                    return;
-              }
-        }
+    if(buffer[0] != 0xff) {
+      _index = 0;
+      return;
+    } else {
+      switch(buffer[1]) {
+      case 0x55:
+        _packetLen = 3+buffer[2];
+        break;
+      case 0x54:
+        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+        break;
+      default:
+        _index = 0;
+        return;
+      }
+    }
   }
   comMode = MODE_WS;
   _index += size;
   if(_index >= _packetLen) {
-        parseData();
-        _client.sendBinary((char*)_packet_dp, _packetLen);
-        _index = 0;
+    parseData();
+    _client.sendBinary((char*)_packet_dp, _packetLen);
+    _index = 0;
   } else {
     const uint8_t buf[] = {0x00};
-        _client.sendBinary((char*)buf, sizeof(buf));
+    _client.sendBinary((char*)buf, sizeof(buf));
   }
 }
 
@@ -754,12 +757,12 @@ static void loopWebSocket(void)
 {
   if(!wsServer.available()) return;
   if(wsServer.poll()) {
-        connected = 1;
-        _index = 0;
-        Serial.println("connected");
-        _client = wsServer.accept();
-        _client.onMessage(onMessageCallback);
-        _client.onEvent(onEventsCallback);
+    connected = 1;
+    _index = 0;
+    Serial.println("connected");
+    _client = wsServer.accept();
+    _client.onMessage(onMessageCallback);
+    _client.onEvent(onEventsCallback);
   }
   if(!connected || !_client.available()) return;
   _client.poll();
@@ -808,94 +811,146 @@ static void _bleWritten(BLECentral& central, BLECharacteristic& _char) {
   //Serial.print(F("R:")); _dump(_rxChar.value(), _rxChar.valueLength());
   int size = _rxChar.valueLength();
   if(_index+size >= sizeof(buffer)) {
-        _index = 0;
-        return;
+    _index = 0;
+    return;
   }
   memcpy(buffer+_index, _rxChar.value(), size);
   if(_index == 0) {
-        if(buffer[0] != 0xff) {
-              _index = 0;
-              return;
-        } else {
-              switch(buffer[1]) {
-                  case 0x55:
-                    _packetLen = 3+buffer[2];
-                    break;
-                  case 0x54:
-                    _packetLen = 4+buffer[2]+(buffer[3]<<8);
-                    break;
-                  default:
-                    _index = 0;
-                    return;
-              }
-        }
+    if(buffer[0] != 0xff) {
+      _index = 0;
+      return;
+    } else {
+      switch(buffer[1]) {
+      case 0x55:
+        _packetLen = 3+buffer[2];
+        break;
+      case 0x54:
+        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+        break;
+      default:
+        _index = 0;
+        return;
+      }
+    }
   }
   comMode = MODE_BLE;
   _index += size;
   if(_index >= _packetLen) {
-        parseData();
-        //Serial.print(F("W:")); _dump((uint8_t*)_packet_dp, _packetLen);
-        _txChar.setValue(_packet_dp, _packetLen);
-        _index = 0;
+    parseData();
+    //Serial.print(F("W:")); _dump((uint8_t*)_packet_dp, _packetLen);
+    _txChar.setValue(_packet_dp, _packetLen);
+    _index = 0;
   } else {
     const uint8_t buf[] = {0x00};
-        //Serial.print(F("W:")); _dump(buf, sizeof(buf));
-        _txChar.setValue(buf, sizeof(buf));
+    //Serial.print(F("W:")); _dump(buf, sizeof(buf));
+    _txChar.setValue(buf, sizeof(buf));
   }
 }
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 
-void handleSystemExclusive(byte* buf, unsigned size)
-{
-  midiDecdata(buf, size);
+void handleSystemExclusive(byte* buf, unsigned size) {
   comMode = MODE_MIDI;
-  parseData();
-  midiEncdata(_packet_dp, _packetLen);
-  MIDI.sendSysEx(EncSize, EncBuffer/*, false*/);
+  memcpy(EncBuffer+EncSize, buf, size);
+  EncSize += size;
+  if(buf[size-1] != 0xF7) return;
+
+  if(_index+((size-2)*7)/8 >= sizeof(buffer)) {
+    _index = 0;
+    return;
+  }
+  size = midiDecdata(EncBuffer, EncSize, buffer+_index);
+  EncSize = 0;
+  if(_index == 0) {
+    if(buffer[0] != 0xff) {
+      _index = 0;
+      return;
+    } else {
+      switch(buffer[1]) {
+      case 0x55:
+        _packetLen = 3+buffer[2];
+        break;
+      case 0x54:
+        _packetLen = 4+buffer[2]+(buffer[3]<<8);
+        break;
+      default:
+        _index = 0;
+        return;
+      }
+    }
+  }
+
+  _index += size;
+  if(_index >= _packetLen) {
+    parseData();
+    midiEncdata(_packet_dp, _packetLen);
+    MIDI.sendSysEx(EncSize, EncBuffer/*, false*/);
+    _index = 0;
+    EncSize = 0;
+  } else {
+    const uint8_t buf[] = {0x00};
+    MIDI.sendSysEx(sizeof(buf), buf/*, false*/);
+  }
 }
 
 void midiEncdata(uint8_t* buf, int size)
 {
-  if(buf[0] != 0xff && buf[1] != 0x55) return;
-
-  buf += 2;
-  size -= 2;
+  _dump(buf, size);  // debug
   EncSize = (size*8 + 6)/7;
   for(int i = 0; i < EncSize*7; i+=7) {
-        int shift = i % 8;
-        int offset = (i-shift)/8;
-        int tmp2 = buf[offset];
-        if(offset+1 < size) {
-              tmp2 += buf[offset+1] << 8;
-        }
-        EncBuffer[i/7] = (tmp2 >> shift) & 0x7f;
+    int shift = i % 8;
+    int offset = (i-shift)/8;
+    int tmp2 = buf[offset];
+    if(offset+1 < size) {
+      tmp2 += buf[offset+1] << 8;
+    }
+    EncBuffer[i/7] = (tmp2 >> shift) & 0x7f;
   }
-  _dump(EncBuffer, EncSize);  // debug
+  //_dump(EncBuffer, EncSize);  // debug
   return;
 }
 
-void midiDecdata(uint8_t* buf, int size)
+int midiDecdata(uint8_t* buf, int size, uint8_t* plain)
 {
-  if(buf[0] != 0xf0 && buf[size-1] != 0xf7) return;
-
+  //_dump(buf, size);  // debug
+  //if(buf[0] != 0xf0 && buf[size-1] != 0xf7) return;
+    
   buf += 1;
   size -= 2;
-  _packetLen = 2 + (size*7)/8;
-  for(int i = 0; i < (_packetLen-2)*8; i+=8) {
-        int shift = i % 7;
-        int offset = (i-shift)/7;
-        int tmp2 = buf[offset];
-        if(offset+1 < size) {
-              tmp2 += buf[offset+1] << 7;
-        }
-        buffer[2+i/8] = (tmp2 >> shift) & 0xff;
+  int plainSize = (size*7)/8;
+  for(int i = 0; i < plainSize*8; i+=8) {
+    int shift = i % 7;
+    int offset = (i-shift)/7;
+    int tmp2 = buf[offset];
+    if(offset+1 < size) {
+      tmp2 += buf[offset+1] << 7;
+    }
+    plain[i/8] = (tmp2 >> shift) & 0xff;
   }
-  buffer[0] = 0xff;
-  buffer[1] = 0x55;
-  _dump(buffer, _packetLen);  // debug
-  return;
+  _dump(plain, plainSize);  // debug
+  return plainSize;
 }
 #endif
+
+int getCurPacket(uint8_t* buf, int size)
+{
+  if(_packetLen >= size) return 0;
+  memcpy(buf, buffer, _packetLen);
+  return _packetLen;
+}
+
+void playbackPackets(uint8_t* buf, int size)
+{
+  comMode = MODE_INVALID;
+  int i;
+  for(i = 0; i < size; ) {
+    if(buf[i+0] != 0xff || buf[i+1] != 0x55) break;
+    _packetLen = buf[i+2] + 3;
+    memcpy(buffer, buf+i, _packetLen);
+    parseData();
+    delay(10);
+    i += _packetLen;
+  }
+}
 
 //*
 static void _dump(const uint8_t* buf, int size)
@@ -903,8 +958,8 @@ static void _dump(const uint8_t* buf, int size)
   int i;
   char tmp[4];
   for(i = 0; i < size; i++) {
-        snprintf(tmp, sizeof(tmp), "%02x", buf[i]);
-        Serial.print(tmp);
+    snprintf(tmp, sizeof(tmp), "%02x", buf[i]);
+    Serial.print(tmp);
   }
   Serial.println();
 }
@@ -942,7 +997,7 @@ float getFloat(uint8_t n)
   uint8_t x = 4+offsetIdx[n];
   union floatConv conv;
   for(uint8_t i=0; i<4; i++) {
-        conv._byte[i] = buffer[x+i];
+    conv._byte[i] = buffer[x+i];
   }
   return conv._float;
 }
@@ -952,7 +1007,7 @@ double getDouble(uint8_t n)
   uint8_t x = 4+offsetIdx[n];
   union doubleConv conv;
   for(uint8_t i=0; i<8; i++) {
-        conv._byte[i] = buffer[x+i];
+    conv._byte[i] = buffer[x+i];
   }
   return conv._double;
 }
@@ -1037,7 +1092,7 @@ static void sendDouble(double data)
   *dp++ = 1+sizeof(double);
   *dp++ = RSP_DOUBLE;
   for(uint8_t i=0; i<8; i++) {
-        *dp++ = conv._byte[i];
+    *dp++ = conv._byte[i];
   }
   _write(buffer, dp-buffer);
 }
@@ -1052,7 +1107,7 @@ static void sendString(String s)
   *dp++ = 1+l;
   *dp++ = RSP_STRING;
   for(uint8_t i=0; i<l; i++) {
-        *dp++ = s.charAt(i);
+    *dp++ = s.charAt(i);
   }
   _write(buffer, dp-buffer);
 }

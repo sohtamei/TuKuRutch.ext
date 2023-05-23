@@ -4,9 +4,7 @@
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	"sort"			: 2,										// メニュー上の表示順序
-	"sampleDir"		: "sample/QuadCrawler",						// サンプルディレクトリ
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"libraryPath"	: "quadCrawlerLib",							// 専用ライブラリ(option)
 
 	"scratch3burn"	: [											// binary定義

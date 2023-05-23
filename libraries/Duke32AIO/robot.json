@@ -3,16 +3,14 @@
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 
 	"sort"			: 61,										// メニュー上の表示順序
-	"helpURL"		: "http://sohta02.web.fc2.com/familyday_shield.html#Duke32AIO",
-	"productInfoURL": "https://thousandiy.wordpress.com/2018/04/11/duke32_aio/",
-	"sampleDir"		: "sample/WifiCar",							// サンプルディレクトリ
 	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex
-	"pcmodeFW"		: "robot_pcmode/robot_pcmode",				// PC modeプログラム, .ino, .cpp.standard.hex, .ino.template
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
+						"custom_EventsCore=esp32_1",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
+						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
