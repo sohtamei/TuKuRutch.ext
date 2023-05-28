@@ -47,6 +47,12 @@ const jsonToJs = function(target, ext)
 				fs.copyFileSync(src, "../scratch3/"+imageName+".hex");
 			break;
 
+		case 'pico':
+			src = binPath+"/src/src.ino.standard.hex";
+			if(fs.existsSync(src))
+				fs.copyFileSync(src, "../scratch3/"+imageName+".hex");
+			break;
+
 		case 'esp32c3u':
 		case 'esp32s3u':
 			type = type.slice(0,type.length-1);

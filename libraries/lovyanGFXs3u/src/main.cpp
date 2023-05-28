@@ -17,7 +17,7 @@ Preferences preferencesLCD;
   #error
 #endif
 
-#include "panel_def.h"
+#include <lgfx_panel_def.h>
 
 void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 {
@@ -70,12 +70,15 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_MSP4020_4021:	lcd = new LGFX_MSP4020_4021(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP4022_4023:	lcd = new LGFX_MSP4022_4023(lcdType, config_buf, config_size); break;
 
+	// XIAO
+	case LCDTYPE_ROUNDXIAO:		lcd = new LGFX_ROUNDXIAO(lcdType, config_buf, config_size); break;
+	case LCDTYPE_SQUAREXIAO:	lcd = new LGFX_SQUAREXIAO(lcdType, config_buf, config_size); break;
+	case LCDTYPE_RoundTouchXIAO: lcd = new LGFX_RoundTouchXIAO(lcdType, config_buf, config_size); break;
+
 	// other
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
-	case LCDTYPE_ROUNDXIAO:		lcd = new LGFX_ROUNDXIAO(lcdType, config_buf, config_size); break;
-	case LCDTYPE_SQUARE:		lcd = new LGFX_SQUARE(lcdType, config_buf, config_size); break;
+	case LCDTYPE_SQUARELCD:		lcd = new LGFX_SQUARELCD(lcdType, config_buf, config_size); break;
 	case LCDTYPE_128TFT:		lcd = new LGFX_128TFT(lcdType, config_buf, config_size); break;
-	case LCDTYPE_ATM0177B3A:	lcd = new LGFX_ATM0177B3A(lcdType, config_buf, config_size); break;
 
 	// micom+LCD
 #if defined(CONFIG_IDF_TARGET_ESP32)
@@ -101,9 +104,9 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	lcd->fillScreen(TFT_BLACK);
 	lcd->setTextColor(TFT_WHITE,TFT_BLACK);
 	lcd->setFont(&fonts::lgfxJapanGothic_12);
-	lcd->setCursor(0,0);
+	lcd->setCursor(0,lcd->height()/3);
 	lcd->println("OK");
-	lcd->setCursor(0,0);
+	lcd->setCursor(0,lcd->height()/3);
 }
 
 int _getLcdConfig(uint8_t* buf)
@@ -170,7 +173,7 @@ static void onConnect(String ip)
 {
 	if(lcd) {
 		lcd->fillScreen(TFT_BLACK);
-		lcd->setCursor(0,0);
+		lcd->setCursor(0,lcd->height()/3);
 		lcd->println(ip);
 	}
 	wsServer.listen(PORT_WEBSOCKET);

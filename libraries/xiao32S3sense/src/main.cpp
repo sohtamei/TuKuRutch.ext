@@ -26,12 +26,15 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	}
 
 	switch(lcdType) {
-	case LCDTYPE_SQUARELCD:
-		lcd = new LGFX_SQUARELCD(lcdType, config_buf, config_size);
+	case LCDTYPE_ROUNDXIAO:
+		lcd = new LGFX_ROUNDXIAO(lcdType, config_buf, config_size);
 		break;
-	case LCDTYPE_ROUNDLCD:
-		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size);
-		lcd->setRotation(1);
+	case LCDTYPE_SQUAREXIAO:
+		lcd = new LGFX_SQUAREXIAO(lcdType, config_buf, config_size);
+		lcd->setRotation(3);
+		break;
+	case LCDTYPE_RoundTouchXIAO:
+		lcd = new LGFX_RoundTouchXIAO(lcdType, config_buf, config_size);
 		break;
 	default:
 		return;
@@ -48,6 +51,8 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	lcd->setTextColor(TFT_WHITE,TFT_BLACK);
 	lcd->setFont(&fonts::lgfxJapanGothic_12);
 	lcd->setCursor(0,lcd->height()/3);
+	lcd->println("OK");
+	lcd->setCursor(0,lcd->height()/3);
 }
 
 int _getLcdConfig(uint8_t* buf)
@@ -59,7 +64,6 @@ int _getLcdConfig(uint8_t* buf)
 	SetL16(buf+0, lcd->width());
 	SetL16(buf+2, lcd->height());
 	int lcdType = preferencesLCD.getInt("lcdType", -1);
-	if(lcdType < 0) lcdType = LCDTYPE_SQUARELCD;
 	SetL16(buf+4, lcdType);
 
 	lgfx::IBus* bus = lcd->panel()->bus();
@@ -125,14 +129,21 @@ static void onConnect(String ip)
 void _setup(const char* ver)
 {
 	Serial.begin(115200);
+
 	espcamera_setup();
+	sensor_t * s = esp_camera_sensor_get();
+	s->set_vflip(s, 1);
+	s->set_hmirror(s, 0);
 	do {
 		uint8_t config[NVSCONFIG_MAX];
 		memset(config, 0xFF, NVSCONFIG_MAX);
 
 		preferencesLCD.begin("lcdConfig", false);
 		int lcdType = preferencesLCD.getInt("lcdType", -1);
-		if(lcdType < 0) lcdType = LCDTYPE_SQUARELCD;
+		if(lcdType < 0) {
+			Serial.println("not configured");
+			break;
+		}
 		int config_size = preferencesLCD.getBytes("config", config, NVSCONFIG_MAX);
 		Serial.print("type=");
 		Serial.println(LcdTypeStr[lcdType]);
