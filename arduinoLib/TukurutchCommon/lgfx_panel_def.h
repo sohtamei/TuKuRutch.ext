@@ -1655,7 +1655,11 @@ public:
 		nvscfg_spi_t nvs = {0};
 		return;
 	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+	  #if defined(CAMERA_ENABLE)
 		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };	// squareCam
+	  #else
+		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=-1, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };
+	  #endif
   	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = {0};
 		return;

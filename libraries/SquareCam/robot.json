@@ -18,8 +18,8 @@
 						"custom_UploadSpeed=esp32s3_921600"],
 
 	"scratch3burn"	: [
-			{"name":"SquareCam",     "type":"esp32s3u","baudrate":921600, "binPath":"SquareCam"},
 			{"name":"xiao32S3sense", "type":"esp32s3u","baudrate":921600, "binPath":"xiao32S3sense"},
+			{"name":"SquareCam",     "type":"esp32s3u","baudrate":921600, "binPath":"SquareCam"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

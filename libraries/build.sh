@@ -48,7 +48,7 @@ function buildSRCs() {
 }
 
 if [ $# -eq 0 ]; then
-  echo "usage: build.sh <target>"
+  echo "usage: build.sh <target> [COM1]"
   exit 1
 fi
 
