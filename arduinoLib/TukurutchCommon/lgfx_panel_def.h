@@ -1575,7 +1575,7 @@ public:
 	#if defined(CONFIG_IDF_TARGET_ESP32)
 		nvscfg_spi_t nvs = { .sclk=14, .mosi=12, .miso=-1, .dc=16, .cs=17, .rst=15, .busy=-1, .bl=13, };
 	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-	  #if defined(CAMERA_ENABLE)
+	  #if defined(CAMERA_ENABLED)
 		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };
 	  #else
 		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=-1, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };
@@ -1655,7 +1655,7 @@ public:
 		nvscfg_spi_t nvs = {0};
 		return;
 	#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-	  #if defined(CAMERA_ENABLE)
+	  #if defined(CAMERA_ENABLED)
 		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };	// squareCam
 	  #else
 		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=-1, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };
