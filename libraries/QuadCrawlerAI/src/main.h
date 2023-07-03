@@ -14,5 +14,4 @@ void _loop(void);
 #define QCAI
 //#define DEVICE_CAMERATCH32
 #define XCLK_FREQ 8000000
-#define I2C_WIRE
 #endif  // main_h

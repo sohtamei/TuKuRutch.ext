@@ -121,8 +121,9 @@
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    -1
   #define XCLK_GPIO_NUM     32
-  #define SIOD_GPIO_NUM     26
-  #define SIOC_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     -1
+  #define SIOC_GPIO_NUM     -1
+  #define SCCB_I2C_PORT      0
 
   #define Y9_GPIO_NUM       35
   #define Y8_GPIO_NUM       34
@@ -144,8 +145,9 @@
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    -1
   #define XCLK_GPIO_NUM     32
-  #define SIOD_GPIO_NUM     26
-  #define SIOC_GPIO_NUM     27
+  #define SIOD_GPIO_NUM     -1
+  #define SIOC_GPIO_NUM     -1
+  #define SCCB_I2C_PORT      0
 
   #define Y9_GPIO_NUM       35
   #define Y8_GPIO_NUM       34
@@ -239,8 +241,9 @@
   #define PWDN_GPIO_NUM -1
   #define RESET_GPIO_NUM -1		// AW9523B_P1_0
   #define XCLK_GPIO_NUM -1
-  #define SIOD_GPIO_NUM 12
-  #define SIOC_GPIO_NUM 11
+  #define SIOD_GPIO_NUM -1
+  #define SIOC_GPIO_NUM -1
+  #define SCCB_I2C_PORT 1
 
   #define Y2_GPIO_NUM 39
   #define Y3_GPIO_NUM 40

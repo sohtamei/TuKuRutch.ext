@@ -24,11 +24,10 @@
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
-#define TAG ""
 #else
 #include "esp_log.h"
-static const char *TAG = "gc0308";
 #endif
+static const char *TAG = "gc0308";
 
 #define H8(v) ((v)>>8)
 #define L8(v) ((v)&0xff)

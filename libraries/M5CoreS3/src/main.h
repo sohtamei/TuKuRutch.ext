@@ -31,5 +31,4 @@ void __tone(int16_t freq, int16_t ms);
 //#define CAMERA_MODEL_SQUARE_CAM
   #define CAMERA_MODEL_CORES3
 #define XCLK_FREQ 20000000
-#define I2C_WIRE1
 #endif  // main_h

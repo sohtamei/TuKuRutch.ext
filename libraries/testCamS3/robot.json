@@ -1,7 +1,7 @@
 {
-	"name"			: "esp32camS3u",								// マイコン拡張定義	
+	"name"			: "testCamS3",
 	"boardType"		: "esp32:esp32:esp32s3",						// package:platform:board
-	"prefs"			: ["custom_CDCOnBoot=esp32s3_cdc",
+	"prefs"			: ["custom_CDCOnBoot=esp32s3_default",
 						"custom_CPUFreq=esp32s3_240",
 						"custom_DFUOnBoot=esp32s3_default",
 						"custom_DebugLevel=esp32s3_none",
@@ -14,19 +14,31 @@
 						"custom_MSCOnBoot=esp32s3_default",
 						"custom_PSRAM=esp32s3_disabled",
 						"custom_PartitionScheme=esp32s3_huge_app",
-						"custom_USBMode=esp32s3_default",
-						"custom_UploadMode=esp32s3_cdc",
+						"custom_USBMode=esp32s3_hwcdc",
+						"custom_UploadMode=esp32s3_default",
 						"custom_UploadSpeed=esp32s3_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"esp32cam1.0\"
+#define mVersion \"testCam1.0\"
 
-#include <TukurutchEsp.h>
+#include \"TukurutchEsp.h\"
 #include \"main.h\"
-#include <TukurutchEspCamera.h>
+
+void _setReg(uint32_t adrs, uint32_t data)
+{
+  *(uint32_t*)adrs = data;
+}
+
+char buf[32] = {};
+char* _getReg(uint32_t adrs)
+{
+  snprintf(buf, sizeof(buf), \"%08x\", *(uint32_t*)adrs);
+  return buf;
+}
+void _setLedc(uint32_t clock);
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -49,13 +61,13 @@
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
+		["w", "set %n %n",								"setReg",		"0x3FF59000",0x0,{"remote":["L","L"],	"func":"_setReg({0},{1});"}],
+		["R", "get %n",									"getReg",		"0x3FF59000",	{"remote":["L","s"],	"func":"_getReg({0})"}],
+		["w", "clock %n",								"setLedc",		10000000,		{"remote":["L"],		"func":"_setLedc({0});"}],
 		["-"],
 		["-"],
 		["-"],
-		["-"],
-		["-"],
-		["-"],
-		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"espcamera_setLED({0});"}],
+		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"_setLED({0});"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],

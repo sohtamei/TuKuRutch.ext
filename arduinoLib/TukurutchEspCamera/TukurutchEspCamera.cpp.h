@@ -57,8 +57,11 @@ void espcamera_setup(void)
 	config.pin_pclk = PCLK_GPIO_NUM;
 	config.pin_vsync = VSYNC_GPIO_NUM;
 	config.pin_href = HREF_GPIO_NUM;
-	config.pin_sscb_sda = SIOD_GPIO_NUM;
-	config.pin_sscb_scl = SIOC_GPIO_NUM;
+	config.pin_sccb_sda = SIOD_GPIO_NUM;
+	config.pin_sccb_scl = SIOC_GPIO_NUM;
+  #if defined(SCCB_I2C_PORT)
+	config.sccb_i2c_port = SCCB_I2C_PORT;
+  #endif
 	config.pin_pwdn = PWDN_GPIO_NUM;
 	config.pin_reset = RESET_GPIO_NUM;
 	config.xclk_freq_hz = XCLK_FREQ;
@@ -149,5 +152,3 @@ void espcamera_loop(void)
 		}
 	}
 }
-
-#include "sccb.cpp.h"

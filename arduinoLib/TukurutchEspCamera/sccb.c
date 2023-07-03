@@ -6,7 +6,6 @@
  * SCCB (I2C like) driver.
  *
  */
-#if !defined(I2C_WIRE) && !defined(I2C_WIRE1)
 #include <stdbool.h>
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -36,50 +35,67 @@ static const char* TAG = "sccb";
 #define READ_BIT                I2C_MASTER_READ       /*!< I2C master read */
 #define ACK_CHECK_EN            0x1                   /*!< I2C master will check ack from slave*/
 #define ACK_CHECK_DIS           0x0                   /*!< I2C master will not check ack from slave */
-#define ACK_VAL                 (i2c_ack_type_t)0x0                   /*!< I2C ack value */
-#define NACK_VAL                (i2c_ack_type_t)0x1                   /*!< I2C nack value */
+#define ACK_VAL                 0x0                   /*!< I2C ack value */
+#define NACK_VAL                0x1                   /*!< I2C nack value */
 #if CONFIG_SCCB_HARDWARE_I2C_PORT1
-const i2c_port_t SCCB_I2C_PORT         = (i2c_port_t)1;
+const int SCCB_I2C_PORT_DEFAULT = 1;
 #else
-const i2c_port_t SCCB_I2C_PORT         = (i2c_port_t)0;
+const int SCCB_I2C_PORT_DEFAULT = 0;
 #endif
+
+static int sccb_i2c_port;
+static bool sccb_owns_i2c_port;
 
 int SCCB_Init(int pin_sda, int pin_scl)
 {
     ESP_LOGI(TAG, "pin_sda %d pin_scl %d", pin_sda, pin_scl);
     i2c_config_t conf;
+    esp_err_t ret;
+
     memset(&conf, 0, sizeof(i2c_config_t));
+
+    sccb_i2c_port = SCCB_I2C_PORT_DEFAULT;
+    sccb_owns_i2c_port = true;
+    ESP_LOGI(TAG, "sccb_i2c_port=%d", sccb_i2c_port);
+
     conf.mode = I2C_MODE_MASTER;
-    conf.sda_io_num = (gpio_num_t)pin_sda;
+    conf.sda_io_num = pin_sda;
     conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-    conf.scl_io_num = (gpio_num_t)pin_scl;
+    conf.scl_io_num = pin_scl;
     conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
     conf.master.clk_speed = SCCB_FREQ;
 
-    i2c_param_config(SCCB_I2C_PORT, &conf);
-    i2c_driver_install(SCCB_I2C_PORT, conf.mode, 0, 0, 0);
-    return 0;
+    if ((ret =  i2c_param_config(sccb_i2c_port, &conf)) != ESP_OK) {
+        return ret;
+    }
+
+    return i2c_driver_install(sccb_i2c_port, conf.mode, 0, 0, 0);
+}
+
+int SCCB_Use_Port(int i2c_num) { // sccb use an already initialized I2C port
+    if (sccb_owns_i2c_port) {
+        SCCB_Deinit();
+    }
+    if (i2c_num < 0 || i2c_num > I2C_NUM_MAX) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    sccb_i2c_port = i2c_num;
+    return ESP_OK;
 }
 
 int SCCB_Deinit(void)
 {
-    return i2c_driver_delete(SCCB_I2C_PORT);
+    if (!sccb_owns_i2c_port) {
+        return ESP_OK;
+    }
+    sccb_owns_i2c_port = false;
+    return i2c_driver_delete(sccb_i2c_port);
 }
 
 uint8_t SCCB_Probe(void)
 {
     uint8_t slave_addr = 0x0;
-    // for (size_t i = 1; i < 0x80; i++) {
-    //     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-    //     i2c_master_start(cmd);
-    //     i2c_master_write_byte(cmd, ( i << 1 ) | WRITE_BIT, ACK_CHECK_EN);
-    //     i2c_master_stop(cmd);
-    //     esp_err_t ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
-    //     i2c_cmd_link_delete(cmd);
-    //     if( ret == ESP_OK) {
-    //         ESP_LOGW(TAG, "Found I2C Device at 0x%02X", i);
-    //     }
-    // }
+
     for (size_t i = 0; i < CAMERA_MODEL_MAX; i++) {
         if (slave_addr == camera_sensor[i].sccb_addr) {
             continue;
@@ -89,7 +105,7 @@ uint8_t SCCB_Probe(void)
         i2c_master_start(cmd);
         i2c_master_write_byte(cmd, ( slave_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
         i2c_master_stop(cmd);
-        esp_err_t ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+        esp_err_t ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
         i2c_cmd_link_delete(cmd);
         if( ret == ESP_OK) {
             return slave_addr;
@@ -107,7 +123,7 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
     i2c_master_write_byte(cmd, ( slv_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, reg, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) return -1;
     cmd = i2c_cmd_link_create();
@@ -115,7 +131,7 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
     i2c_master_write_byte(cmd, ( slv_addr << 1 ) | READ_BIT, ACK_CHECK_EN);
     i2c_master_read_byte(cmd, &data, NACK_VAL);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "SCCB_Read Failed addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
@@ -123,7 +139,7 @@ uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
     return data;
 }
 
-uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
+int SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
 {
     esp_err_t ret = ESP_FAIL;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -132,7 +148,7 @@ uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
     i2c_master_write_byte(cmd, reg, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, data, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "SCCB_Write Failed addr:0x%02x, reg:0x%02x, data:0x%02x, ret:%d", slv_addr, reg, data, ret);
@@ -152,7 +168,7 @@ uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
     i2c_master_write_byte(cmd, reg_u8[0], ACK_CHECK_EN);
     i2c_master_write_byte(cmd, reg_u8[1], ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) return -1;
     cmd = i2c_cmd_link_create();
@@ -160,7 +176,7 @@ uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
     i2c_master_write_byte(cmd, ( slv_addr << 1 ) | READ_BIT, ACK_CHECK_EN);
     i2c_master_read_byte(cmd, &data, NACK_VAL);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "W [%04x]=%02x fail\n", reg, data);
@@ -168,7 +184,7 @@ uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
     return data;
 }
 
-uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
+int SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
 {
     static uint16_t i = 0;
     esp_err_t ret = ESP_FAIL;
@@ -181,141 +197,64 @@ uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
     i2c_master_write_byte(cmd, reg_u8[1], ACK_CHECK_EN);
     i2c_master_write_byte(cmd, data, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    ret = i2c_master_cmd_begin(SCCB_I2C_PORT, cmd, 1000 / portTICK_RATE_MS);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
     if(ret != ESP_OK) {
         ESP_LOGE(TAG, "W [%04x]=%02x %d fail\n", reg, data, i++);
     }
     return ret == ESP_OK ? 0 : -1;
 }
-#elif defined(I2C_WIRE)
-#include <Wire.h>
-#include "sccb.h"
 
-int SCCB_Init(int pin_sda, int pin_scl)
+uint16_t SCCB_Read_Addr16_Val16(uint8_t slv_addr, uint16_t reg)
 {
-    Wire.begin(pin_sda, pin_scl);
-    return 0;
+    uint16_t data = 0;
+    uint8_t *data_u8 = (uint8_t *)&data;
+    esp_err_t ret = ESP_FAIL;
+    uint16_t reg_htons = LITTLETOBIG(reg);
+    uint8_t *reg_u8 = (uint8_t *)&reg_htons;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( slv_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_u8[0], ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_u8[1], ACK_CHECK_EN);
+    i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    if(ret != ESP_OK) return -1;
+
+    cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( slv_addr << 1 ) | READ_BIT, ACK_CHECK_EN);
+    i2c_master_read_byte(cmd, &data_u8[1], ACK_VAL);
+    i2c_master_read_byte(cmd, &data_u8[0], NACK_VAL);
+    i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "W [%04x]=%04x fail\n", reg, data);
+    }
+    return data;
 }
 
-int SCCB_Deinit(void)
+int SCCB_Write_Addr16_Val16(uint8_t slv_addr, uint16_t reg, uint16_t data)
 {
-    return 0;
+    esp_err_t ret = ESP_FAIL;
+    uint16_t reg_htons = LITTLETOBIG(reg);
+    uint8_t *reg_u8 = (uint8_t *)&reg_htons;
+    uint16_t data_htons = LITTLETOBIG(data);
+    uint8_t *data_u8 = (uint8_t *)&data_htons;
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, ( slv_addr << 1 ) | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_u8[0], ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, reg_u8[1], ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, data_u8[0], ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, data_u8[1], ACK_CHECK_EN);
+    i2c_master_stop(cmd);
+    ret = i2c_master_cmd_begin(sccb_i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    i2c_cmd_link_delete(cmd);
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "W [%04x]=%04x fail\n", reg, data);
+    }
+    return ret == ESP_OK ? 0 : -1;
 }
-
-uint8_t SCCB_Probe()
-{
-    uint8_t slave_addr = 0x30;
-    Wire.beginTransmission(slave_addr);
-    int ret = Wire.endTransmission();
-    if(!ret)
-        return slave_addr;
-    return 0x3c;
-}
-
-uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
-{
-  Wire.beginTransmission(slv_addr);
-  Wire.write(reg);
-  Wire.endTransmission(false);
-  Wire.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
-  return Wire.read();
-}
-
-uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
-{
-  Wire.beginTransmission(slv_addr);
-  Wire.write(reg>>8);
-  Wire.write(reg&0xFF);
-  Wire.endTransmission(false);
-  Wire.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
-  return Wire.read();
-}
-
-uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
-{
-  Wire.beginTransmission(slv_addr);
-  Wire.write(reg);
-  Wire.write(data);
-  Wire.endTransmission();
-  return 0;
-}
-
-uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
-{
-  Wire.beginTransmission(slv_addr);
-  Wire.write(reg>>8);
-  Wire.write(reg&0xFF);
-  Wire.write(data);
-  Wire.endTransmission();
-  return 0;
-}
-#elif defined(I2C_WIRE1)
-#include <Wire.h>
-#include "sccb.h"
-
-int SCCB_Init(int pin_sda, int pin_scl)
-{
-    Wire1.begin(pin_sda, pin_scl);
-    return 0;
-}
-
-int SCCB_Deinit(void)
-{
-    return 0;
-}
-
-uint8_t SCCB_Probe()
-{
-    uint8_t slave_addr = 0x30;
-    Wire1.beginTransmission(slave_addr);
-    int ret = Wire1.endTransmission();
-    if(!ret)
-        return slave_addr;
-
-    slave_addr = 0x21;
-    Wire1.beginTransmission(slave_addr);
-    ret = Wire1.endTransmission();
-    if(!ret)
-        return slave_addr;
-    return 0x3c;
-}
-
-uint8_t SCCB_Read(uint8_t slv_addr, uint8_t reg)
-{
-  Wire1.beginTransmission(slv_addr);
-  Wire1.write(reg);
-  Wire1.endTransmission(false);
-  Wire1.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
-  return Wire1.read();
-}
-
-uint8_t SCCB_Read16(uint8_t slv_addr, uint16_t reg)
-{
-  Wire1.beginTransmission(slv_addr);
-  Wire1.write(reg>>8);
-  Wire1.write(reg&0xFF);
-  Wire1.endTransmission(false);
-  Wire1.requestFrom(slv_addr, (uint8_t)1, (uint8_t)true);
-  return Wire1.read();
-}
-
-uint8_t SCCB_Write(uint8_t slv_addr, uint8_t reg, uint8_t data)
-{
-  Wire1.beginTransmission(slv_addr);
-  Wire1.write(reg);
-  Wire1.write(data);
-  Wire1.endTransmission();
-  return 0;
-}
-
-uint8_t SCCB_Write16(uint8_t slv_addr, uint16_t reg, uint8_t data)
-{
-  Wire1.beginTransmission(slv_addr);
-  Wire1.write(reg>>8);
-  Wire1.write(reg&0xFF);
-  Wire1.write(data);
-  Wire1.endTransmission();
-  return 0;
-}
-#endif // I2C_WIRE

@@ -23,7 +23,7 @@ struct { m5::board_t board; char name[32]; } const boardTable[] = {
 	{ m5::board_t::board_M5Paper,		"Paper" },			// 6
 	{ m5::board_t::board_M5Tough,		"Tough" },			// 7
 	{ m5::board_t::board_M5Station,		"Station" },		// 8
-	{ m5::board_t::board_M5StackCoreS3,	"StackS3" },		// 9
+	{ m5::board_t::board_M5StackCoreS3,	"StackCoreS3" },	// 9
 
 	{ m5::board_t::board_M5AtomS3,		"ATOM S3" },		// 10
 	{ m5::board_t::board_M5Atom,		"ATOM" },			// 11

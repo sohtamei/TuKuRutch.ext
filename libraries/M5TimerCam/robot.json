@@ -4,10 +4,12 @@
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
+						"custom_EraseFlash=esp32_none",
 						"custom_EventsCore=esp32_1",
 						"custom_FlashFreq=esp32_80",
 						"custom_FlashMode=esp32_qio",
 						"custom_FlashSize=esp32_4M",
+						"custom_JTAGAdapter=esp32_default",
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",

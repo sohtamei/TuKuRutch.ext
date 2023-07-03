@@ -1,6 +1,8 @@
 #!/bin/bash
-ARDUINOPATH="/mnt/c/fd_work/TuKuRutchExe/Arduino"
 PWD_=`echo -n $PWD | sed -E "s/\/mnt\/c/C:/"`
+#ARDUINOPATH="/mnt/c/fd_work/TuKuRutchExe/Arduino"
+#ARDUINOPATH="/mnt/c/fd_work/TuKuRutch2/Arduino"
+ ARDUINOPATH="$PWD/../../Arduino"
 
 #################
 TARGETS=\

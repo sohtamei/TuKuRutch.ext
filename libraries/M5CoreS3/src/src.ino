@@ -149,7 +149,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
 
 enum {
     MODE_INVALID = 0,
-    MODE_UART,
+    MODE_UART_,
     MODE_WS,
     MODE_BLE,
     MODE_MIDI,
@@ -174,7 +174,7 @@ void _write(uint8_t* dp, int count)
     _packetLen = count;
   } else
 #endif
-  if(comMode == MODE_UART) {
+  if(comMode == MODE_UART_) {
     _Serial.write(dp, count);
   }
 }
@@ -536,7 +536,7 @@ case 21: M5.Speaker.playRaw(getBufLen2(0), 44100, false);; callOK(); break;
 int16_t _readUart(void)
 {
   if(_Serial.available()>0) {
-    comMode = MODE_UART;
+    comMode = MODE_UART_;
     return _Serial.read();
   }
   return -1;
