@@ -1,7 +1,6 @@
 #!/bin/bash
-PWD_=`echo -n $PWD | sed -E "s/\/mnt\/c/C:/"`
-#ARDUINOPATH="/mnt/c/fd_work/TuKuRutchExe/Arduino"
-ARDUINOPATH="$PWD/../../Arduino"
+ARDUINO_PATH="/mnt/c/fd_work/TuKuRutch2/Arduino"
+ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`
 
 #################
 TARGETS=\
@@ -11,13 +10,14 @@ function buildSRCs() {
   #node parseRobotJson.js $1 jsonToCpp2         # src.ino生成
 
   echo $PARAMS > buildlog.txt
-  $ARDUINOPATH/arduino_debug.exe $PARAMS --save-prefs
+  $ARDUINO_PATH/arduino_debug.exe $PARAMS --save-prefs
   if [ $? -ne 0 ]; then
     echo "error in $1"
     exit 1
   fi
 
-  time $ARDUINOPATH/arduino_debug.exe --verify --verbose --preserve-temp-files $PWD_/$1/src/src.ino >> buildlog.txt
+  PWD_=`echo -n $PWD | sed -e "s@/mnt/c@C:@"`
+  time $ARDUINO_PATH/arduino_debug.exe --verify --verbose --preserve-temp-files $PWD_/$1/src/src.ino >> buildlog.txt
   if [ $? -ne 0 ]; then
     echo "error in $1"
     exit 1
@@ -26,7 +26,7 @@ function buildSRCs() {
 }
 
 if [ $# -eq 0 ]; then
-  echo "usage: build.sh <target>"
+  echo "usage: build.sh <target> [COM1]"
   exit 1
 fi
 
@@ -42,10 +42,9 @@ if [ $1 == "all" ]; then
 else
   buildSRCs $1
   if [ $# -ge 2 ]; then
-    CMD=`node parseRobotJson.js $1 burnFW $2`
+    ARDUINO_PATH_=`echo $ARDUINO_PATH | sed -e "s@/mnt/c@@"`
+    CMD=`node parseRobotJson.js $1 burnFW $2 | sed -e "s@ARDUINO_PATH@${ARDUINO_PATH_}@g" | sed -e "s@ESP32_VER@${ESP32_VER}@g"`
     echo $CMD
     $CMD
   fi
 fi
-
-# /mnt/c/fd_work/TuKuRutchExe/Arduino/arduino.exe

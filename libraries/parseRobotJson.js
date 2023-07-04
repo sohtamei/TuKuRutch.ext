@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const PWD = process.cwd().replace('/mnt/c','C:');
-const toolsPath = "C:/fd_work/TuKuRutchExe";
+const toolsPath = "C:ARDUINO_PATH";
 
 const getProp = function(obj, key) {
 	return obj.hasOwnProperty(key) ? obj[key] : "";
@@ -396,9 +396,9 @@ const _burnFW2 = function(target, ext, selectPort)
 			return false;
 		}
 
-		args = "-C"+toolsPath+"/tools/avr/etc/avrdude.conf -v -patmega328p -carduino -P"+selectPort+" -b115200 -D -V"
+		args = "-C"+toolsPath+"/hardware/tools/avr/etc/avrdude.conf -v -patmega328p -carduino -P"+selectPort+" -b115200 -D -V"
 			+" -Uflash:w:"+hexFile+":i";
-		cmd = toolsPath+"/tools/avr/bin/avrdude.exe";
+		cmd = toolsPath+"/hardware/tools/avr/bin/avrdude.exe";
 		break;
 
 	case "esp32":
@@ -423,35 +423,35 @@ const _burnFW2 = function(target, ext, selectPort)
 		case "esp32":
 		default:
 			args = "--chip esp32 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x1000 " +toolsPath+"/tools/esp32/sdk/esp32/bin/bootloader_qio_80m.bin"
+				+" 0x1000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/sdk/esp32/bin/bootloader_qio_80m.bin"
 				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/tools/esp32/partitions/boot_app0.bin"
+				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
 				+" 0x10000 "+hexFile;
 			break;
 		case "esp32c3":
 			args = "--chip esp32c3 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x0 "    +toolsPath+"/tools/esp32/sdk/esp32c3/bin/bootloader_qio_80m.bin"
+				+" 0x0 "    +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/sdk/esp32c3/bin/bootloader_qio_80m.bin"
 				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/tools/esp32/partitions/boot_app0.bin"
+				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
 				+" 0x10000 "+hexFile;
 			break;
 		case "esp32s3":
 			args = "--chip esp32s3 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
 				+" 0x0 "    +target+"/src/src.ino.bootloader.bin"
 				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/tools/esp32/partitions/boot_app0.bin"
+				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
 				+" 0x10000 "+hexFile;
 			break;
 		}
-		cmd = toolsPath+"/tools/esp32/esptool.exe";
+		cmd = toolsPath+"/portable/packages/esp32/tools/esptool_py/*/esptool.exe";
 		break;
 	}
 
 	cmd = cmd.replace('C:','/mnt/c')
-	if(!fs.existsSync(cmd)){
-		console.log("upgrade fail!");
-		return false;
-	}
+//	if(!fs.existsSync(cmd)){
+//		console.log("upgrade fail!");
+//		return false;
+//	}
 	console.log(cmd + ' ' + args);
 	return true;
 }
