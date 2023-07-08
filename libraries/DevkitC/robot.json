@@ -1,5 +1,6 @@
 {
 	"name"			: "DevkitC",								// マイコン拡張定義	
+	"scratch3ext"	: "DevkitC",								// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -13,6 +14,13 @@
 						"custom_PSRAM=esp32_disabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
+
+	"scratch3burn"	: [
+			{"name":"DevkitC_ESP32",        "type":"esp32",  "baudrate":921600, "binPath":"DevkitC"},
+			{"name":"DevkitC_S3.uart",      "type":"esp32s3","baudrate":921600, "binPath":"DevkitC/s3"},
+			{"name":"generic_ESP32.921600", "type":"esp32",  "baudrate":921600, "binPath":"DevkitC"},
+			{"name":"generic_ESP32.115200", "type":"esp32",  "baudrate":115200, "binPath":"DevkitC"},
+	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -43,6 +51,7 @@
 	//  type | Block表示                                   | Block名           | 初期値     |remote/enum           | 実行/取得関数
 	//-------+---------------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
+		["w", "show onboard led red %n green %n blue %n",	"showLED",		255,255,255,	{"remote":["S","S","S"],"func":""}]
 	],
 
 	// メニュー定義
@@ -53,5 +62,11 @@
 	"values":{
 	},
 
+	// 翻訳定義
+	"translators":{
+		"ja":{
+			"show onboard led red %n green %n blue %n"		:"オンボードLEDを点灯 赤 %n 緑 %n 青 %n"
+		}
+	},
 	"sort"			: 16,
 }

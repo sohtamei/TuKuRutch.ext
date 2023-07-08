@@ -1,0 +1,244 @@
+{
+	"name"			: "cameratch32",
+	"scratch3ext"	: "cameratch32,SupportCamera",				// scratch3 ext名[,SupportCamera]
+	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
+	"prefs"			: ["custom_CPUFreq=esp32_240",
+						"custom_DebugLevel=esp32_none",
+						"custom_EraseFlash=esp32_none",
+						"custom_EventsCore=esp32_1",
+						"custom_FlashFreq=esp32_80",
+						"custom_FlashMode=esp32_qio",
+						"custom_FlashSize=esp32_4M",
+						"custom_JTAGAdapter=esp32_default",
+						"custom_LoopCore=esp32_1",
+						"custom_PSRAM=esp32_disabled",
+						"custom_PartitionScheme=esp32_default",
+						"custom_UploadSpeed=esp32_921600"],
+
+	"scratch3burn"	: [
+			{"name":"cameratch32", "type":"esp32", "baudrate":921600, "binPath":"other/cameratch32"},
+	],
+
+	// C言語記述注意 : " を使うときは \" とすること
+
+	// ヘッダ (C言語)
+	"header":"
+#define mVersion \"cameratch32_1.0\"
+
+#include <Adafruit_PWMServoDriver.h>
+#include <Adafruit_NeoPixel.h>
+#include <TukurutchEsp.h>
+#include \"main.h\"
+#include <TukurutchEspCamera.h>
+
+#define P_STBY    0
+#define P_BUZZER  2
+#define P_NEOPIX  14
+
+#define PWM_FREQ 10000
+#define PWM_BITS  8//12
+const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
+  {2, 4},  // Left, Forward
+  {3,13},  // Left, Backward
+  {4,33},  // Right, Forward
+  {5,12}}; // Right, Backward
+
+int16_t _speed[2] = {0,0};
+void _setMotor(uint8_t index, int16_t speed)
+{
+  if(index >= 2) return;
+  _speed[index] = speed;
+  digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
+
+  uint32_t pwm = (speed<0) ? -speed: speed;
+  pwm = (pwm * (1<<PWM_BITS)) / 100;
+  if(pwm > (1<<PWM_BITS)-1) pwm = (1<<PWM_BITS)-1;
+
+  if(speed > 0) {
+    ledcWrite(motorTable[index*2+0].ledc, pwm);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  } else if(speed < 0) {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, pwm);
+  } else {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  }
+}
+
+struct { int16_t L; int16_t R;} static const dir_table[7] = {
+//  L   R
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+};
+
+void _setCar(uint8_t direction, int16_t speed, int16_t duration)
+{
+  if(direction >= 7) return;
+  _setMotor(0, speed * dir_table[direction].L);
+  _setMotor(1, speed * dir_table[direction].R);
+
+  if(duration) {
+    delay(duration);
+    _setMotor(0, 0);
+    _setMotor(1, 0);
+ }
+}
+
+void _setPwmFreq(int16_t pwm_freq)
+{
+  for(int i = 0; i < 4; i++) {
+    ledcSetup(motorTable[i].ledc, pwm_freq/*Hz*/, PWM_BITS/*bit*/);
+    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
+    ledcWrite(motorTable[i].ledc, 0);
+  }
+}
+
+//----------------
+
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(4, P_NEOPIX, NEO_GRB + NEO_KHZ800);
+
+static void colorWipe(uint32_t c)
+{
+  uint8_t i;
+  for (i = 0; i < strip.numPixels(); i++) {
+    strip.setPixelColor(i, c);
+    strip.show();
+    delay(10);
+  }
+}
+
+enum {
+  COLOR_OFF = 0,
+  COLOR_RED,
+  COLOR_GREEN,
+  COLOR_BLUE,
+  COLOR_YELLOW,
+  COLOR_PURPLE,
+  COLOR_LIGHTBLUE,
+};
+void _colorWipe(uint8_t color)
+{
+  switch(color) {
+  case COLOR_OFF:
+    colorWipe(strip.Color(0,0,0));
+    break;
+  case COLOR_RED:
+    colorWipe(strip.Color(255,0,0));
+    break;
+  case COLOR_GREEN:
+    colorWipe(strip.Color(0,255,0));
+    break;
+  case COLOR_BLUE:
+    colorWipe(strip.Color(0,0,255));
+    break;
+  case COLOR_YELLOW:
+    colorWipe(strip.Color(128,128,0));
+    break;
+  case COLOR_PURPLE:
+    colorWipe(strip.Color(128,0,128));
+    break;
+  case COLOR_LIGHTBLUE:
+    colorWipe(strip.Color(0,128,128));
+    break;
+  default:
+    break;
+  }
+}
+
+//----------------
+
+Adafruit_PWMServoDriver pwm9685 = Adafruit_PWMServoDriver();	// 
+uint8_t pwm9685_init = false;
+
+void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, uint8_t continuous)
+{
+  if(id >= 8) return;
+
+  if(!pwm9685_init) {
+    pwm9685.begin();
+    pwm9685.setPWMFreq(50);  // Analog servos run at ~50 Hz updates
+    pwm9685_init = true;
+  }
+
+  uint16_t pwmWidth;
+  if(continuous) {
+    #define srvZero 307		// 1.5ms/20ms*4096 = 307.2
+    #define srvCoef 163		// (2.3ms-1.5ms)/20ms*4096 = 163.8
+    if(data < -100) data = -100;
+    else if(data > 100) data = 100;
+    pwmWidth = (data * srvCoef) / 100 + srvZero;
+    if(data==0) pwmWidth=0;
+  } else {
+    #define srvMin 103		// 0.5ms/20ms*4096 = 102.4 (-90c)
+    #define srvMax 491		// 2.4ms/20ms*4096 = 491.5 (+90c)
+    if(data < 0) data = 0;
+    else if(data > 180) data = 180;
+    pwmWidth = (data * (srvMax - srvMin)) / 180 + srvMin;
+  }
+  pwm9685.setPWM(id, (512*id)&0xFFF, (512*id+pwmWidth)&0xFFF);
+}
+
+",
+	// setup処理 (C言語)
+	"setup":"
+  _setup(mVersion);
+  digitalWrite(P_STBY, 0);
+  pinMode(P_STBY, OUTPUT_OPEN_DRAIN);
+  _setPwmFreq(PWM_FREQ);
+  _tone(P_BUZZER, T_C4, 300);
+  _tone(P_BUZZER, T_D4, 300);
+  _tone(P_BUZZER, T_E4, 300);
+
+  strip.begin();
+  strip.show(); // Initialize all pixels to 'off'
+",
+
+	// loop処理 (C言語)
+	"loop":"
+  loopWebSocket();
+  _loop();
+",
+
+	// スクラッチブロック定義
+	"blockSpecs": [
+	// type			: w-実行関数, R-取得関数, B-true/false取得, h-プログラム開始
+	// Block定義	: パラメータ %n-数値, %d-数値+enum, %s-文字列, %m-文字列+enum
+	// remote		: 通常関数, 引数+戻値 型定義 B-int8, S-int16, L-int32, F-float, D-double, s-string, b-byteArray
+	// custom		: 特殊関数, robot.js呼び出し(ext.Block名). PCモードと書き込みモードで処理を分けるとき使用。
+	// enum			: enum値取得
+	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
+
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
+	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
+		["-"],					// dummy
+		["w", "set LED %d.onoff",						"setLED",		"On",			{"remote":["B"],		"func":"espcamera_setLED({0});"}],
+		["w", "%d.direction at speed %n duration %n ms","setCar",	"run forward",100,0,{"remote":["B","S","S"],"func":"_setCar({0},{1},{2});"}],
+		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
+		["w", "set pwm freq %n",						"setPwmFreq",	10000,			{"remote":["S"],		"func":"_setPwmFreq({0});"}],
+		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_colorWipe({0});"}],
+		["w", "set servo %n %n",						"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
+		["w", "stop servo %n",							"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
+		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
+	],
+	"menus": {
+		"onoff"		:["On","Off"],
+		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"motorch"	:["ch-L","ch-R"],
+		"color":["off","red","green","blue","yellow","purple","lightblue"],
+	},
+	"values":{
+		"On":1,"Off":0,
+		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
+		"ch-L":0,"ch-R":1,
+		"off":0,"red":1,"green":2,"blue":3,"yellow":4,"purple":5,"lightblue":6,
+	},
+
+	"sort"			: 61,										// メニュー上の表示順序
+}

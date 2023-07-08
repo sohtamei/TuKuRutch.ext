@@ -423,14 +423,14 @@ const _burnFW2 = function(target, ext, selectPort)
 		case "esp32":
 		default:
 			args = "--chip esp32 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x1000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/sdk/esp32/bin/bootloader_qio_80m.bin"
+				+" 0x1000 " +target+"/src/src.ino.bootloader.bin"
 				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
 				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
 				+" 0x10000 "+hexFile;
 			break;
 		case "esp32c3":
 			args = "--chip esp32c3 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x0 "    +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/sdk/esp32c3/bin/bootloader_qio_80m.bin"
+				+" 0x0 "    +target+"/src/src.ino.bootloader.bin"
 				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
 				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
 				+" 0x10000 "+hexFile;

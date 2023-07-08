@@ -1,36 +1,34 @@
 {
-	"name"			: "lovyanGFXesp32",
-	"scratch3ext"	: "lovyanGFX",								// scratch3 ext名[,SupportCamera]
-	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
-	"prefs"			: ["custom_CPUFreq=esp32_240",
-						"custom_DebugLevel=esp32_none",
-						"custom_EraseFlash=esp32_none",
-						"custom_EventsCore=esp32_1",
-						"custom_FlashFreq=esp32_80",
-						"custom_FlashMode=esp32_qio",
-						"custom_FlashSize=esp32_4M",
-						"custom_JTAGAdapter=esp32_default",
-						"custom_LoopCore=esp32_1",
-						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=esp32_huge_app",
-//						"custom_UploadSpeed=esp32_750000"],
-						"custom_UploadSpeed=esp32_921600"],
+	"name"			: "SquareCam",
+	"scratch3ext"	: "esp32camlcd,SupportCamera",					// scratch3 ext名[,SupportCamera]
+	"boardType"		: "esp32:esp32:esp32s3",						// package:platform:board
+	"prefs"			: ["custom_CDCOnBoot=esp32s3_cdc",
+						"custom_CPUFreq=esp32s3_240",
+						"custom_DFUOnBoot=esp32s3_default",
+						"custom_DebugLevel=esp32s3_none",
+						"custom_EraseFlash=esp32s3_none",
+						"custom_EventsCore=esp32s3_1",
+						"custom_FlashMode=esp32s3_qio",
+						"custom_FlashSize=esp32s3_4M",
+						"custom_JTAGAdapter=esp32s3_default",
+						"custom_LoopCore=esp32s3_1",
+						"custom_MSCOnBoot=esp32s3_default",
+						"custom_PSRAM=esp32s3_opi",
+						"custom_PartitionScheme=esp32s3_huge_app",
+						"custom_USBMode=esp32s3_default",
+						"custom_UploadMode=esp32s3_cdc",
+						"custom_UploadSpeed=esp32s3_921600"],
 
 	"scratch3burn"	: [
-			{"name":"lovyanGFX.esp32",        "type":"esp32", "baudrate":921600, "binPath":"lovyanGFX"},
-			{"name":"lovyanGFX.esp32.750000", "type":"esp32", "baudrate":750000, "binPath":"lovyanGFX"},
-			{"name":"lovyanGFX.esp32s3.uart", "type":"esp32s3", "baudrate":921600, "binPath":"lovyanGFX/s3"},
-			{"name":"lovyanGFX.esp32s3.usb",  "type":"esp32s3u","baudrate":921600, "binPath":"lovyanGFX/s3u"},
-			{"name":"lovyanGFX.esp32c3.uart", "type":"esp32c3", "baudrate":921600, "binPath":"lovyanGFX/c3"},
-			{"name":"lovyanGFX.esp32c3.usb",  "type":"esp32c3u","baudrate":921600, "binPath":"lovyanGFX/c3u"},
-			{"name":"lovyanGFX.pico",         "type":"pico", "baudrate":921600, "binPath":"lovyanGFX/pico"},
+			{"name":"xiao32S3sense", "type":"esp32s3u","baudrate":921600, "binPath":"esp32camlcd/xiao32S3sense"},
+			{"name":"SquareCam",     "type":"esp32s3u","baudrate":921600, "binPath":"esp32camlcd/SquareCam"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"lovyanGFX 1.0\"
+#define mVersion \"SquareCam1.0\"
 
 #include \"main.h\"
 #define RECV_BUFFER 65536
@@ -59,9 +57,105 @@ void _drawJpg(uint8_t* buf, int size) {
 	int y = GetL16(buf+2);
 	lcd->drawJpg(buf+4, size-4, x, y);
 }
+
+/*
+	'ledcFrequency.ino'
+
+	bits | min[Hz] | max[Hz]
+	-----+---------+------------
+	   1 |  19,532 | 20,039,138
+	   2 |   9,766 | 10,019,569
+	   3 |   4,883 |  5,009,784
+	   4 |   2,442 |  2,504,892
+	   5 |   1,221 |  1,252,446
+	   6 |     611 |    626,223
+	   7 |     306 |    313,111
+	   8 |     153 |    156,555
+	   9 |      77 |     78,277
+	  10 |      39 |     39,138
+	  11 |      20 |     19,569
+	  12 |      10 |      9,784
+	  13 |       5 |      4,892
+	  14 |       3 |      2,446
+*/
+#define P_STBY    45
+
+#define PWM_FREQ  50//10000
+#define PWM_BITS  12//8
+static uint8_t _pwm_bits = PWM_BITS;
+const struct {uint8_t ledc; uint8_t port;} motorTable[4] = {
+  {2,41},  // Left, Forward
+  {3,38},  // Left, Backward
+  {4, 2},  // Right, Forward
+  {5, 1}}; // Right, Backward
+
+int16_t _speed[2] = {0,0};
+void _setMotor(uint8_t index, int16_t speed)
+{
+  if(index >= 2) return;
+  _speed[index] = speed;
+  digitalWrite(P_STBY, (_speed[0]==0 && _speed[1]==0) ? 0: 1);
+
+  uint32_t pwm = (speed<0) ? -speed: speed;
+  pwm = (pwm * (1<<_pwm_bits)) / 100;
+  if(pwm > (1<<_pwm_bits)-1) pwm = (1<<_pwm_bits)-1;
+
+  if(speed > 0) {
+    ledcWrite(motorTable[index*2+0].ledc, pwm);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  } else if(speed < 0) {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, pwm);
+  } else {
+    ledcWrite(motorTable[index*2+0].ledc, 0);
+    ledcWrite(motorTable[index*2+1].ledc, 0);
+  }
+}
+
+struct { int16_t L; int16_t R;} static const dir_table[7] = {
+//  L   R
+  { 0,  0},  // 0:STOP
+  { 1,  1},  // 1:FORWARD
+  { 0,  1},  // 2:LEFT
+  { 1,  0},  // 3:RIGHT
+  {-1, -1},  // 4:BACK
+  {-1,  1},  // 5:ROLL_LEFT
+  { 1, -1},  // 6:ROLL_RIGHT
+};
+
+void _setCar(uint8_t direction, int16_t speed, int16_t duration)
+{
+  if(direction >= 7) return;
+  _setMotor(0, speed * dir_table[direction].L);
+  _setMotor(1, speed * dir_table[direction].R);
+
+  if(duration) {
+    delay(duration);
+    _setMotor(0, 0);
+    _setMotor(1, 0);
+ }
+}
+
+void _setPwmFreq(int16_t pwm_freq, uint8_t pwm_bits)
+{
+  digitalWrite(P_STBY, 0);
+  pinMode(P_STBY, OUTPUT);
+  for(int i = 0; i < 4; i++) {
+    if(ledcSetup(motorTable[i].ledc, pwm_freq/*Hz*/, pwm_bits/*bit*/)) {
+      if(i==0) _pwm_bits = pwm_bits;
+    } else {
+      if(i==0) Serial.println(\"error\");
+    }
+    ledcAttachPin(motorTable[i].port, motorTable[i].ledc);
+    ledcWrite(motorTable[i].ledc, 0);
+  }
+}
 ",
 	// setup処理 (C言語)
-	"setup":"_setup(mVersion);",
+	"setup":"
+  _setup(mVersion);
+  _setPwmFreq(PWM_FREQ, PWM_BITS);
+",
 
 	// loop処理 (C言語)
 	"loop":"
@@ -78,12 +172,12 @@ void _drawJpg(uint8_t* buf, int size) {
 	// enum			: enum値取得
 	// 実行/取得関数: 引数 {0},{1}, 関数の区切り＝wブロック';', R/Bブロック','  (C言語)
 
-	//  type | Block定義                               | Block名       | 初期値         |remote/custom/enum    | 実行/取得関数
+	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+---------------+----------------+----------------------+----------------------------------
 		["-"],					// dummy
 
 		["R", "get config",								"_getLcdConfig",				{"remote":[		"b"],	"func":"sendBin(buffer, _getLcdConfig(buffer))", "hide":true}],
-		["w", "set config %d.lcdType port=%s",			"setLcdConfig",	"no-LCD"," ",	{"remote":["S","b"],	"func":"_setLcdConfig({0},{1});_setupLCD({0},{1});"}],
+		["w", "set config %d.lcdType port=%s",			"setLcdConfig",	"SQUARELCD"," ",{"remote":["S","b"],	"func":"_setLcdConfig({0},{1});/*_setupLCD({0},{1});*/"}],
 		["w", "set font=%d.font",						"setFont",		"monospace12",	{"remote":["B"],		"func":"if(lcd) lcd->setFont(fontTbl[{0}]);"}],
 		["w", "set rotation=%n",						"setRotation",	0,				{"remote":["B"],		"func":"if(lcd) lcd->setRotation({0});"}],
 		["w", "set text %d.color ,%d.color size=%n",	"setText",	"WHITE","BLACK",2,	{"remote":["S","S","F"],"func":"if(lcd) {lcd->setTextColor({0},{1});lcd->setTextSize({2});}"}],
@@ -95,23 +189,24 @@ void _drawJpg(uint8_t* buf, int size) {
 		["w", "fill screen with %d.color",				"fillScreen",	"BLACK",		{"remote":["S"],		"func":"if(lcd) {lcd->fillScreen({0}); lcd->setCursor(0,0);}"}],
 		["w", "draw jpg %s",							"drawJpg",		"00000000FFD8FFE000104A46494600010101007800780000FFE100224578696600004D4D002A00000008000101120003000000010001000000000000FFDB0043000201010201010202020202020202030503030303030604040305070607070706070708090B0908080A0807070A0D0A0A0B0C0C0C0C07090E0F0D0C0E0B0C0C0CFFDB004301020202030303060303060C0807080C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0C0CFFC00011080020002003012200021101031101FFC4001F0000010501010101010100000000000000000102030405060708090A0BFFC400B5100002010303020403050504040000017D01020300041105122131410613516107227114328191A1082342B1C11552D1F02433627282090A161718191A25262728292A3435363738393A434445464748494A535455565758595A636465666768696A737475767778797A838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1F2F3F4F5F6F7F8F9FAFFC4001F0100030101010101010101010000000000000102030405060708090A0BFFC400B51100020102040403040705040400010277000102031104052131061241510761711322328108144291A1B1C109233352F0156272D10A162434E125F11718191A262728292A35363738393A434445464748494A535455565758595A636465666768696A737475767778797A82838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE2E3E4E5E6E7E8E9EAF2F3F4F5F6F7F8F9FAFFDA000C03010002110311003F00FDFCAF896DFF006AFF00137C729F54D5AD6CFC6571E1CBABF9C68834EB95D16DBEC2094827F31A48AE2669957CDDE86488095400ACA6BBAFF828F7C765F0F7862CFC116EB248BAE491BEB4140C4F6193BED413C132E36B8208F2C95618941AE4F4EF1A693E21B0B5BAB7BFF326BAB717F2472ED568609155E391C6E2C8195B3F385C640E4E40F8CCF7882542BFB0C3D9F2EF7D55FB5BCBE7BEDA1E563B387866E9D18A72D1B6F64BE5ADDEFBAB2EF776C7D33E3F788BC1BE3992FEF6F3C75E12B38ACA3CDCEAF72FAD6901C3B3379D89A58E38CA901DCB42C022812A6E6CFD4BFB3AFC7ED27E3FF80A2D4ACEF3499351B79AE2D2FED6CAFA3BA586582E25B77652A73E53BC4CC858025197201C81F2F785FE2CE8DE2CF1AAE8DA5DCC97170D14D2C176ABB2CAE5A0789278E29C90AEF0B4F0F99B72A9E6805B2182F7DF026D6CFE0F7C6BFB42DA471FFC24096FA55DA898C89681B2F6ED0A64AC61DA48D5D630A1C3A3B731F3CF95F12559D78C2B45252766D5D6AF6D355F968FC8787CEA75651A389A7CB276B3D6DAAD347AEBA5B567837ED0F65AA78F3F6C1D5B45F1B5C47E1DB49B51B95B6B9495257FB208643692322B32A3CFE4C30AA8258868DCAAC8CD1AE5FC1CF87BA92EA1F0B347BCF0B697E3CF10F8C350B1B1D7B54D7AC85DE9FA0687A669D6975710C68DE5A34F21BDF2D378259C493F9476154FABBF6D7FD89A3FDA5A28F5BD26F23B3F1469F60D64B0DC13F63D5A1DCCCB04C465A3C6F982BA8383312CB205503E4CD4BF697F895FF04FBF1445A77C41B1B3874EF14DADEDF5CC9AB6A3159A410E9DA74625BAB2B98D6E37CECB1DB2FD9763F99239936C2A9339C2AE4F5A9E63770728C9B6A49736F6767DB67D2FADD743D7CB611A789973413536DDED7D5A564FB24D37BF2BBA56DEDEE9FF000500D47C23E04F85DE0FD22487FB1F576BCB88FC312E9B02C634486CF4FB8BCBC731AE3FD0D6D2D9D2589073BE2DABBD6323CEFF00639D5F5AF889FB43E9BE1FBAD3E4D3E6D1AC6C46A50B4C9335A7F66DD5D2BCC76B1077DD27901B23728593047CAB47C05FB48789BFE0A4DA668B0F84BE1FCD6BA08BC9AC6EBC41ABC399351D324C3CD1ACDE427D96D6F6185509447671B1182329AFB7FE027C27B1F83FF0E2CF4FB7D36CF4ED42F156F757FB372B737EE89E7CA5B8DCCCCBD7BE0576472B962F30551A718D37ADD3576ADEEEBD9DEEFB69AD8BCCA8D0AB561271B4E3BB7D754D5BBA56BDECD3BBB3DEDFFFD9",
 																						{"remote":["b2"],		"func":"_drawJpg({0});"}],
-		["w", "set brightness %n",						"setBrightness",128,			{"remote":["B"],		"func":"lcd->setBrightness({0});"}],
+		["w", "%d.direction at speed %n duration %n ms","setCar",	"run forward",100,0,{"remote":["B","S","S"],"func":"_setCar({0},{1},{2});"}],
+		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
+		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
+		["w", "set pwm freq %n bits %n",				"setPwmFreq",	50,12,			{"remote":["S","B"],	"func":"_setPwmFreq({0},{1});"}],
 	],
 	"menus": {
-		"onoff":["On","Off"],
+		"onoff"		:["On","Off"],
 		"color":["BLACK","WHITE","NAVY","DARKGREEN","DARKCYAN","MAROON","PURPLE","OLIVE","LIGHTGREY","DARKGREY","BLUE",
 				"GREEN","CYAN","RED","MAGENTA","YELLOW","ORANGE","GREENYELLOW","PINK","TRANSPARENT"],
 
 		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
 				"monospace12","proportional12","monospace16","proportional16",],
 
-		"lcdType":["no-LCD","AUTO","AUTO-ROT1",
-				"SSD1306","SSD1306_32","SSD1306_6432","SH110X",
-				"085TFT_SPI","QT095B","MSP0961","MSP1141","MSP1308_GMT130","MSP1541","GMT177","MSP2008","128TFT",
-				"MSP1443","MSP1803","MSP2202","MSP2401_2402","MSP2806_2807","MSP3217_3218","MSP3520_3521","MSP4020_4021","MSP4022_4023",
-				"ROUNDXIAO","SQUAREXIAO","RoundTouchXIAO",
-				"ROUNDLCD","SQUARELCD",
-				"3248S035","TTGO_TDISP","1732S019","RP2040LCD128",],
+		"lcdType":["no-LCD",
+					"SQUARELCD","ROUNDLCD",
+					"ROUNDXIAO","SQUAREXIAO","RoundTouchXIAO",],
+		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right"],
+		"motorch"	:["ch-L","ch-R"],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -121,13 +216,11 @@ void _drawJpg(uint8_t* buf, int size) {
 		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
 		"monospace12":10,"proportional12":11,"monospace16":12,"proportional16":13,
 
-		"no-LCD":0, "AUTO":1,"AUTO-ROT1":2,
-		"SSD1306":3,"SSD1306_32":4,"SSD1306_6432":32,"SH110X":28,
-		"085TFT_SPI":31,"QT095B":5,"MSP0961":10,"MSP1141":11,"MSP1308_GMT130":12,"MSP1541":13,"GMT177":14,"MSP2008":15,"128TFT":26,
-		"MSP1443":16,"MSP1803":17,"MSP2202":18,"MSP2401_2402":19,"MSP2806_2807":8,"MSP3217_3218":20,"MSP3520_3521":21,"MSP4020_4021":22,"MSP4022_4023":23,
+		"no-LCD":0,
+		"SQUARELCD":33,"ROUNDLCD":7,
 		"ROUNDXIAO":24,"SQUAREXIAO":25,"RoundTouchXIAO":34,
-		"ROUNDLCD":7,"SQUARELCD":33,
-		"3248S035":6,"TTGO_TDISP":27,"1732S019":29,"RP2040LCD128":30,
+		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,
+		"ch-L":0,"ch-R":1,
 	},
 	"translators":{
 		"ja":{
@@ -137,7 +230,7 @@ void _drawJpg(uint8_t* buf, int size) {
 	"scratch3constructor":"
 		this.width = 320;
 		this.height = 240;
-		this.uiNames = ['lovyanGFX ext.','lovyanGFX拡張'];
+		this.uiNames = ['ESP32 CAM LCD','ESP32 CAM＆LCD'];
 ",
 
 	"scratch3blocks":"
@@ -155,6 +248,9 @@ void _drawJpg(uint8_t* buf, int size) {
     ARG5: { type: ArgumentType.NUMBER, defaultValue:0 },
     ARG6: { type: ArgumentType.STRING, defaultValue:'0', menu: 'onoff' },
 }},
+
+//{blockType: BlockType.COMMAND, opcode: 'getExtJs', text: 'update extension', arguments: {
+//}},
 ",
 
 	"scratch3menus":"",
@@ -186,22 +282,6 @@ void _drawJpg(uint8_t* buf, int size) {
 				targetBlock.childBlocks_[0].inputList[0].fieldRow[0].setValue(id);
 
 			let str = 'width=' + _this.width + ' height=' + _this.height + ' type=' + lcdType;
-
-			let portsName;
-			switch(result.length) {
-			default:
-			case 6:
-				return str;
-			case 6+2:
-				portsName = ['sda', 'scl'];
-				break;
-			case 6+8:
-				portsName = ['sclk', 'mosi', 'miso', 'dc', 'cs', 'rst', 'busy', 'bl'];
-				break;
-			}
-
-			for(let i = 6; i < result.length; i++)
-				str += ' ' + portsName[i-6] + '=' + ((result[i]==255) ? '' : result[i].toString(10));
 			return str;
 		})
 	}
@@ -237,5 +317,5 @@ void _drawJpg(uint8_t* buf, int size) {
 	}
 ",
 
-	"sort"			: 50,										// メニュー上の表示順序
+	"sort"			: 32,										// メニュー上の表示順序
 }

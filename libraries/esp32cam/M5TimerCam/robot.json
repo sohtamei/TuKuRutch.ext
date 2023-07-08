@@ -1,6 +1,5 @@
 {
-	"name"			: "esp32cam",								// マイコン拡張定義	
-	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
+	"name"			: "M5TimerCam",
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -13,24 +12,13 @@
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
-						"custom_UploadSpeed=esp32_921600"],
-
-	"scratch3burn"	: [
-			{"name":"M5TimerCam",     "type":"esp32",   "baudrate":1500000, "binPath":"esp32cam/M5TimerCam"},
-			{"name":"M5Camera",       "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/M5CameraCar"},
-			{"name":"ESP32S3cam.uart","type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/S3"},
-			{"name":"ESP32S3cam.usb", "type":"esp32s3u","baudrate":921600, "binPath":"esp32cam/S3u"},
-			{"name":"ESP32_CAM",      "type":"esp32",   "baudrate":921600, "binPath":"esp32cam"},
-			{"name":"UnitCam",        "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/unitCam"},
-			{"name":"testXclkIssue",  "type":"esp32",   "baudrate":115200, "binPath":"esp32cam/testCam"},
-			{"name":"testXclkS3.uart","type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/testCamS3"},
-	],
+						"custom_UploadSpeed=esp32_1500000"],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"esp32cam1.0\"
+#define mVersion \"M5TimerCam1.0\"
 
 #include <TukurutchEsp.h>
 #include \"main.h\"
@@ -58,8 +46,8 @@
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
 		["-"],
-		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":""}],
-		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"0"}],
+		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":"digitalWrite(33,{0});"}],
+		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"getAdc1(38,64)/0.661"}],
 		["-"],
 		["-"],
 		["-"],
@@ -72,5 +60,5 @@
 		"On":1,"Off":0,
 	},
 
-	"sort"			: 31,										// メニュー上の表示順序
+	"sort"			: 30,										// メニュー上の表示順序
 }

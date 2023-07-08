@@ -19,7 +19,7 @@
 	"scratch3burn"	: [
 			{"name":"M5Unified.esp32",        "type":"esp32", "baudrate":921600, "binPath":"M5Unified"},
 			{"name":"M5Unified.esp32.750000", "type":"esp32", "baudrate":750000, "binPath":"M5Unified"},
-			{"name":"M5Unified.esp32s3",      "type":"esp32s3u","baudrate":921600, "binPath":"M5UnifiedS3"},
+			{"name":"M5Unified.esp32s3",      "type":"esp32s3u","baudrate":921600, "binPath":"M5Unified/S3"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

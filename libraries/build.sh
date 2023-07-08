@@ -4,28 +4,19 @@ ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`
 
 #################
 TARGETS=\
-"lovyanGFX lovyanGFXc3 lovyanGFXc3u lovyanGFXs3 lovyanGFXs3u lovyanGFXpico "\
-"QuadCrawlerAI SquareCam cameratch32 "\
-"xiao32S3sense "\
-"uno32 uno32s3u uno uno.pico "\
-"DevkitCs3 DevkitC "\
-"M5TimerCam M5CameraCar esp32camS3 esp32camS3u esp32cam unitCam testCam testCamS3 "\
-"M5Unified M5UnifiedS3 "\
-"M5CoreS3 "\
-"QuadCrawler RemoconRobo "\
-"GroveBeginnerKit "\
 
 #################
 S3TARGETS=\
-"uno32 "\
-"DevkitCs3 "\
 "lovyanGFX "\
-"M5TimerCam "\
+"uno32 "\
+"DevkitC "\
+"esp32cam "\
 "M5Unified "\
-"QuadCrawlerAI SquareCam cameratch32 "\
+"QuadCrawlerAI other/cameratch32 "\
+"esp32camlcd/SquareCam "\
 "M5CoreS3 "\
 "QuadCrawler RemoconRobo "\
-"GroveBeginnerKit "\
+"other/GroveBeginnerKit "\
 
 function buildSRCs() {
   PARAMS=`node parseRobotJson.js $1 params`

@@ -16,9 +16,9 @@
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [											// binary定義
-			{"name":"uno",         "type":"atmega328", "baudrate":115200, "binPath":"uno"},
+			{"name":"uno",         "type":"atmega328", "baudrate":115200, "binPath":"uno32/avr"},
 			{"name":"uno32",       "type":"esp32",     "baudrate":921600, "binPath":"uno32"},
-			{"name":"uno32s3.usb", "type":"esp32s3u",  "baudrate":921600, "binPath":"uno32s3u"},
+			{"name":"uno32s3.usb", "type":"esp32s3u",  "baudrate":921600, "binPath":"uno32/s3u"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること
