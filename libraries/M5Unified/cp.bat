@@ -1,2 +1,2 @@
-copy src\main.*  S3\src\
+copy src\main.*  s3\src\
 timeout 3
