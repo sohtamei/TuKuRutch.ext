@@ -1,11 +1,12 @@
 LIST=('analogRemote' 'TukurutchEsp' 'TukurutchEspCamera' 'TukurutchCommon')
+ARDUINO_PATH="/mnt/c/fd_work/TuKuRutch2/Arduino"
 
 for NAME in ${LIST[@]}; do
   echo $NAME
-  rm -rf ../../Arduino/portable/sketchbook/libraries/$NAME
-  cp -a $NAME ../../Arduino/portable/sketchbook/libraries/
-  rm -f ../../$NAME.zip
-  zip -q ../../$NAME.zip $NAME/*
+  rm -rf $ARDUINO_PATH/portable/sketchbook/libraries/$NAME
+  cp -a $NAME $ARDUINO_PATH/portable/sketchbook/libraries/
+#  rm -f ../../$NAME.zip
+#  zip -q ../../$NAME.zip $NAME/*
 done
 
 sleep 3

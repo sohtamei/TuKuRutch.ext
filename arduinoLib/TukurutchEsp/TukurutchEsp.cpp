@@ -1,17 +1,17 @@
 #include <WiFi.h>
-#include <AsyncUDP.h>
+//#include <AsyncUDP.h>
 #include <Preferences.h>
 #include <driver/adc.h>
 #include <esp_adc_cal.h>
 
 #include "TukurutchEsp.h"
 
-#define PORT  54321
+//#define PORT  54321
 #define DPRINT(a) // _Serial.println(a) // for debug
 
 char g_ssid[4+32+1] = {0};		// length(4)+SSID
 
-AsyncUDP udp;
+//AsyncUDP udp;
 Preferences preferences;
 char strBuf[256];
 
@@ -104,7 +104,7 @@ char* scanWifi(void)
 // disconnect     : DISCONNECTED->(NO_SSID_AVAIL)->IDLE->CONNECTED->DISCONNECTED
 // no SSID		  : DISCONNECTED->NO_SSID_AVAIL (timeout)
 // password error : DISCONNECTED (timeout)
-uint32_t last_udp;
+//uint32_t last_udp;
 int readWifi(void)
 {
 	if(WiFi.status() != WL_CONNECTED) {
@@ -122,7 +122,7 @@ int readWifi(void)
 		}
 		return -1;
 	}
-    
+/*
 	uint32_t cur = millis();
 	if(cur - last_udp > 2000) {
 		last_udp = cur;
@@ -131,7 +131,7 @@ int readWifi(void)
 		uint32_t subnet = WiFi.subnetMask();
 		udp.writeTo((uint8_t*)mVersion, strlen(mVersion), IPAddress(adrs|~subnet), PORT);
 	}
-
+*/
 	switch(connection_status) {
 	case CONNECTION_NONE:
 	case CONNECTION_CONNECTING:
