@@ -4,8 +4,6 @@
 	"boardType"		: "arduino:avr:uno",						// package:platform:board
 
 	"sort"			: 1,										// メニュー上の表示順序
-	"normalFW"		: "robot_normal/robot_normal",				// 最初のプログラム,  .ino, .cpp.standard.hex (option)
-	"libraryPath"	: "remoconRoboLib",							// 専用ライブラリ(option)
 
 	"scratch3burn"	: [											// binary定義
 			{"name":"remoconRobo", "type":"atmega328", "baudrate":115200, "binPath":"RemoconRobo"},
@@ -18,7 +16,7 @@
 #define mVersion \"RemoconRobo1.2\"
 
 #include <Servo.h>
-#include <remoconRoboLib.h>
+#include \"remoconRoboLib.h\"
 #include <analogRemote.h>
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template

@@ -3,7 +3,7 @@
 #define mVersion "RemoconRobo1.2"
 
 #include <Servo.h>
-#include <remoconRoboLib.h>
+#include "remoconRoboLib.h"
 #include <analogRemote.h>
 
 #define REMOTE_ENABLE	// for robot_pcmode.ino.template

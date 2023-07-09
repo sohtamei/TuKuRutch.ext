@@ -1,0 +1,3 @@
+{
+	"boardType"		: "arduino:avr:uno",						// package:platform:board
+}
