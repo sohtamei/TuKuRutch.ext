@@ -57,6 +57,8 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_GMT177:		lcd = new LGFX_GMT177(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP2008:		lcd = new LGFX_MSP2008(lcdType, config_buf, config_size); break;
 
+	case LCDTYPE_128TFT:		lcd = new LGFX_128TFT(lcdType, config_buf, config_size); break;
+
 	// Type2
 	case LCDTYPE_MSP1443:		lcd = new LGFX_MSP1443(lcdType, config_buf, config_size); break;
 	case LCDTYPE_MSP1803:		lcd = new LGFX_MSP1803(lcdType, config_buf, config_size); break;
@@ -78,7 +80,6 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	// other
 	case LCDTYPE_ROUNDLCD:		lcd = new LGFX_ROUNDLCD(lcdType, config_buf, config_size); break;
 	case LCDTYPE_SQUARELCD:		lcd = new LGFX_SQUARELCD(lcdType, config_buf, config_size); break;
-	case LCDTYPE_128TFT:		lcd = new LGFX_128TFT(lcdType, config_buf, config_size); break;
 
 	// micom+LCD
 #if defined(CONFIG_IDF_TARGET_ESP32)

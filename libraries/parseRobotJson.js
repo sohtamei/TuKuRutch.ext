@@ -48,9 +48,9 @@ const jsonToJs = function(target, ext)
 			break;
 
 		case 'pico':
-			src = binPath+"/src/src.ino.standard.hex";
+			src = binPath+"/src/src.ino.rpipico.uf2";
 			if(fs.existsSync(src))
-				fs.copyFileSync(src, "../scratch3/"+imageName+".hex");
+				fs.copyFileSync(src, "../scratch3/"+imageName+".uf2");
 			break;
 
 		case 'esp32c3u':
@@ -360,6 +360,13 @@ const copyBins = function(target, ext)
 			fs.copyFileSync(src, des);
 		break;
 
+	case "rp2040":
+		src = target+"/src/build/src.ino.uf2";
+		des = target+"/src/src.ino.rpipico.uf2";
+		if(fs.existsSync(src))
+			fs.copyFileSync(src, des);
+		break;
+
 	case "esp32":
 		src = target+"/src/build/src.ino.bin";
 		des = target+"/src/src.ino."+boards[2]+".bin";
@@ -399,6 +406,17 @@ const _burnFW2 = function(target, ext, selectPort)
 		args = "-C"+toolsPath+"/hardware/tools/avr/etc/avrdude.conf -v -patmega328p -carduino -P"+selectPort+" -b115200 -D -V"
 			+" -Uflash:w:"+hexFile+":i";
 		cmd = toolsPath+"/hardware/tools/avr/bin/avrdude.exe";
+		break;
+
+	case "rp2040":
+		hexFile = target+"/src/src.ino.rpipico.uf2";
+		if(!fs.existsSync(hexFile)){
+			console.log("upgrade fail!");
+			return false;
+		}
+
+		args = "-I "+toolsPath+"/portable/packages/rp2040/hardware/rp2040/3.3.0/tools/uf2conv.py --serial "+selectPort+" --family RP2040 --deploy "+hexFile;
+		cmd = toolsPath+"/portable/packages/rp2040/tools/pqt-python3/*/python3.exe";
 		break;
 
 	case "esp32":

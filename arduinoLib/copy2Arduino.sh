@@ -1,5 +1,5 @@
 LIST=('analogRemote' 'TukurutchEsp' 'TukurutchEspCamera' 'TukurutchCommon')
-ARDUINO_PATH="/mnt/c/fd_work/TuKuRutch2/Arduino"
+ARDUINO_PATH="/mnt/c/fd_work/Arduino"
 
 for NAME in ${LIST[@]}; do
   echo $NAME

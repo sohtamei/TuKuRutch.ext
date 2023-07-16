@@ -1,15 +1,19 @@
 {
 	"name"			: "lovyanGFXpico",
 	"boardType"		: "rp2040:rp2040:rpipico",				// package:platform:board
-	"prefs"			: ["custom_dbglvl=rpipico_None",
+	"prefs"			: [	"custom_dbglvl=rpipico_None",
+					//	"custom_dbglvl=rpipico_All",
 						"custom_dbgport=rpipico_Disabled",
+					//	"custom_dbgport=rpipico_Serial",
 						"custom_exceptions=rpipico_Disabled",
 						"custom_flash=rpipico_2097152_65536",
 						"custom_freq=rpipico_133",
+						"custom_ipbtstack=rpipico_ipv4only",
 						"custom_ipstack=rpipico_ipv4only",
 						"custom_opt=rpipico_Small",
 						"custom_rtti=rpipico_Disabled",
 						"custom_stackprotect=rpipico_Disabled",
+						"custom_uploadmethod=rpipico_default",
 						"custom_usbstack=rpipico_tinyusb"],
 
 	// C言語記述注意 : " を使うときは \" とすること

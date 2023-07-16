@@ -1,5 +1,5 @@
 #!/bin/bash
-ARDUINO_PATH="/mnt/c/fd_work/TuKuRutch2/Arduino"
+ARDUINO_PATH="/mnt/c/fd_work/Arduino"
 ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`
 
 if [ $# -le 1 ]; then
