@@ -32,6 +32,7 @@ struct { m5::board_t board; char name[32]; } const boardTable[] = {
 	{ m5::board_t::board_M5StampC3,		"StampC3" },		// 15
 	{ m5::board_t::board_M5StampC3U,	"StampC3U" },		// 16
 	{ m5::board_t::board_M5AtomS3Lite,	"M5AtomS3Lite" },	// 17
+	{ m5::board_t::board_M5StickCPlus2,	"StickCPlus2" },	// 18
 };
 
 /*
@@ -135,7 +136,8 @@ void __tone(int16_t freq, int16_t ms)
 int _getConfig(uint8_t* buf)
 {
 	int enabled =
-		  (M5.Display.getBoard() > m5gfx::boards::board_t::board_Non_Panel ? (1<<0) : 0)
+//		  (M5.Display.getBoard() > m5gfx::boards::board_t::board_Non_Panel ? (1<<0) : 0)
+		  (M5.Display.getBoard() < m5gfx::boards::board_t::board_M5Atom ? (1<<0) : 0)
 		| (M5.In_I2C.isEnabled()  ? (1<<1) : 0)
 		| (M5.Ex_I2C.isEnabled()  ? (1<<2) : 0)
 		| (M5.Imu.isEnabled()     ? (1<<3) : 0)

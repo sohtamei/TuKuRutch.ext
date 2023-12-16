@@ -1,3 +1,4 @@
+# robot.json→src.ino生成しない版？
 #!/bin/bash
 ARDUINO_PATH="/mnt/c/fd_work/Arduino"
 ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`

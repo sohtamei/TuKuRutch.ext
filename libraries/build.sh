@@ -9,11 +9,13 @@ TARGETS=\
 "DevkitC DevkitC/s3 "\
 "esp32cam esp32cam/M5TimerCam esp32cam/M5CameraCar esp32cam/s3 esp32cam/s3u esp32cam/unitCam esp32cam/testCam esp32cam/testCamS3 "\
 "M5Unified M5Unified/s3 "\
-"QuadCrawlerAI other/cameratch32 "\
+"QuadCrawlerAI "\
 "esp32camlcd/SquareCam esp32camlcd/xiao32S3sense "\
 "M5CoreS3 "\
 "QuadCrawler RemoconRobo "\
 "other/GroveBeginnerKit "\
+
+# other/cameratch32  - サーボが動作せず
 
 #################
 S3TARGETS=\
