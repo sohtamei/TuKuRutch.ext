@@ -24,11 +24,13 @@ S3TARGETS=\
 "DevkitC "\
 "esp32cam "\
 "M5Unified "\
-"QuadCrawlerAI other/cameratch32 "\
+"QuadCrawlerAI "\
 "esp32camlcd/SquareCam "\
 "M5CoreS3 "\
 "QuadCrawler RemoconRobo "\
 "other/GroveBeginnerKit "\
+
+# other/cameratch32  - サーボが動作せず
 
 function buildSRCs() {
   PARAMS=`node parseRobotJson.js $1 params`
