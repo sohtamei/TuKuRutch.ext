@@ -1,5 +1,6 @@
 /* copyright (C) 2020 Sohta. */
 #include <Arduino.h>
+#include <SD.h>
 #include <stdint.h>
 #include "main.h"
 
@@ -31,7 +32,7 @@ struct { m5::board_t board; char name[32]; } const boardTable[] = {
 
 	{ m5::board_t::board_M5StampC3,		"StampC3" },		// 15
 	{ m5::board_t::board_M5StampC3U,	"StampC3U" },		// 16
-	{ m5::board_t::board_M5AtomS3Lite,	"M5AtomS3Lite" },	// 17
+	{ m5::board_t::board_M5AtomS3Lite,	"AtomS3Lite" },		// 17
 	{ m5::board_t::board_M5StickCPlus2,	"StickCPlus2" },	// 18
 };
 
@@ -173,6 +174,8 @@ static void onConnect(String ip)
 
 void _setup(const char* ver)
 {
+	M5.begin();
+
 	auto cfg = M5.config();
 	cfg.serial_baudrate = 115200;	// default=115200. if "Serial" is not needed, set it to 0.
 	cfg.clear_display = true;		// default=true. clear the screen when begin.
