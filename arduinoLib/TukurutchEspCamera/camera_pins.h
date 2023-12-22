@@ -116,6 +116,31 @@
   #define P_LED				4
   #define P_LED_NEG			1
 
+#elif defined(DEVICE_UNITCAMS3)
+// M5Stack UnitCamS3
+
+  #define PWDN_GPIO_NUM -1
+  #define RESET_GPIO_NUM 21
+  #define XCLK_GPIO_NUM 11
+  #define SIOD_GPIO_NUM 17
+  #define SIOC_GPIO_NUM 41
+
+  #define Y2_GPIO_NUM 6
+  #define Y3_GPIO_NUM 15
+  #define Y4_GPIO_NUM 16
+  #define Y5_GPIO_NUM 7
+  #define Y6_GPIO_NUM 5
+  #define Y7_GPIO_NUM 10
+  #define Y8_GPIO_NUM 4
+  #define Y9_GPIO_NUM 13
+
+  #define VSYNC_GPIO_NUM 42
+  #define HREF_GPIO_NUM 18
+  #define PCLK_GPIO_NUM 12
+
+  #define P_LED		14
+  #define P_LED_NEG	1
+
 #elif defined(QCAI)
 // QCAI
   #define PWDN_GPIO_NUM     -1
