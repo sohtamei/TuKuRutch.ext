@@ -7,7 +7,7 @@ TARGETS=\
 "lovyanGFX lovyanGFX/c3 lovyanGFX/c3u lovyanGFX/s3 lovyanGFX/s3u lovyanGFX/pico "\
 "uno32 uno32/s3u uno32/avr uno32/pico "\
 "DevkitC DevkitC/s3 "\
-"esp32cam esp32cam/M5TimerCam esp32cam/M5CameraCar esp32cam/s3 esp32cam/s3u esp32cam/unitCam esp32cam/unitCamS3 esp32cam/testCam esp32cam/testCamS3 "\
+"esp32cam esp32cam/M5TimerCam esp32cam/M5CameraCar esp32cam/s3 esp32cam/s3u esp32cam/unitCam esp32cam/unitCamS3 esp32cam/unitCamS3u esp32cam/testCam esp32cam/testCamS3 "\
 "M5Unified M5Unified/s3 "\
 "QuadCrawlerAI "\
 "esp32camlcd/SquareCam esp32camlcd/xiao32S3sense "\

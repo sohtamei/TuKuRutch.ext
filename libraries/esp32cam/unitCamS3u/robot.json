@@ -1,7 +1,7 @@
 {
-	"name"			: "unitCamS3",								// マイコン拡張定義	
+	"name"			: "unitCamS3u",								// マイコン拡張定義	
 	"boardType"		: "esp32:esp32:esp32s3",						// package:platform:board
-	"prefs"			: ["custom_CDCOnBoot=esp32s3_default",
+	"prefs"			: ["custom_CDCOnBoot=esp32s3_cdc",
 						"custom_CPUFreq=esp32s3_240",
 						"custom_DFUOnBoot=esp32s3_default",
 						"custom_DebugLevel=esp32s3_none",
@@ -14,8 +14,8 @@
 						"custom_MSCOnBoot=esp32s3_default",
 						"custom_PSRAM=esp32s3_disabled",
 						"custom_PartitionScheme=esp32s3_huge_app",
-						"custom_USBMode=esp32s3_hwcdc",
-						"custom_UploadMode=esp32s3_default",
+						"custom_USBMode=esp32s3_default",
+						"custom_UploadMode=esp32s3_cdc",
 						"custom_UploadSpeed=esp32s3_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
