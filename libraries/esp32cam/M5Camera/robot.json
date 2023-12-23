@@ -1,6 +1,5 @@
 {
-	"name"			: "M5CameraCar",
-	"scratch3ext"	: "M5CameraCar,SupportCamera",				// scratch3 ext名[,SupportCamera]
+	"name"			: "M5Camera",
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -14,10 +13,6 @@
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
-
-	"scratch3burn"	: [
-			{"name":"M5Camera", "type":"esp32", "baudrate":921600, "binPath":"M5CameraCar"},
-	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -50,43 +45,19 @@
 	//  type | Block定義                               | Block名           | 初期値     |remote/custom/enum    | 実行/取得関数
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
-
-		["w", "%d.direction at speed %d.speed calib %n duration %n",
-														"setCar", "run forward",4,0,0,	{"remote":["B","S","S","S"],"func":"_setCar({0},{1},{2},{3});"}],
-		["w", "set motor left %d.speed right %d.speed calib %n duration %n",
-														"setMotor",			4,4,0,0,	{"remote":["S","S","S","S"],"func":"_setMotor({0},{1},{2},{3});"}],
 		["-"],
 		["-"],
-		["w", "stop",									"stopCar",						{"remote":[],				"func":"_stopServo();"}],
-
-		["R", "%d.direction .",							"enumDirection",  "run forward",{"enum":"",				"func":"{0}"}],
-
+		["-"],
+		["-"],
+		["-"],
+		["-"],
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"espcamera_setLED({0});"}],
-
-		["R", "download calibration %n %s",				"downloadCal",		1,"",		{"remote":["S","s",	"s"],	"func":"_downloadCal({0},{1})"}],
-		["R", "get cal",								"getCal",						{"remote":[			"s"],	"func":"_getCal()"}],
 	],
 	"menus": {
 		"onoff"		:["On","Off"],
-		"direction"	:["stop","run forward","turn left","turn right","run backward","rotate left","rotate right","calibration"],
-		"speed"		:[4,2,1,0,-1,-2,-4],
 	},
 	"values":{
 		"On":1,"Off":0,
-		"stop":0,"run forward":1,"turn left":2,"turn right":3,"run backward":4,"rotate left":5,"rotate right":6,"calibration":7,
-	},
-	"translators":{
-		"ja":{
-			"stop":"ストップ", "run forward":"前", "turn left":"左", "turn right":"右", "run backward":"後", "rotate left":"左旋回", "rotate right":"右旋回", "calibration":"原点調整",
-			"%d.direction at speed %d.speed calib %n duration %n"			:"%d.direction 向きに %d.speed の速さで動かす(補正 %n , %n ms)",
-			"set motor left %d.speed right %d.speed calib %n duration %n"	:"左 %d.speed 右 %d.speed で動かす(補正 %n , %n ms)",
-
-			"download calibration %n %s"					:"補正データダウンロード ID=%n データ%s",
-			"download calibration %n %n"					:"補正データダウンロード ID=%n データ%n",
-			"get cal"										:"補正データ表示",
-
-			"set LED %d.onoff"								:"LED %d.onoff",
-		}
 	},
 
 	"sort"			: 31,										// メニュー上の表示順序
