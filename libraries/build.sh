@@ -4,13 +4,31 @@ ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`
 
 #################
 TARGETS=\
-"esp32cam esp32cam/M5TimerCam esp32cam/M5Camera esp32cam/s3 esp32cam/s3u esp32cam/unitCam esp32cam/unitCamS3 esp32cam/unitCamS3u esp32cam/testCam esp32cam/testCamS3 "\
+"lovyanGFX lovyanGFX/c3 lovyanGFX/c3u lovyanGFX/s3 lovyanGFX/s3u lovyanGFX/pico "\
+"uno32 uno32/s3u uno32/avr uno32/pico "\
+"DevkitC DevkitC/s3 "\
+"esp32cam/M5TimerCam esp32cam/esp32_cam esp32cam/M5Camera esp32cam/s3 esp32cam/s3u esp32cam/testCam esp32cam/testCamS3 esp32cam/unitCam esp32cam/unitCamS3 esp32cam/unitCamS3u "\
+"M5Unified M5Unified/s3 "\
+"QuadCrawlerAI "\
+"esp32camlcd/SquareCam esp32camlcd/xiao32S3sense "\
+"M5CoreS3 "\
+"QuadCrawler RemoconRobo "\
+"other/GroveBeginnerKit "\
 
 # other/cameratch32  - サーボが動作せず
 
 #################
 S3TARGETS=\
-"esp32cam "\
+"lovyanGFX "\
+"uno32 "\
+"DevkitC "\
+"esp32cam/M5TimerCam "\
+"M5Unified "\
+"QuadCrawlerAI "\
+"esp32camlcd/SquareCam "\
+"M5CoreS3 "\
+"QuadCrawler RemoconRobo "\
+"other/GroveBeginnerKit "\
 
 # other/cameratch32  - サーボが動作せず
 

@@ -12,7 +12,7 @@
 						"custom_JTAGAdapter=esp32s3_default",
 						"custom_LoopCore=esp32s3_1",
 						"custom_MSCOnBoot=esp32s3_default",
-						"custom_PSRAM=esp32s3_enabled",
+						"custom_PSRAM=esp32s3_opi",
 						"custom_PartitionScheme=esp32s3_huge_app",
 						"custom_USBMode=esp32s3_default",
 						"custom_UploadMode=esp32s3_cdc",

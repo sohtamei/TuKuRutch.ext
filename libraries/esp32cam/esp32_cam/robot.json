@@ -1,6 +1,5 @@
 {
 	"name"			: "esp32cam",								// マイコン拡張定義	
-	"scratch3ext"	: "M5Camera,SupportCamera",					// scratch3 ext名[,SupportCamera]
 	"boardType"		: "esp32:esp32:esp32",						// package:platform:board
 	"prefs"			: ["custom_CPUFreq=esp32_240",
 						"custom_DebugLevel=esp32_none",
@@ -14,19 +13,6 @@
 						"custom_PSRAM=esp32_enabled",
 						"custom_PartitionScheme=esp32_default",
 						"custom_UploadSpeed=esp32_921600"],
-
-	"scratch3burn"	: [
-			{"name":"M5TimerCam",     "type":"esp32",   "baudrate":1500000, "binPath":"esp32cam/M5TimerCam"},
-			{"name":"M5Camera",       "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/M5Camera"},
-			{"name":"UnitCam",        "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/unitCam"},
-			{"name":"UnitCamS3.uart", "type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/unitCamS3"},
-			{"name":"UnitCamS3.usb",  "type":"esp32s3u","baudrate":921600, "binPath":"esp32cam/unitCamS3u"},
-			{"name":"ESP32S3cam.uart","type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/s3"},
-			{"name":"ESP32S3cam.usb", "type":"esp32s3u","baudrate":921600, "binPath":"esp32cam/s3u"},
-			{"name":"ESP32_CAM",      "type":"esp32",   "baudrate":921600, "binPath":"esp32cam"},
-			{"name":"testXclkIssue",  "type":"esp32",   "baudrate":115200, "binPath":"esp32cam/testCam"},
-			{"name":"testXclkS3.uart","type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/testCamS3"},
-	],
 
 	// C言語記述注意 : " を使うときは \" とすること
 
@@ -60,8 +46,8 @@
 	//-------+-----------------------------------------+-------------------+------------+----------------------+----------------------------------
 		["-"],					// dummy
 		["-"],
-		["w", "battery connection %d.onoff",			"setBatteryConnect", "Off",		{"remote":["B"],			"func":""}],
-		["R", "battery voltage",						"getBatteryVoltage",			{"remote":[			"S"],	"func":"0"}],
+		["-"],
+		["-"],
 		["-"],
 		["-"],
 		["-"],
