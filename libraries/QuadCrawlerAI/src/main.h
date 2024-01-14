@@ -1,9 +1,13 @@
 #ifndef main_h
 #define main_h
+#define LGFX_USE_V1
+#include <LovyanGFX.hpp>
 
 extern WebsocketsServer wsServer;
 void _setup(const char* ver);
 void _loop(void);
+
+extern lgfx::LGFX_Device *lcd;
 
 #define CAMERA_ENABLED
 //#define DEVICE_M5CAMERA
