@@ -3,6 +3,7 @@
 
 #include "quadCrawler.h"
 #include <analogRemote.h>
+#include <Adafruit_NeoPixel.h>
 
 static void funcLed(uint8_t onoff) { digitalWrite(P_LED, onoff); }
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, funcLed);
@@ -23,6 +24,7 @@ static int detect_sw4(void)
 	lastSw4 = sw4;
 	return detect;
 }
+
 void setup()
 {
 	// 初期化処理
@@ -34,6 +36,34 @@ void setup()
 	quadCrawler_colorWipe(COLOR_PURPLE);
 	quadCrawler_beep(100);
 	Serial.println("Normal: " mVersion);
+}
+
+Adafruit_NeoPixel* _pixels = NULL;
+#if defined(__AVR_ATmega328P__)
+  Adafruit_NeoPixel _pixels_instance;
+#endif
+
+static void _initNeoPixel(uint8_t port, uint8_t num)
+{
+  #if defined(__AVR_ATmega328P__)
+    _pixels = &_pixels_instance;
+    _pixels->updateType(NEO_GRB + NEO_KHZ800);
+    _pixels->updateLength(num);
+    _pixels->setPin(port);
+  #else
+    _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
+  #endif
+  _pixels->begin();
+}
+
+void _neoPixels(uint8_t port, int num, int color)
+{
+  if(!_pixels)
+    _initNeoPixel(port, num);
+
+  for(int i = 0; i < num; i++)
+    _pixels->setPixelColor(i, color);
+  _pixels->show();
 }
 
 void loop()

@@ -37,11 +37,9 @@ static void beep(int sound)
   MIDI_CREATE_INSTANCE(Adafruit_USBD_MIDI, usb_midi, MIDI);
 #endif
 
-#if defined(_SAMD21_)
-#define _Serial SerialUSB
-#else
 #define _Serial Serial
-#endif
+
+#include <Adafruit_NeoPixel.h>
 
 enum {
 RSP_BYTE    = 1,
@@ -220,8 +218,7 @@ static const PROGMEM char ArgTypesTbl2[][ARG_NUM] = {
   {'B','S'},		// 0x88:anaRead        (port, count)           ret:level(int16)
   {'B','S','S'},	// 0x89:tone           (port,freq,ms)
   {'b'},			// 0x8a:setPwms        (LIST[port,data])
-  {},				// 0x8b:neoPixcel      ()
-  {'B','B'},		// 0x8c:setCameraMode  (mode,gain)
+  {'B','b'},		// 0x8b:neoPixels      (port,LIST[rgb])
   {'S','B','b'},	// 0x8d:setPwmsDur     (duration,mode,LIST[port,data])
 };
 #define CMD_MIN   0x81
@@ -445,6 +442,46 @@ static void _setPwmsDur(int16_t duration, uint8_t mode, uint8_t* buf, int num)
   }
 }
 
+Adafruit_NeoPixel* _pixels = NULL;
+#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+#else
+  Adafruit_NeoPixel _pixels_instance;
+#endif
+
+static void _initNeoPixel(uint8_t port, uint8_t num)
+{
+  #if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+    _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
+  #else
+    _pixels = &_pixels_instance;
+    _pixels->updateType(NEO_GRB + NEO_KHZ800);
+    _pixels->updateLength(num);
+    _pixels->setPin(port);
+  #endif
+  _pixels->begin();
+}
+
+void _neoPixels(uint8_t port, uint8_t* buf, int num)
+{
+  num = num/3;
+  if(!_pixels)
+    _initNeoPixel(port, num);
+
+  for(int i = 0; i < num; i++)
+    _pixels->setPixelColor(i, buf[i*3+0], buf[i*3+1], buf[i*3+2]);
+  _pixels->show();
+}
+
+void _neoPixels(uint8_t port, int num, int color)
+{
+  if(!_pixels)
+    _initNeoPixel(port, num);
+
+  for(int i = 0; i < num; i++)
+    _pixels->setPixelColor(i, color);
+  _pixels->show();
+}
+
 static void parseData()
 {
   uint8_t cmd;
@@ -517,10 +554,7 @@ case 23: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin
   case 0x88: sendShort(_analogRead(getByte(0),getShort(1)));break;
   case 0x89: _tone(getByte(0),getShort(1),getShort(2)); callOK(); break;
   case 0x8a: _setPwms(getBufLen(0)); callOK(); break;
-  case 0x8b: callOK(); break;
-#if defined(CAMERA_ENABLED)
-//case 0x8c: espcamera_setCameraMode(getByte(0),getByte(1)); callOK(); break;
-#endif
+  case 0x8b: _neoPixels(getByte(0),getBufLen(1)); callOK(); break;
   case 0x8d: _setPwmsDur(getShort(0),getByte(1),getBufLen(2)); callOK(); break;
 #if defined(ESP32)
   // WiFi設定
@@ -536,8 +570,6 @@ case 23: if(!srvClass[getByte(0)].attached()) srvClass[getByte(0)].attach(srvPin
   #if defined(__AVR_ATmega328P__)
     wdt_enable(WDTO_15MS);
     while(1);
-  #elif defined(_SAMD21_)
-    NVIC_SystemReset();
   #elif defined(ESP32)
     ESP.restart();
   #endif

@@ -19,6 +19,7 @@
 			{"name":"uno",         "type":"atmega328", "baudrate":115200, "binPath":"uno32/avr"},
 			{"name":"uno32",       "type":"esp32",     "baudrate":921600, "binPath":"uno32"},
 			{"name":"uno32s3.usb", "type":"esp32s3u",  "baudrate":921600, "binPath":"uno32/s3u"},
+			{"name":"uno.pico",    "type":"pico",      "baudrate":921600, "binPath":"uno32/pico"},
 	],
 
 	// C言語記述注意 : " を使うときは \" とすること

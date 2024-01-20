@@ -5,7 +5,7 @@
 #include "main.h"
 
 U8X8_SSD1306_128X64_NONAME_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
-DHT dht(P_TEMP_HUM, DHT11);		// DHT 11
+DHT* dht = NULL;		// DHT11, DHT20
 BMP280 bmp280;
 
 #include <LIS3DHTR.h>
@@ -41,7 +41,14 @@ void _setup(const char* ver)
 	u8x8.setFont(u8x8_font_chroma48medium8_r);
 	u8x8.println("Hello !");
 
-	dht.begin();
+	Wire.beginTransmission(0x38);		// DHT20 i2c
+	int ret = Wire.endTransmission();
+	if(!ret) {
+		dht = new DHT(DHT20);
+	} else {
+		dht = new DHT(P_TEMP_HUM, DHT11);
+	}
+	dht->begin();
 	bmp280.init();
 
 	LIS.begin(Wire, 0x19); //IIC init

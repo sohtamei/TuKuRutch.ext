@@ -39,9 +39,9 @@
 		["w", "［OLED］print %s",							"oledPrint",		"Hello",	{"remote":["s"],		"func":"u8x8.print({0});"}],
 		["w", "［OLED］print line %s",						"oledPrintLine",	"Hello",	{"remote":["s"],		"func":"u8x8.println({0});"}],
 		["w", "［OLED］clear",								"oledClear",					{"remote":[],			"func":"u8x8.clear();"}],
-			
-		["R", "［DHT11］get Temperature",					"getDhtTemp",					{"remote":[		"F"],	"func":"dht.readTemperature()"}],
-		["R", "［DHT11］get Humidity",						"getDhtHum",					{"remote":[		"B"],	"func":"dht.readHumidity()"}],
+
+		["R", "［DHT］get Temperature",						"getDhtTemp",					{"remote":[		"F"],	"func":"(!dht?0:dht->readTemperature())"}],
+		["R", "［DHT］get Humidity",						"getDhtHum",					{"remote":[		"B"],	"func":"(!dht?0:dht->readHumidity())"}],
 
 		["R", "［BMP280］get Temperature",					"getBmpTemp",					{"remote":[		"F"],	"func":"bmp280.getTemperature()"}],
 		["R", "［BMP280］get Pressure",						"getBmpPress",					{"remote":[		"L"],	"func":"bmp280.getPressure()"}],

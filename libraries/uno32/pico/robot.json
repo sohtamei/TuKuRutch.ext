@@ -20,25 +20,19 @@
 
 #include \"main.h\"
 
-#include <Adafruit_NeoPixel.h>
-Adafruit_NeoPixel pixels(1/*num*/, 23/*pin*/, NEO_GRB + NEO_KHZ800);
-
 void setNeoPixel(int c, int level)
 {
   if(level>100) level = 100;
-  int r = ((c>>16)&0xff)*level;
-  int g = ((c>>8)&0xff)*level;
-  int b = ((c>>0)&0xff)*level;
-  pixels.setPixelColor(0, pixels.Color(r/100, g/100, b/100));
-  pixels.show();
+  int r = (((c>>16)&0xff)*level)/100;
+  int g = (((c>>8)&0xff)*level)/100;
+  int b = (((c>>0)&0xff)*level)/100;
+  _neoPixels(23/*pin*/, 1/*num*/, (r<<16)|(g<<8)|b);
 }
 ",
 	// setup処理 (C言語)
 	"setup":"
-  pixels.begin();
-  pixels.clear();
-  setNeoPixel(0x000000, 0);
-  setNeoPixel(0x000000, 0);
+  _neoPixels(23/*pin*/, 1/*num*/, 0x000000);
+  _neoPixels(23/*pin*/, 1/*num*/, 0x000000);
   _setup(mVersion);
 ",
 

@@ -556,41 +556,40 @@ int16_t _calibServo(uint8_t id, uint8_t cmd)
 
 //---------------------------------------------------------
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(8, P_Neopix, NEO_GRB + NEO_KHZ800);
+extern Adafruit_NeoPixel* _pixels;
+void _neoPixels(uint8_t port, int num, int color);
 
 static void colorWipe(uint32_t c)
 {
 	uint8_t i;
-	for (i = 0; i < strip.numPixels(); i++) {
-		strip.setPixelColor(i, c);
-		strip.show();
-		delay(10);
-	}
+	for (i = 0; i < _pixels->numPixels(); i++)
+		_pixels->setPixelColor(i, c);
+	_pixels->show();
 }
 
 void quadCrawler_colorWipe(uint8_t color)
 {
 	switch(color) {
 	case COLOR_OFF:
-		colorWipe(strip.Color(0,0,0));
+		colorWipe(_pixels->Color(0,0,0));
 		break;
 	case COLOR_RED:
-		colorWipe(strip.Color(255,0,0));
+		colorWipe(_pixels->Color(255,0,0));
 		break;
 	case COLOR_GREEN:
-		colorWipe(strip.Color(0,255,0));
+		colorWipe(_pixels->Color(0,255,0));
 		break;
 	case COLOR_BLUE:
-		colorWipe(strip.Color(0,0,255));
+		colorWipe(_pixels->Color(0,0,255));
 		break;
 	case COLOR_YELLOW:
-		colorWipe(strip.Color(128,128,0));
+		colorWipe(_pixels->Color(128,128,0));
 		break;
 	case COLOR_PURPLE:
-		colorWipe(strip.Color(128,0,128));
+		colorWipe(_pixels->Color(128,0,128));
 		break;
 	case COLOR_LIGHTBLUE:
-		colorWipe(strip.Color(0,128,128));
+		colorWipe(_pixels->Color(0,128,128));
 		break;
 	default:
 		break;
@@ -599,29 +598,25 @@ void quadCrawler_colorWipe(uint8_t color)
 
 void quadCrawler_colorRed(uint8_t id)
 {
-	colorWipe(strip.Color(0,0,0));
+	colorWipe(_pixels->Color(0,0,0));
 
-	strip.setPixelColor(id*2+0, strip.Color(255,0,0));
-	strip.show();
-	delay(10);
-
-	strip.setPixelColor(id*2+1, strip.Color(255,0,0));
-	strip.show();
-	delay(10);
+	_pixels->setPixelColor(id*2+0, _pixels->Color(255,0,0));
+	_pixels->setPixelColor(id*2+1, _pixels->Color(255,0,0));
+	_pixels->show();
 }
 
 static uint32_t Wheel(byte WheelPos)
 {
 	WheelPos = 255 - WheelPos;
 	if (WheelPos < 85) {
-		return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+		return _pixels->Color(255 - WheelPos * 3, 0, WheelPos * 3);
 	}
 	if (WheelPos < 170) {
 		WheelPos -= 85;
-		return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+		return _pixels->Color(0, WheelPos * 3, 255 - WheelPos * 3);
 	}
 	WheelPos -= 170;
-	return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+	return _pixels->Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
 void quadCrawler_rainbow(uint8_t wait)
@@ -629,10 +624,9 @@ void quadCrawler_rainbow(uint8_t wait)
 	uint16_t i, j;
 
 	for (j = 0; j < 256; j++) {
-		for (i = 0; i < strip.numPixels(); i++) {
-			strip.setPixelColor(i, Wheel((i + j) & 255));
-		}
-		strip.show();
+		for (i = 0; i < _pixels->numPixels(); i++)
+			_pixels->setPixelColor(i, Wheel((i + j) & 255));
+		_pixels->show();
 		delay(wait);
 	}
 }
@@ -683,8 +677,7 @@ void quadCrawler_init(void)
 	pinMode(P_Sw3, INPUT_PULLUP);
 	pinMode(P_Sw4, INPUT_PULLUP);
 
-	strip.begin();
-	strip.show(); // Initialize all pixels to 'off'
+	_neoPixels(P_Neopix, 8, 0x000000);
 
 	uint8_t i;
 	uint8_t initFlag = 1;
