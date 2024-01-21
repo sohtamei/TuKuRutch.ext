@@ -27,6 +27,7 @@
 
 #include <Adafruit_PWMServoDriver.h>
 #include <Adafruit_NeoPixel.h>
+#include <Wire.h>
 #include <TukurutchEsp.h>
 #include \"main.h\"
 #include <TukurutchEspCamera.h>
@@ -34,6 +35,9 @@
 #define P_STBY    0
 #define P_BUZZER  2
 #define P_NEOPIX  14
+
+#define P_SCL		27
+#define P_SDA		26
 
 #define PWM_FREQ 10000
 #define PWM_BITS  8//12
@@ -101,16 +105,15 @@ void _setPwmFreq(int16_t pwm_freq)
 
 //----------------
 
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(4, P_NEOPIX, NEO_GRB + NEO_KHZ800);
+extern Adafruit_NeoPixel* _pixels;
+void _neoPixels(uint8_t port, int num, int color);
 
 static void colorWipe(uint32_t c)
 {
   uint8_t i;
-  for (i = 0; i < strip.numPixels(); i++) {
-    strip.setPixelColor(i, c);
-    strip.show();
-    delay(10);
-  }
+  for (i = 0; i < _pixels->numPixels(); i++)
+    _pixels->setPixelColor(i, c);
+  _pixels->show();
 }
 
 enum {
@@ -126,25 +129,25 @@ void _colorWipe(uint8_t color)
 {
   switch(color) {
   case COLOR_OFF:
-    colorWipe(strip.Color(0,0,0));
+    colorWipe(_pixels->Color(0,0,0));
     break;
   case COLOR_RED:
-    colorWipe(strip.Color(255,0,0));
+    colorWipe(_pixels->Color(255,0,0));
     break;
   case COLOR_GREEN:
-    colorWipe(strip.Color(0,255,0));
+    colorWipe(_pixels->Color(0,255,0));
     break;
   case COLOR_BLUE:
-    colorWipe(strip.Color(0,0,255));
+    colorWipe(_pixels->Color(0,0,255));
     break;
   case COLOR_YELLOW:
-    colorWipe(strip.Color(128,128,0));
+    colorWipe(_pixels->Color(128,128,0));
     break;
   case COLOR_PURPLE:
-    colorWipe(strip.Color(128,0,128));
+    colorWipe(_pixels->Color(128,0,128));
     break;
   case COLOR_LIGHTBLUE:
-    colorWipe(strip.Color(0,128,128));
+    colorWipe(_pixels->Color(0,128,128));
     break;
   default:
     break;
@@ -187,6 +190,7 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
 ",
 	// setup処理 (C言語)
 	"setup":"
+  Wire.begin(P_SDA,P_SCL);
   _setup(mVersion);
   digitalWrite(P_STBY, 0);
   pinMode(P_STBY, OUTPUT_OPEN_DRAIN);
@@ -195,8 +199,7 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
   _tone(P_BUZZER, T_D4, 300);
   _tone(P_BUZZER, T_E4, 300);
 
-  strip.begin();
-  strip.show(); // Initialize all pixels to 'off'
+  _neoPixels(P_NEOPIX, 4, 0x000000);
 ",
 
 	// loop処理 (C言語)

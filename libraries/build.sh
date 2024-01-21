@@ -14,8 +14,7 @@ TARGETS=\
 "M5CoreS3 "\
 "QuadCrawler RemoconRobo "\
 "other/GroveBeginnerKit "\
-
-# other/cameratch32  - サーボが動作せず
+"other/cameratch32 " \
 
 #################
 S3TARGETS=\
@@ -29,8 +28,7 @@ S3TARGETS=\
 "M5CoreS3 "\
 "QuadCrawler RemoconRobo "\
 "other/GroveBeginnerKit "\
-
-# other/cameratch32  - サーボが動作せず
+"other/cameratch32 " \
 
 function buildSRCs() {
   PARAMS=`node parseRobotJson.js $1 params`
