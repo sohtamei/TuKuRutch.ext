@@ -405,13 +405,16 @@ static void _initNeoPixel(uint8_t port, uint8_t num)
 {
   #if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
     _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
+    _pixels->begin();
+    _pixels->clear();
+    _pixels->clear();
   #else
     _pixels = &_pixels_instance;
     _pixels->updateType(NEO_GRB + NEO_KHZ800);
     _pixels->updateLength(num);
     _pixels->setPin(port);
+    _pixels->begin();
   #endif
-  _pixels->begin();
 }
 
 void _neoPixels(uint8_t port, uint8_t* buf, int num)

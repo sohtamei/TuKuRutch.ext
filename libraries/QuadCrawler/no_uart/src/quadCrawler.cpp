@@ -559,6 +559,17 @@ int16_t _calibServo(uint8_t id, uint8_t cmd)
 extern Adafruit_NeoPixel* _pixels;
 void _neoPixels(uint8_t port, int num, int color);
 
+const uint32_t colorTable[8] = {
+	0x000000,
+	0xFF0000,	// R
+	0x00FF00,	// G
+	0x0000FF,	// B
+	0x808000,	// yellow
+	0x800080,	// purple
+	0x008080,	// lightblue
+	0xFFFFFF,
+};
+
 static void colorWipe(uint32_t c)
 {
 	uint8_t i;
@@ -569,39 +580,15 @@ static void colorWipe(uint32_t c)
 
 void quadCrawler_colorWipe(uint8_t color)
 {
-	switch(color) {
-	case COLOR_OFF:
-		colorWipe(_pixels->Color(0,0,0));
-		break;
-	case COLOR_RED:
-		colorWipe(_pixels->Color(255,0,0));
-		break;
-	case COLOR_GREEN:
-		colorWipe(_pixels->Color(0,255,0));
-		break;
-	case COLOR_BLUE:
-		colorWipe(_pixels->Color(0,0,255));
-		break;
-	case COLOR_YELLOW:
-		colorWipe(_pixels->Color(128,128,0));
-		break;
-	case COLOR_PURPLE:
-		colorWipe(_pixels->Color(128,0,128));
-		break;
-	case COLOR_LIGHTBLUE:
-		colorWipe(_pixels->Color(0,128,128));
-		break;
-	default:
-		break;
-	}
+	colorWipe(colorTable[color&0x7]);
 }
 
 void quadCrawler_colorRed(uint8_t id)
 {
-	colorWipe(_pixels->Color(0,0,0));
+	colorWipe(0x000000);
 
-	_pixels->setPixelColor(id*2+0, _pixels->Color(255,0,0));
-	_pixels->setPixelColor(id*2+1, _pixels->Color(255,0,0));
+	_pixels->setPixelColor(id*2+0, 0xFF0000);
+	_pixels->setPixelColor(id*2+1, 0xFF0000);
 	_pixels->show();
 }
 

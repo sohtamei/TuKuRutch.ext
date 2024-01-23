@@ -30,11 +30,7 @@ void setNeoPixel(int c, int level)
 }
 ",
 	// setup処理 (C言語)
-	"setup":"
-  _neoPixels(23/*pin*/, 1/*num*/, 0x000000);
-  _neoPixels(23/*pin*/, 1/*num*/, 0x000000);
-  _setup(mVersion);
-",
+	"setup":"_setup(mVersion);",
 
 	// loop処理 (C言語)
 	"loop":"

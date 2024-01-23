@@ -26,7 +26,6 @@
 #define mVersion \"cameratch32_1.0\"
 
 #include <Adafruit_PWMServoDriver.h>
-#include <Adafruit_NeoPixel.h>
 #include <Wire.h>
 #include <TukurutchEsp.h>
 #include \"main.h\"
@@ -36,8 +35,19 @@
 #define P_BUZZER  2
 #define P_NEOPIX  14
 
-#define P_SCL		27
-#define P_SDA		26
+#define P_SCL     27
+#define P_SDA     26
+
+const uint32_t colorTable[8] = {
+  0x000000,
+  0xFF0000,   // R
+  0x00FF00,   // G
+  0x0000FF,   // B
+  0x808000,   // yellow
+  0x800080,   // purple
+  0x008080,   // lightblue
+  0xFFFFFF,
+};
 
 #define PWM_FREQ 10000
 #define PWM_BITS  8//12
@@ -105,57 +115,6 @@ void _setPwmFreq(int16_t pwm_freq)
 
 //----------------
 
-extern Adafruit_NeoPixel* _pixels;
-void _neoPixels(uint8_t port, int num, int color);
-
-static void colorWipe(uint32_t c)
-{
-  uint8_t i;
-  for (i = 0; i < _pixels->numPixels(); i++)
-    _pixels->setPixelColor(i, c);
-  _pixels->show();
-}
-
-enum {
-  COLOR_OFF = 0,
-  COLOR_RED,
-  COLOR_GREEN,
-  COLOR_BLUE,
-  COLOR_YELLOW,
-  COLOR_PURPLE,
-  COLOR_LIGHTBLUE,
-};
-void _colorWipe(uint8_t color)
-{
-  switch(color) {
-  case COLOR_OFF:
-    colorWipe(_pixels->Color(0,0,0));
-    break;
-  case COLOR_RED:
-    colorWipe(_pixels->Color(255,0,0));
-    break;
-  case COLOR_GREEN:
-    colorWipe(_pixels->Color(0,255,0));
-    break;
-  case COLOR_BLUE:
-    colorWipe(_pixels->Color(0,0,255));
-    break;
-  case COLOR_YELLOW:
-    colorWipe(_pixels->Color(128,128,0));
-    break;
-  case COLOR_PURPLE:
-    colorWipe(_pixels->Color(128,0,128));
-    break;
-  case COLOR_LIGHTBLUE:
-    colorWipe(_pixels->Color(0,128,128));
-    break;
-  default:
-    break;
-  }
-}
-
-//----------------
-
 Adafruit_PWMServoDriver pwm9685 = Adafruit_PWMServoDriver();	// 
 uint8_t pwm9685_init = false;
 
@@ -186,7 +145,6 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
   }
   pwm9685.setPWM(id, (512*id)&0xFFF, (512*id+pwmWidth)&0xFFF);
 }
-
 ",
 	// setup処理 (C言語)
 	"setup":"
@@ -198,8 +156,6 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
   _tone(P_BUZZER, T_C4, 300);
   _tone(P_BUZZER, T_D4, 300);
   _tone(P_BUZZER, T_E4, 300);
-
-  _neoPixels(P_NEOPIX, 4, 0x000000);
 ",
 
 	// loop処理 (C言語)
@@ -225,7 +181,7 @@ void _setServo(uint8_t id, int16_t data/*normal:0~180, continuous:-100~+100*/, u
 		["w", "set motor %d.motorch speed %n",			"setMotor",		"ch-L",100,		{"remote":["B","S"],	"func":"_setMotor({0},{1});"}],
 		["w", "stop",									"stopCar",						{"remote":[],			"func":"_setCar(0,0,0);"}],
 		["w", "set pwm freq %n",						"setPwmFreq",	10000,			{"remote":["S"],		"func":"_setPwmFreq({0});"}],
-		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_colorWipe({0});"}],
+		["w", "LED %d.color",							"setColorWipe",		"red",		{"remote":["B"],		"func":"_neoPixels(P_NEOPIX,4,colorTable[{0}&0x7]);"}],
 		["w", "set servo %n %n",						"setServo",			0,90,		{"remote":["B","B"],	"func":"_setServo({0},{1},0);"}],
 		["w", "stop servo %n",							"stopServo",		0,			{"remote":["B"],		"func":"_setServo({0},0,1);"}],
 		["R", "%d.direction .",							"enumDirection","run forward",	{"enum":"",				"func":"{0}"}],
