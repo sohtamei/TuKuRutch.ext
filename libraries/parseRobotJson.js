@@ -256,6 +256,7 @@ const jsonToCpp2 = function(target, ext)
 {
 	let code = fs.readFileSync('Common/robot_pcmode.ino.template', 'utf8');
 
+	code = code.replace(/\r\n/g, "\n");
 	code = code.replace("// HEADER\n", getProp(ext, "header"))
 				.replace("// SETUP\n", getProp(ext, "setup"))
 				.replace("// LOOP\n", getProp(ext, "loop"));

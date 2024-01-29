@@ -12,7 +12,8 @@
 #elif defined(ESP32)
   #define P_BUZZER  19
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-  #define P_BUZZER  19
+  #define P_BUZZER  16//19
+  #define P_BUZZER2 20
 #endif
 
 void _setup(const char* ver);
@@ -25,8 +26,12 @@ uint8_t _getSw(uint8_t idx);
 void _tone(uint8_t port, int16_t freq, int16_t ms);
 int _analogRead(uint8_t port, uint16_t count);
 
+#if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 void _regHist();
 void _saveHist();
+void _setMelody(uint8_t* buf, int size);
+void _playbackMidi2();
+#endif
 
 extern uint8_t comMode;
 void playbackPackets(uint8_t* buf, int size);

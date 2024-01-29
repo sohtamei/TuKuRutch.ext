@@ -19,6 +19,7 @@
 #define mVersion \"uno 1.0\"
 
 #include \"main.h\"
+#define RECV_BUFFER (2048+16)
 
 void setNeoPixel(int c, int level)
 {
@@ -55,6 +56,8 @@ void setNeoPixel(int c, int level)
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
 		["w", "set led color %d.color %n",					"setNeoPixel",		"White",10,	{"remote":["L","B"],	"func":"_regHist();setNeoPixel({0},{1});"}],
 		["w", "save hist",									"saveHist",						{"remote":[],			"func":"_saveHist();"}],
+		["w", "set melody %s",								"setMelody",		"1b0193020000",
+																							{"remote":["b2"],			"func":"_setMelody({0});_playbackMidi2();"}],
 	],
 
 	// メニュー定義

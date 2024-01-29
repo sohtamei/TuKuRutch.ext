@@ -5,7 +5,12 @@
 
 #if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 #include <Preferences.h>
-Preferences preferencesHIST;
+Preferences preferencesHIST;  // cmdHistNVP, cmdHistMode
+enum {
+	CmdHistMode_NULL = 0,
+	CmdHistMode_PACKETS,
+	CmdHistMode_MIDI2,
+};
 #endif
 
 #if defined(ESP32)
@@ -83,8 +88,9 @@ uint8_t _getSw(uint8_t idx)
 }
 
 #if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-uint8_t cmdHistNVP[1024] = {0};
+uint8_t cmdHistNVP[2048] = {0};
 int cmdHistNVP_num = 0;
+int cmdHistMode = CmdHistMode_NULL;
 
 uint8_t cmdHist[1024] = {0};
 int cmdHist_count = 0;
@@ -109,6 +115,9 @@ void _saveHist()
 			cmdHistNVP_num = cmdHist_count;
 			memcpy(cmdHistNVP, cmdHist, cmdHist_count);
 			preferencesHIST.putBytes("cmdHistNVP", cmdHistNVP, cmdHistNVP_num);
+
+			cmdHistMode = CmdHistMode_PACKETS;
+			preferencesHIST.putUChar("cmdHistMode", cmdHistMode);
 			Serial.println(cmdHistNVP_num);
 		}
 	}
@@ -117,6 +126,38 @@ void _saveHist()
 #endif
 	cmdHist_count = 0;
 	cmdHist_last = 0;
+}
+
+#define NOTE_NUM  2
+void _setMelody(uint8_t* buf, int size)
+{
+	if(size > sizeof(cmdHistNVP)) size = sizeof(cmdHistNVP);
+	cmdHistNVP_num = size;
+	memcpy(cmdHistNVP, buf, cmdHistNVP_num);
+	preferencesHIST.putBytes("cmdHistNVP", cmdHistNVP, cmdHistNVP_num);
+
+	cmdHistMode = CmdHistMode_MIDI2;
+	preferencesHIST.putUChar("cmdHistMode", cmdHistMode);
+	Serial.println(cmdHistNVP_num);
+}
+void _playbackMidi2()
+{
+	for(int i = 0; i < cmdHistNVP_num; i += (1+NOTE_NUM)*2) {
+		#define GetL16(a) (((a)[1]<<8) | (a)[0])
+		int dur   = GetL16(cmdHistNVP+i+0);
+		int note1 = GetL16(cmdHistNVP+i+2);
+		int note2 = GetL16(cmdHistNVP+i+4);
+	//	Serial.printf("%d %d %d\n", dur, (note1==0xffff)?-1:note1, (note2==0xffff)?-1:note2);
+		if(note1 != 0xFFFF) tone(P_BUZZER, note1, 0);
+	#if defined(P_BUZZER2)
+		if(note2 != 0xFFFF) tone(P_BUZZER2, note2, 0);
+	#endif
+		delay(dur);
+	}
+	tone(P_BUZZER, 0, 0);
+#if defined(P_BUZZER2)
+	tone(P_BUZZER2, 0, 0);
+#endif
 }
 #endif // ESP32,RP2040
 
@@ -153,7 +194,9 @@ void _setup(const char* ver)
 #if defined(ESP32) || defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	preferencesHIST.begin("histConfig", false);
 	cmdHistNVP_num = preferencesHIST.getBytes("cmdHistNVP", cmdHistNVP, sizeof(cmdHistNVP));
-	Serial.println(cmdHistNVP_num);
+	cmdHistMode    = preferencesHIST.getUChar("cmdHistMode");
+
+	Serial.printf("NVP:%d,%d\n", cmdHistMode, cmdHistNVP_num);
 #endif
 }
 
@@ -165,7 +208,14 @@ void _loop(void)
 		int level = _getAdc1(1,4,8);	// id, count, discharge
 		if(state == 0) {
 			if(level > 600) {
-				playbackPackets(cmdHistNVP, cmdHistNVP_num);
+				switch(cmdHistMode) {
+				case CmdHistMode_PACKETS:
+					playbackPackets(cmdHistNVP, cmdHistNVP_num);
+					break;
+				case CmdHistMode_MIDI2:
+					_playbackMidi2();
+					break;
+				}
 			#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 				setNeoPixel(0x000000, 0);
 			#endif

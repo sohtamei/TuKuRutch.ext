@@ -3,6 +3,8 @@
 #define mVersion "uno 1.0"
 
 #include "main.h"
+#define RECV_BUFFER (2048+16)
+
 void setNeoPixel(int c, int level) {}
 
 #include <Wire.h>
@@ -120,6 +122,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {'L','B',},
   {},
+  {'2',},
 };
 
 enum {
@@ -408,7 +411,8 @@ static void _initNeoPixel(uint8_t port, uint8_t num)
     _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
     _pixels->begin();
     _pixels->clear();
-    _pixels->clear();
+    _pixels->show();
+    _pixels->show();
   #else
     _pixels = &_pixels_instance;
     _pixels->updateType(NEO_GRB + NEO_KHZ800);
@@ -487,6 +491,7 @@ case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
 case 4: sendByte((_getSw(getByte(0)))); break;
 case 5: _regHist();setNeoPixel(getLong(0),getByte(1));; callOK(); break;
 case 6: _saveHist();; callOK(); break;
+case 7: _setMelody(getBufLen2(0));_playbackMidi2();; callOK(); break;
 #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
   case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
 #else
