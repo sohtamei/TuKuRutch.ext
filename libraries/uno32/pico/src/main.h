@@ -10,7 +10,10 @@
 #if defined(__AVR_ATmega328P__)
   #define P_BUZZER  12
 #elif defined(ESP32)
-  #define P_BUZZER  19
+  #define P_BUZZER   19
+  #define P_BUZZER2  16
+  #define P_BUZZER2G 14
+  #define LEDC_BUZZER2 13
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
   #define P_BUZZER  16//19
   #define P_BUZZER2 20

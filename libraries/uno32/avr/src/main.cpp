@@ -51,6 +51,7 @@ uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 	if(!idx || idx > numof(sensorTable)) return 0;
 
 	uint8_t ch = sensorTable[idx-1];
+#if !defined(ESP32)
 	if(discharge) {
 		pinMode(ch, OUTPUT);		// 電荷discharge (リモコンロボで1000mVくらいに帯電してしまう)
 		digitalWrite(ch, LOW);
@@ -58,6 +59,7 @@ uint16_t _getAdc1(uint8_t idx, uint16_t count, uint8_t discharge)
 		pinMode(ch, INPUT);
 		delay(discharge);
 	}
+#endif
 	return _analogRead(ch, count);
 }
 
@@ -140,24 +142,40 @@ void _setMelody(uint8_t* buf, int size)
 	preferencesHIST.putUChar("cmdHistMode", cmdHistMode);
 	Serial.println(cmdHistNVP_num);
 }
+
+void _tone2(int16_t freq)
+{
+#if defined(P_BUZZER2)
+	uint8_t port = P_BUZZER2;
+  #if defined(ESP32)
+	ledcAttachPin(port, LEDC_BUZZER2);
+	ledcWriteTone(LEDC_BUZZER2, freq);
+  #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
+	;
+  #else
+	tone(port, freq, 0);
+  #endif
+#endif
+}
+
 void _playbackMidi2()
 {
+#if defined(ESP32) && defined(P_BUZZER2)
+	pinMode(P_BUZZER2G, OUTPUT);
+	digitalWrite(P_BUZZER2G, LOW);
+#endif
 	for(int i = 0; i < cmdHistNVP_num; i += (1+NOTE_NUM)*2) {
 		#define GetL16(a) (((a)[1]<<8) | (a)[0])
 		int dur   = GetL16(cmdHistNVP+i+0);
 		int note1 = GetL16(cmdHistNVP+i+2);
 		int note2 = GetL16(cmdHistNVP+i+4);
 	//	Serial.printf("%d %d %d\n", dur, (note1==0xffff)?-1:note1, (note2==0xffff)?-1:note2);
-		if(note1 != 0xFFFF) tone(P_BUZZER, note1, 0);
-	#if defined(P_BUZZER2)
-		if(note2 != 0xFFFF) tone(P_BUZZER2, note2, 0);
-	#endif
+		if(note1 != 0xFFFF) _tone(P_BUZZER, note1, 0);
+		if(note2 != 0xFFFF) _tone2(note2);
 		delay(dur);
 	}
-	tone(P_BUZZER, 0, 0);
-#if defined(P_BUZZER2)
-	tone(P_BUZZER2, 0, 0);
-#endif
+	_tone(P_BUZZER, 0, 0);
+	_tone2(0);
 }
 #endif // ESP32,RP2040
 
@@ -165,9 +183,7 @@ void _playbackMidi2()
 void onConnect(String ip)
 {
 	_setLED(1,1);
-	_tone(P_BUZZER, T_C4, 250);
-	_tone(P_BUZZER, T_D4, 250);
-	_tone(P_BUZZER, T_E4, 250);
+	_tone(P_BUZZER, T_C4, 100);
 
 	wsServer.listen(PORT_WEBSOCKET);
 	Serial.println(ip);
