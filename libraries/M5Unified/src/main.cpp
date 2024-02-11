@@ -162,6 +162,58 @@ int _getConfig(uint8_t* buf)
 	return 10;
 }
 
+static int sd_initialized = false;
+int _beginSD(void)
+{
+	if(sd_initialized) return 0;
+	for(int i = 0; i < 6; i++) {
+		int ret = SD.begin(GPIO_NUM_4, SPI, 25000000);	// core series, M5paper
+		if(ret) {
+			sd_initialized = true;
+			return 0;
+		}
+		delay(500);
+	}
+	return -1;
+}
+
+extern char strBuf[256];	// TukurutchEsp.cpp
+
+char* _getFilelist(void)
+{
+	memset(strBuf, 0, sizeof(strBuf));
+
+	if(_beginSD() < 0) return strBuf;
+
+	File root = SD.open("/");
+	if(!root) return strBuf;
+
+	int cnt = 0;
+	File file = root.openNextFile();
+	while (file) {
+		if (file.isDirectory()) {
+			// Dir skip
+		} else {
+			// File
+			String filename = file.name();
+			Serial.println(filename.indexOf(".jpg"));
+			if (filename.indexOf(".jpg") != -1 || filename.indexOf(".png") != -1 ) {
+				// Find
+				int len = strlen(filename.c_str());
+				if(cnt+len+1 > 256-1) break;
+
+				memcpy(strBuf+cnt, filename.c_str(), len);
+				strBuf[cnt+len] = '\t';
+				cnt += len+1;
+			}
+		}
+		file = root.openNextFile();
+	}
+	if(cnt != 0)
+		strBuf[cnt-1] = 0x00;		// last \t
+	return strBuf;
+}
+
 static void onConnect(String ip)
 {
 //	M5.Display.fillScreen(TFT_BLACK);
