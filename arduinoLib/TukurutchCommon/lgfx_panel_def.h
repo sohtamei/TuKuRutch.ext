@@ -973,6 +973,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
@@ -1506,6 +1509,9 @@ public:
 	{
 	#if defined(SUPPORT_XIAO)
 		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=XIAO9, .dc=XIAO3, .cs=XIAO1, .rst=-1, .busy=-1, .bl=XIAO6, };
+		#if defined(USE_SD)
+		pin_sdcs = XIAO2;
+		#endif
 	#else
 		nvscfg_spi_t nvs = {0};
 		return;
@@ -1522,6 +1528,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
@@ -1582,12 +1591,18 @@ public:
 	  #if defined(CAMERA_ENABLED)
 		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };
 	  #else
-		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=-1, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };
+		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=43, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };	// SDCS=44
+		#if defined(USE_SD)
+		pin_sdcs = 44;
+		#endif
 	  #endif
   	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = { .sclk= 4, .mosi= 6, .miso=-1, .dc= 1, .cs= 7, .rst= 0, .busy=-1, .bl=10, };
 	#elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-		nvscfg_spi_t nvs = { .sclk=18, .mosi=19, .miso=-1, .dc=11, .cs=13, .rst=12, .busy=-1, .bl=10, };
+		nvscfg_spi_t nvs = { .sclk=18, .mosi=19, .miso=16, .dc=11, .cs=13, .rst=12, .busy=-1, .bl=10, };	// SDCS=16
+		#if defined(USE_SD)
+		pin_sdcs = 16;
+		#endif
 	#else
 		nvscfg_spi_t nvs = {0};
 		return;
@@ -1604,6 +1619,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
@@ -1662,7 +1680,10 @@ public:
 	  #if defined(CAMERA_ENABLED)
 		nvscfg_spi_t nvs = { .sclk=21, .mosi=47, .miso=-1, .dc=40, .cs=14, .rst=39, .busy=-1, .bl=48, };	// squareCam
 	  #else
-		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=-1, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };
+		nvscfg_spi_t nvs = { .sclk= 1, .mosi=15, .miso=43, .dc= 7, .cs= 5, .rst=13, .busy=-1, .bl= 9, };	// SDCS=44
+		#if defined(USE_SD)
+		pin_sdcs = 44;
+		#endif
 	  #endif
   	#elif defined(CONFIG_IDF_TARGET_ESP32C3)
 		nvscfg_spi_t nvs = {0};
@@ -1686,6 +1707,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)

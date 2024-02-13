@@ -11,6 +11,8 @@ Preferences preferencesLCD;
 
 #if defined(ESP32)
   WebsocketsServer wsServer;
+  #define USE_SD
+  int8_t pin_sdcs = -1;
 #elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 
 #else
@@ -173,6 +175,66 @@ void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 }
 
 #if defined(ESP32)
+static int sd_initialized = false;
+int _beginSD(void)
+{
+	if(pin_sdcs < 0) return -1;
+	if(sd_initialized) return 0;
+	for(int i = 0; i < 6; i++) {
+		if(SD.begin(pin_sdcs, SPI, 15000000)) {
+			sd_initialized = true;
+			return 0;
+		}
+		delay(500);
+	}
+	return -1;
+}
+
+extern char strBuf[256];	// TukurutchEsp.cpp
+
+char* _getFilelist(void)
+{
+	memset(strBuf, 0, sizeof(strBuf));
+
+	if(_beginSD() < 0) return strBuf;
+
+	File root = SD.open("/");
+	if(!root) return strBuf;
+
+	int cnt = 0;
+	File file = root.openNextFile();
+	while (file) {
+		if (file.isDirectory()) {
+			// Dir skip
+		} else {
+			// File
+			String filename = file.name();
+			if (filename.indexOf(".jpg") != -1 || filename.indexOf(".png") != -1 ) {
+				// Find
+				int len = strlen(filename.c_str());
+				if(cnt+len+1 > 256-1) break;
+
+				memcpy(strBuf+cnt, filename.c_str(), len);
+				strBuf[cnt+len] = '\t';
+				cnt += len+1;
+			}
+		}
+		file = root.openNextFile();
+	}
+	if(cnt != 0)
+		strBuf[cnt-1] = 0x00;		// last \t
+	return strBuf;
+}
+
+void _drawFile(const char* filename, int x, int y)
+{
+	if(_beginSD() < 0) return;
+	if(strstr(filename, ".jpg"))
+		lcd->drawJpgFile(SD, filename, x, y);
+	else
+		lcd->drawPngFile(SD, filename, x, y);
+}
+
 static void onConnect(String ip)
 {
 	if(lcd) {

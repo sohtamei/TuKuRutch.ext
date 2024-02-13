@@ -152,6 +152,8 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'S',},
   {'2',},
   {'B',},
+  {'s','S','S',},
+  {},
 };
 
 enum {
@@ -365,13 +367,17 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
 #if defined(ESP32)
   ledcAttachPin(port, LEDC_BUZZER);
   ledcWriteTone(LEDC_BUZZER, freq);
-  delay(ms);
-  ledcWriteTone(LEDC_BUZZER, 0);
+  if(ms) {
+    delay(ms);
+    ledcWriteTone(LEDC_BUZZER, 0);
+  }
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   ;
 #else
   tone(port, freq, ms);
-  delay(ms);
+  if(ms) {
+    delay(ms);
+  }
 #endif
 }
 
@@ -440,7 +446,8 @@ static void _initNeoPixel(uint8_t port, uint8_t num)
     _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
     _pixels->begin();
     _pixels->clear();
-    _pixels->clear();
+    _pixels->show();
+    _pixels->show();
   #else
     _pixels = &_pixels_instance;
     _pixels->updateType(NEO_GRB + NEO_KHZ800);
@@ -526,6 +533,8 @@ case 10: if(lcd) lcd->drawString(getString(0),getShort(1),getShort(2),fontTbl[ge
 case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK(); break;
 case 12: _drawJpg(getBufLen2(0));; callOK(); break;
 case 13: lcd->setBrightness(getByte(0));; callOK(); break;
+case 14: _drawFile(getString(0),getShort(1),getShort(2));; callOK(); break;
+case 15: sendString((_getFilelist())); break;
 #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
   case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
 #else
