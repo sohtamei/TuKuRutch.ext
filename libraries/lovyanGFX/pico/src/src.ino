@@ -154,6 +154,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'B',},
   {},
   {},
+  {},
 };
 
 enum {

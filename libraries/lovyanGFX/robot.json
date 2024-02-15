@@ -97,6 +97,7 @@ void _drawJpg(uint8_t* buf, int size) {
 																						{"remote":["b2"],		"func":"_drawJpg({0});"}],
 		["w", "set brightness %n",						"setBrightness",128,			{"remote":["B"],		"func":"lcd->setBrightness({0});"}],
 		["w", "draw file %m.files (%n ,%n )",			"drawFile",		"xx",0,0,		{"remote":["s","S","S"],"func":"_drawFile({0},{1},{2});"}],
+		["w", "set slideshow %d.mode sec %m.files",		"setSlideshow",	0xFF,"xx",		{"remote":["B","s"],	"func":"_setSlideshow({0},{1});"}],
 		["R", "get file list",							"_getFilelist",					{"remote":[		"s"],	"func":"_getFilelist()", "hide":true}],
 	],
 	"menus": {
@@ -115,6 +116,7 @@ void _drawJpg(uint8_t* buf, int size) {
 				"ROUNDLCD","SQUARELCD",
 				"3248S035","TTGO_TDISP","1732S019","RP2040LCD128","RP2040GEEK","ESP32C3_144",],
 		"files":["push <get file list>"],
+		"mode":["off","wallpaper",0,1,2,5,10,20],
 	},
 	"values":{
 		"On":1,"Off":0,
@@ -131,6 +133,8 @@ void _drawJpg(uint8_t* buf, int size) {
 		"ROUNDXIAO":24,"SQUAREXIAO":25,"RoundTouchXIAO":34,
 		"ROUNDLCD":7,"SQUARELCD":33,
 		"3248S035":6,"TTGO_TDISP":27,"1732S019":29,"RP2040LCD128":30,"RP2040GEEK":35,"ESP32C3_144":36,
+
+		"off":0xFF, "wallpaper":0xFE,
 	},
 	"translators":{
 		"ja":{
@@ -250,13 +254,16 @@ void _drawJpg(uint8_t* buf, int size) {
 
 			const filelist = result.split('\\t');
 			const targetBlock = Blockly.getMainWorkspace().getBlockById(extName+'_drawFile');
-			if(targetBlock) {
+			const targetBlock2 = Blockly.getMainWorkspace().getBlockById(extName+'_setSlideshow');
+			if(targetBlock && targetBlock2) {
 				let menus = [];
 				for(let i = 0; i < filelist.length; i++) {
 					menus.push(['/'+filelist[i], '/'+filelist[i]]);
 				}
 				targetBlock.childBlocks_[0].inputList[0].fieldRow[0].menuGenerator_ = menus;
 				targetBlock.childBlocks_[0].inputList[0].fieldRow[0].setValue('/'+filelist[0]);
+				targetBlock2.childBlocks_[1].inputList[0].fieldRow[0].menuGenerator_ = menus;
+				targetBlock2.childBlocks_[1].inputList[0].fieldRow[0].setValue('/'+filelist[0]);
 				return 'list has been updated.';
 			}
 			return 'failed';

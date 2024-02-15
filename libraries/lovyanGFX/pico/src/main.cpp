@@ -180,7 +180,7 @@ int _beginSD(void)
 {
 	if(pin_sdcs < 0) return -1;
 	if(sd_initialized) return 0;
-	for(int i = 0; i < 6; i++) {
+	for(int i = 0; i < 2; i++) {
 		if(SD.begin(pin_sdcs, SPI, 15000000)) {
 			sd_initialized = true;
 			return 0;
@@ -191,6 +191,10 @@ int _beginSD(void)
 }
 
 extern char strBuf[256];	// TukurutchEsp.cpp
+uint8_t slideshowMode = SLIDESHOW_OFF;
+String slideshowFilename;
+File slideshowRoot;
+int32_t slideshowLast = 0;
 
 char* _getFilelist(void)
 {
@@ -203,11 +207,8 @@ char* _getFilelist(void)
 
 	int cnt = 0;
 	File file = root.openNextFile();
-	while (file) {
-		if (file.isDirectory()) {
-			// Dir skip
-		} else {
-			// File
+	while(file) {
+		if(!file.isDirectory()) {
 			String filename = file.name();
 			if (filename.indexOf(".jpg") != -1 || filename.indexOf(".png") != -1 ) {
 				// Find
@@ -230,9 +231,68 @@ void _drawFile(const char* filename, int x, int y)
 {
 	if(_beginSD() < 0) return;
 	if(strstr(filename, ".jpg"))
-		lcd->drawJpgFile(SD, filename, x, y);
+		lcd->drawJpgFile(SD, filename, x, y, lcd->width(), lcd->height());
+	else if(strstr(filename, ".png"))
+		lcd->drawPngFile(SD, filename, x, y, lcd->width(), lcd->height());
+}
+
+void _setSlideshow(int mode, const char* filename)
+{
+	preferencesLCD.putUChar("slideshowMode", mode);
+	if(mode == SLIDESHOW_WALLPAPER)
+		preferencesLCD.putString("slideshowFile", filename);
 	else
-		lcd->drawPngFile(SD, filename, x, y);
+		preferencesLCD.remove("slideshowFile");
+}
+
+void initSlideshow(void)
+{
+	if(_beginSD() < 0) return;
+
+	slideshowMode = preferencesLCD.getUChar("slideshowMode", SLIDESHOW_OFF);
+	slideshowLast = millis();
+	switch(slideshowMode) {
+	case SLIDESHOW_OFF:
+		break;
+
+	case SLIDESHOW_WALLPAPER:
+		slideshowFilename = preferencesLCD.getString("slideshowFile", "");
+		break;
+
+	default:
+		slideshowRoot = SD.open("/");
+		break;
+	}
+}
+
+void loopSlideshow(void)
+{
+	int32_t elapsed = ((millis() - slideshowLast) & 0x7FFFFFFF);
+
+	switch(slideshowMode) {
+	case SLIDESHOW_OFF:
+		break;
+
+	case SLIDESHOW_WALLPAPER:
+		if(elapsed >= 1000) {
+			_drawFile(slideshowFilename.c_str(), 0, 0);
+			slideshowMode = SLIDESHOW_OFF;
+		}
+		break;
+
+	default:
+		if(elapsed >= slideshowMode*1000 && slideshowRoot) {
+			File file = slideshowRoot.openNextFile();
+			if(!file) {
+				slideshowRoot.rewindDirectory();
+				file = slideshowRoot.openNextFile();
+			}
+			if(file && !file.isDirectory())
+				_drawFile((String("/")+file.name()).c_str(), 0, 0);
+			slideshowLast = millis();
+		}
+		break;
+	}
 }
 
 static void onConnect(String ip)
@@ -272,10 +332,16 @@ void _setup(const char* ver)
 
 #if defined(ESP32)
 	initWifi(ver, false, onConnect);
+	initSlideshow();
 #endif
 }
 
 void _loop(void)
 {
+#if defined(ESP32)
+	if(comMode == 0) {			// when comMode = MODE_INVALID
+		loopSlideshow();
+	}
+#endif
 //	delay(50);
 }

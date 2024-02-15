@@ -28,6 +28,12 @@ extern lgfx::LGFX_Device *lcd;
 #if defined(ESP32)
   char* _getFilelist(void);
   void _drawFile(const char* filename, int x, int y);
+  void _setSlideshow(int mode, const char* filename);
+  enum {
+    SLIDESHOW_OFF = 0xFF,
+    SLIDESHOW_WALLPAPER = 0xFE,
+  };
+  extern uint8_t comMode;
 #endif
 
 #define GetL16(a) (((a)[1]<<8) | (a)[0])

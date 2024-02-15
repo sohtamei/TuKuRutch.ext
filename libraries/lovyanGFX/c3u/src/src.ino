@@ -153,6 +153,7 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'2',},
   {'B',},
   {'s','S','S',},
+  {'B','s',},
   {},
 };
 
@@ -534,7 +535,8 @@ case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK();
 case 12: _drawJpg(getBufLen2(0));; callOK(); break;
 case 13: lcd->setBrightness(getByte(0));; callOK(); break;
 case 14: _drawFile(getString(0),getShort(1),getShort(2));; callOK(); break;
-case 15: sendString((_getFilelist())); break;
+case 15: _setSlideshow(getByte(0),getString(1));; callOK(); break;
+case 16: sendString((_getFilelist())); break;
 #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
   case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
 #else
