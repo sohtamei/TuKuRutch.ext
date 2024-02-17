@@ -1951,6 +1951,12 @@ public:
 		setPanel(&_panel_instance); // 使用するパネルをセットします。
 		init();
 		setTextSize(2);
+		#if defined(USE_SD)
+		pin_sdcs = 5;
+		pin_sdclk = 18;
+		pin_sdmosi = 23;
+		pin_sdmiso = 19;
+		#endif
 	}
 };
 

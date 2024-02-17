@@ -13,6 +13,9 @@ Preferences preferencesLCD;
   WebsocketsServer wsServer;
   #define USE_SD
   int8_t pin_sdcs = -1;
+  int8_t pin_sdclk = -1;
+  int8_t pin_sdmosi = -1;
+  int8_t pin_sdmiso = -1;
 #elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 
 #else
@@ -175,13 +178,24 @@ void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 }
 
 #if defined(ESP32)
+#if defined(CONFIG_IDF_TARGET_ESP32)
+  SPIClass spiSD(VSPI);
+#endif
+
 static int sd_initialized = false;
 int _beginSD(void)
 {
 	if(pin_sdcs < 0) return -1;
 	if(sd_initialized) return 0;
+	SPIClass* spi = &SPI;
+  #if defined(CONFIG_IDF_TARGET_ESP32)
+	if(pin_sdclk >= 0) {
+		spiSD.begin(pin_sdclk, pin_sdmiso, pin_sdmosi, pin_sdcs);
+		spi = &spiSD;
+	}
+  #endif
 	for(int i = 0; i < 2; i++) {
-		if(SD.begin(pin_sdcs, SPI, 15000000)) {
+		if(SD.begin(pin_sdcs, *spi, 15000000)) {
 			sd_initialized = true;
 			return 0;
 		}
