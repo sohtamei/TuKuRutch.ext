@@ -1364,7 +1364,10 @@ public:
 	LGFX_ROUNDXIAO(int lcdType, uint8_t *config_buf, int config_size)
 	{
 	#if defined(SUPPORT_XIAO)
-		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=-1, .dc=XIAO0, .cs=XIAO7, .rst=XIAO1, .busy=-1, .bl=XIAO2, };
+		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=XIAO9, .dc=XIAO0, .cs=XIAO7, .rst=XIAO1, .busy=-1, .bl=XIAO2, };
+		#if defined(USE_SD)
+		pin_sdcs = 21;
+		#endif
 	#else
 		nvscfg_spi_t nvs = {0};
 		return;
@@ -1381,6 +1384,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
@@ -1433,7 +1439,10 @@ public:
 	LGFX_SQUAREXIAO(int lcdType, uint8_t *config_buf, int config_size)
 	{
 	#if defined(SUPPORT_XIAO)
-		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=-1, .dc=XIAO0, .cs=XIAO7, .rst=XIAO1, .busy=-1, .bl=XIAO2, };
+		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=XIAO9, .dc=XIAO0, .cs=XIAO7, .rst=XIAO1, .busy=-1, .bl=XIAO2, };
+		#if defined(USE_SD)
+		pin_sdcs = 21;
+		#endif
 	#else
 		nvscfg_spi_t nvs = {0};
 		return;
@@ -1450,6 +1459,9 @@ public:
 			cfg.spi_mode = 0;					// SPI通信モードを設定 (0 ~ 3)
 			cfg.freq_write = 40000000;			// 送信時のSPIクロック (最大80MHz, 80MHzを整数で割った値に丸められます)
 			cfg.freq_read  = 16000000;			// 受信時のSPIクロック
+		#if defined(USE_SD)
+			cfg.spi_3wire  = true;				// 受信をMOSIピンで行う場合はtrueを設定
+		#endif
 			cfg.pin_sclk = ChkFF(nvs.sclk);		// SPIのSCLKピン番号を設定
 			cfg.pin_mosi = ChkFF(nvs.mosi);		// SPIのMOSIピン番号を設定
 			cfg.pin_miso = ChkFF(nvs.miso);		// SPIのMISOピン番号を設定 (-1 = disable)
@@ -1510,7 +1522,7 @@ public:
 	#if defined(SUPPORT_XIAO)
 		nvscfg_spi_t nvs = { .sclk=XIAO8, .mosi=XIAO10, .miso=XIAO9, .dc=XIAO3, .cs=XIAO1, .rst=-1, .busy=-1, .bl=XIAO6, };
 		#if defined(USE_SD)
-		pin_sdcs = XIAO2;
+		pin_sdcs = 21;//XIAO2;
 		#endif
 	#else
 		nvscfg_spi_t nvs = {0};

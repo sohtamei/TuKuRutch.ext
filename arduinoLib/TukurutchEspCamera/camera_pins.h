@@ -258,7 +258,7 @@
   #define HREF_GPIO_NUM  47
   #define PCLK_GPIO_NUM  13
 
-  #define P_LED				21
+  #define P_LED				-1//21 sd_csと兼用
   #define P_LED_NEG			1
 
 #elif defined(CAMERA_MODEL_CORES3)

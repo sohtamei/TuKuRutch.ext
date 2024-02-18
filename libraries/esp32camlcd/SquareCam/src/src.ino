@@ -464,13 +464,17 @@ void _tone(uint8_t port, int16_t freq, int16_t ms)
 #if defined(ESP32)
   ledcAttachPin(port, LEDC_BUZZER);
   ledcWriteTone(LEDC_BUZZER, freq);
-  delay(ms);
-  ledcWriteTone(LEDC_BUZZER, 0);
+  if(ms) {
+    delay(ms);
+    ledcWriteTone(LEDC_BUZZER, 0);
+  }
 #elif defined(NRF51_SERIES) || defined(NRF52_SERIES)
   ;
 #else
   tone(port, freq, ms);
-  delay(ms);
+  if(ms) {
+    delay(ms);
+  }
 #endif
 }
 
@@ -539,7 +543,8 @@ static void _initNeoPixel(uint8_t port, uint8_t num)
     _pixels = new Adafruit_NeoPixel(num/*num*/, port/*pin*/, NEO_GRB + NEO_KHZ800);
     _pixels->begin();
     _pixels->clear();
-    _pixels->clear();
+    _pixels->show();
+    _pixels->show();
   #else
     _pixels = &_pixels_instance;
     _pixels->updateType(NEO_GRB + NEO_KHZ800);
