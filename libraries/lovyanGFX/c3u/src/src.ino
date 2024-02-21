@@ -30,6 +30,22 @@ void _drawJpg(uint8_t* buf, int size) {
 	lcd->drawJpg(buf+4, size-4, x, y);
 }
 
+uint16_t fileIndex = 0;
+void _saveJpg(uint8_t* buf, int size) {
+	if(!lcd || size<4) return;
+	int x = GetL16(buf+0);
+	int y = GetL16(buf+2);
+	char fname[32];
+	snprintf(fname,sizeof(fname),"/%d.%d.%d.jpg",fileIndex,x,y);
+	File file = SD.open(fname, FILE_WRITE);
+	if(file) {
+		file.write(buf+4, size-4);
+		file.close();
+		fileIndex++;
+	}
+	lcd->drawJpg(buf+4, size-4, x, y);
+}
+
 #include <Wire.h>
 
 #if defined(__AVR_ATmega328P__)
@@ -153,8 +169,10 @@ static const PROGMEM char ArgTypesTbl[][ARG_NUM] = {
   {'2',},
   {'B',},
   {'s','S','S',},
-  {'B','s',},
+  {'s','S',},
   {},
+  {'B',},
+  {'2',},
 };
 
 enum {
@@ -535,8 +553,10 @@ case 11: if(lcd) {lcd->fillScreen(getShort(0)); lcd->setCursor(0,0);}; callOK();
 case 12: _drawJpg(getBufLen2(0));; callOK(); break;
 case 13: lcd->setBrightness(getByte(0));; callOK(); break;
 case 14: _drawFile(getString(0),getShort(1),getShort(2));; callOK(); break;
-case 15: _setSlideshow(getByte(0),getString(1));; callOK(); break;
+case 15: _setAutomode(getString(0),getShort(1));; callOK(); break;
 case 16: sendString((_getFilelist())); break;
+case 17: if(getByte(0)==1) _removeFiles();; callOK(); break;
+case 18: _saveJpg(getBufLen2(0));; callOK(); break;
 #if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
   case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
 #else
