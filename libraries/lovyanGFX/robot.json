@@ -298,9 +298,7 @@ void _saveJpg(uint8_t* buf, int size) {
 				}
 				targetBlock.childBlocks_[0].inputList[0].fieldRow[0].menuGenerator_ = menus;
 				targetBlock.childBlocks_[0].inputList[0].fieldRow[0].setValue('/'+filelist[0]);
-				let menus2 = structuredClone(menus);
-				menus2.unshift(['slideshow','slideshow']);
-				menus2.unshift(['off','off']);
+				const menus2 = [['off','off'], ['slideshow','slideshow']].concat(menus);
 				targetBlock2.childBlocks_[0].inputList[0].fieldRow[0].menuGenerator_ = menus2;
 				targetBlock2.childBlocks_[0].inputList[0].fieldRow[0].setValue('/'+filelist[0]);
 				return 'list has been updated.';
