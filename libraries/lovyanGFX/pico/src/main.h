@@ -27,12 +27,9 @@ extern lgfx::LGFX_Device *lcd;
 
 #if defined(ESP32)
   char* _getFilelist(void);
+  int _removeFiles(void);
   void _drawFile(const char* filename, int x, int y);
-  void _setSlideshow(int mode, const char* filename);
-  enum {
-    SLIDESHOW_OFF = 0xFF,
-    SLIDESHOW_WALLPAPER = 0xFE,
-  };
+  void _setAutomode(const char* filename, int duration);
   extern uint8_t comMode;
 #endif
 

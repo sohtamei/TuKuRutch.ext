@@ -205,10 +205,10 @@ int _beginSD(void)
 }
 
 extern char strBuf[256];	// TukurutchEsp.cpp
-uint8_t slideshowMode = SLIDESHOW_OFF;
-String slideshowFilename;
-File slideshowRoot;
-int32_t slideshowLast = 0;
+uint16_t autoDur = 0;
+String autoMode = "off";
+File autoRoot;
+int32_t autoLast = 0;
 
 char* _getFilelist(void)
 {
@@ -225,7 +225,6 @@ char* _getFilelist(void)
 		if(!file.isDirectory()) {
 			String filename = file.name();
 			if (filename.indexOf(".jpg") != -1 || filename.indexOf(".png") != -1 ) {
-				// Find
 				int len = strlen(filename.c_str());
 				if(cnt+len+1 > 256-1) break;
 
@@ -241,6 +240,23 @@ char* _getFilelist(void)
 	return strBuf;
 }
 
+int _removeFiles(void)
+{
+	if(_beginSD() < 0) return -1;
+
+	File root = SD.open("/");
+	if(!root) return -1;
+
+	File file = root.openNextFile();
+	while(file) {
+		if(!file.isDirectory()) {
+			SD.remove(String("/")+file.name());
+		}
+		file = root.openNextFile();
+	}
+	return 0;
+}
+
 void _drawFile(const char* filename, int x, int y)
 {
 	if(_beginSD() < 0) return;
@@ -250,62 +266,78 @@ void _drawFile(const char* filename, int x, int y)
 		lcd->drawPngFile(SD, filename, x, y, lcd->width(), lcd->height());
 }
 
-void _setSlideshow(int mode, const char* filename)
+void _setAutomode(const char* filename, int duration)
 {
-	preferencesLCD.putUChar("slideshowMode", mode);
-	if(mode == SLIDESHOW_WALLPAPER)
-		preferencesLCD.putString("slideshowFile", filename);
-	else
-		preferencesLCD.remove("slideshowFile");
+	preferencesLCD.putString("autoMode", filename);
+	preferencesLCD.putUShort("autoDur", duration);
 }
 
-void initSlideshow(void)
+void initAutomode(void)
 {
 	if(_beginSD() < 0) return;
 
-	slideshowMode = preferencesLCD.getUChar("slideshowMode", SLIDESHOW_OFF);
-	slideshowLast = millis();
-	switch(slideshowMode) {
-	case SLIDESHOW_OFF:
-		break;
+	autoMode = preferencesLCD.getString("autoMode", "off");
+	autoDur = preferencesLCD.getUShort("autoDur", 0);
+	autoLast = millis();
+	Serial.printf("autoMode=%s\n", autoMode);
 
-	case SLIDESHOW_WALLPAPER:
-		slideshowFilename = preferencesLCD.getString("slideshowFile", "");
-		break;
-
-	default:
-		slideshowRoot = SD.open("/");
-		break;
+	if(autoMode == "slideshow") {
+		autoRoot = SD.open("/");
 	}
 }
 
-void loopSlideshow(void)
+std::vector<std::string> split_naive(const std::string &s, char delim)
 {
-	int32_t elapsed = ((millis() - slideshowLast) & 0x7FFFFFFF);
+	std::vector<std::string> elems;
+	std::string item;
+	for(char ch: s) {
+		if (ch == delim) {
+			if (!item.empty())
+				elems.push_back(item);
+			item.clear();
+		}
+		else {
+			item += ch;
+		}
+	}
+	if(!item.empty())
+		elems.push_back(item);
+	return elems;
+}
 
-	switch(slideshowMode) {
-	case SLIDESHOW_OFF:
-		break;
+void loopAutomode(void)
+{
+	int32_t elapsed = ((millis() - autoLast) & 0x7FFFFFFF);
 
-	case SLIDESHOW_WALLPAPER:
+	if(autoMode == "off") {
+		;
+	} else if(autoMode != "slideshow") {
 		if(elapsed >= 1000) {
-			_drawFile(slideshowFilename.c_str(), 0, 0);
-			slideshowMode = SLIDESHOW_OFF;
+			_drawFile(autoMode.c_str(), 0, 0);
+			autoMode = "off";
 		}
-		break;
-
-	default:
-		if(elapsed >= slideshowMode*1000 && slideshowRoot) {
-			File file = slideshowRoot.openNextFile();
+	} else {
+		if(elapsed >= autoDur*100 && autoRoot) {
+			File file = autoRoot.openNextFile();
 			if(!file) {
-				slideshowRoot.rewindDirectory();
-				file = slideshowRoot.openNextFile();
+				autoRoot.rewindDirectory();
+				file = autoRoot.openNextFile();
 			}
-			if(file && !file.isDirectory())
-				_drawFile((String("/")+file.name()).c_str(), 0, 0);
-			slideshowLast = millis();
+			if(file && !file.isDirectory()) {
+				int x = 0; int y = 0;
+				std::vector<std::string> names = split_naive(file.name(), '.');
+				if(names.size() >= 4) {
+					try {
+						x = stoi(names[1]);
+						y = stoi(names[2]);
+					} catch(std::exception const& e) {
+						Serial.printf("Error: %s\n", e.what());
+					}
+				}
+				_drawFile((String("/")+file.name()).c_str(), x, y);
+			}
+			autoLast = millis();
 		}
-		break;
 	}
 }
 
@@ -346,7 +378,7 @@ void _setup(const char* ver)
 
 #if defined(ESP32)
 	initWifi(ver, false, onConnect);
-	initSlideshow();
+	initAutomode();
 #endif
 }
 
@@ -354,7 +386,7 @@ void _loop(void)
 {
 #if defined(ESP32)
 	if(comMode == 0) {			// when comMode = MODE_INVALID
-		loopSlideshow();
+		loopAutomode();
 	}
 #endif
 //	delay(50);
