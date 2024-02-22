@@ -17,12 +17,9 @@ float getIMU(uint8_t index);
 int getIMUs(uint8_t index, uint8_t* buf);
 void __tone(int16_t freq, int16_t ms);
 char* _getFilelist(void);
+int _removeFiles(void);
 void _drawFile(const char* filename, int x, int y);
-void _setSlideshow(int mode, const char* filename);
-enum {
-  SLIDESHOW_OFF = 0xFF,
-  SLIDESHOW_WALLPAPER = 0xFE,
-};
+void _setAutomode(const char* filename, int duration);
 extern uint8_t comMode;
 
 #define GetL16(a) (((a)[1]<<8) | (a)[0])
