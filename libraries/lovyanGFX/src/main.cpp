@@ -94,6 +94,7 @@ void _setupLCD(int lcdType, uint8_t *config_buf, int config_size)
 	case LCDTYPE_ESP32C3_144:	lcd = new LGFX_ESP32C3_144(lcdType, config_buf, config_size); break;
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 	case LCDTYPE_1732S019:		lcd = new LGFX_1732S019(lcdType, config_buf, config_size); break;
+	case LCDTYPE_ESP32S3GEEK:	lcd = new LGFX_ESP32S3GEEK(lcdType, config_buf, config_size); break;
 #elif defined(ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
 	case LCDTYPE_RP2040LCD128:	lcd = new LGFX_RP2040LCD128(lcdType, config_buf, config_size); break;
 	case LCDTYPE_RP2040GEEK:	lcd = new LGFX_RP2040GEEK(lcdType, config_buf, config_size); break;
@@ -180,6 +181,8 @@ void _setLcdConfig(int lcdType, uint8_t *config_buf, int config_size)
 #if defined(ESP32)
 #if defined(CONFIG_IDF_TARGET_ESP32)
   SPIClass spiSD(VSPI);
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+  SPIClass spiSD(SPI3_HOST);
 #endif
 
 static int sd_initialized = false;
@@ -188,7 +191,7 @@ int _beginSD(void)
 	if(pin_sdcs < 0) return -1;
 	if(sd_initialized) return 0;
 	SPIClass* spi = &SPI;
-  #if defined(CONFIG_IDF_TARGET_ESP32)
+  #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3)
 	if(pin_sdclk >= 0) {
 		spiSD.begin(pin_sdclk, pin_sdmiso, pin_sdmosi, pin_sdcs);
 		spi = &spiSD;
