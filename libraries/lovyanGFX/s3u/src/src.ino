@@ -327,15 +327,57 @@ static const PROGMEM char ArgTypesTbl3[][ARG_NUM] = {
 #else
   #define _Wire Wire
 #endif
+class TwoWire* wirep = &_Wire;
+
+#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+enum {
+    TYPE_SDA0, TYPE_SCL0,
+    TYPE_SDA1, TYPE_SCL1,
+};
+const uint8_t wireType[30] = { 
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		//  0
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		//  4
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		//  8
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		// 12
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		// 16
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		// 20
+    TYPE_SDA0, TYPE_SCL0, TYPE_SDA1, TYPE_SCL1,		// 24
+    TYPE_SDA0, TYPE_SCL0,							// 28
+};
+#endif
+
+int _wireBegin(int sda, int scl)
+{
+#if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
+  wirep->end();
+  wirep->begin(sda, scl);
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+  if(sda >= 30 || scl >= 30) return -1;
+  if(wireType[sda] == TYPE_SDA0 && wireType[scl] == TYPE_SCL0) {
+    wirep = &Wire;
+  } else if(wireType[sda] == TYPE_SDA1 && wireType[scl] == TYPE_SCL1) {
+    wirep = &Wire1;
+  } else {
+    return -1;
+  }
+  wirep->end();
+  wirep->setSDA(sda);
+  wirep->setSCL(scl);
+  wirep->begin();
+#else
+  wirep->begin();
+#endif
+  return 0;
+}
 
 static void sendWireRead(int adrs, int num)
 {
-  _Wire.requestFrom(adrs, num);
-  if(_Wire.available() < num) {
+  wirep->requestFrom(adrs, num);
+  if(wirep->available() < num) {
     callOK();
   } else {
     for(int i = 0; i < num; i++)
-      buffer[i] = _Wire.read();
+      buffer[i] = wirep->read();
     sendBin(buffer, num);
   }
 }
@@ -345,8 +387,8 @@ static void sendWireScan(void)
   int num = 0;
   int i;
   for(i = 0; i < 127; i++) {
-    _Wire.beginTransmission(i);
-    int ret = _Wire.endTransmission();
+    wirep->beginTransmission(i);
+    int ret = wirep->endTransmission();
     if(!ret) buffer[num++] = i;
   }
   sendBin(buffer, num);
@@ -557,13 +599,9 @@ case 15: _setAutomode(getString(0),getShort(1));; callOK(); break;
 case 16: sendString((_getFilelist())); break;
 case 17: if(getByte(0)==1) _removeFiles();; callOK(); break;
 case 18: _saveJpg(getBufLen2(0));; callOK(); break;
-#if defined(ESP32) || defined(NRF51_SERIES) || defined(NRF52_SERIES)
-  case 0x81: _Wire.end(); _Wire.begin((int)getByte(0),(int)getByte(1)); callOK(); break;
-#else
-  case 0x81: _Wire.begin(); callOK(); break;
-#endif
-  case 0x82: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); sendByte(_Wire.endTransmission()); break;
-  case 0x83: _Wire.beginTransmission(getByte(0)); _Wire.write(getBufLen(1)); _Wire.endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
+  case 0x81: _wireBegin((int)getByte(0),(int)getByte(1)); callOK(); break;
+  case 0x82: wirep->beginTransmission(getByte(0)); wirep->write(getBufLen(1)); sendByte(wirep->endTransmission()); break;
+  case 0x83: wirep->beginTransmission(getByte(0)); wirep->write(getBufLen(1)); wirep->endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;
   case 0x84: sendWireRead(getByte(0),getByte(1)); break;
   case 0x85: sendWireScan(); break;
 
