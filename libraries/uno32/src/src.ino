@@ -537,7 +537,7 @@ case 3: sendShort((_getAdc1(getByte(0),getShort(1),getByte(2)))); break;
 case 4: sendByte((_getSw(getByte(0)))); break;
 case 5: _regHist();setNeoPixel(getLong(0),getByte(1));; callOK(); break;
 case 6: _saveHist();; callOK(); break;
-case 7: _setMelody(getBufLen2(0));_playbackMidi2();; callOK(); break;
+case 7: _setMelody(getBufLen2(0));callOK();comMode=0;; callOK(); break;
   case 0x81: _wireBegin((int)getByte(0),(int)getByte(1)); callOK(); break;
   case 0x82: wirep->beginTransmission(getByte(0)); wirep->write(getBufLen(1)); sendByte(wirep->endTransmission()); break;
   case 0x83: wirep->beginTransmission(getByte(0)); wirep->write(getBufLen(1)); wirep->endTransmission(false); sendWireRead(getByte(0),getByte(2)); break;

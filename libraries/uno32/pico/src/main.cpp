@@ -9,7 +9,7 @@ Preferences preferencesHIST;  // cmdHistNVP, cmdHistMode
 enum {
 	CmdHistMode_NULL = 0,
 	CmdHistMode_PACKETS,
-	CmdHistMode_MIDI2,
+	CmdHistMode_MIDI,
 };
 #endif
 
@@ -138,7 +138,7 @@ void _setMelody(uint8_t* buf, int size)
 	memcpy(cmdHistNVP, buf, cmdHistNVP_num);
 	preferencesHIST.putBytes("cmdHistNVP", cmdHistNVP, cmdHistNVP_num);
 
-	cmdHistMode = CmdHistMode_MIDI2;
+	cmdHistMode = CmdHistMode_MIDI;
 	preferencesHIST.putUChar("cmdHistMode", cmdHistMode);
 	Serial.println(cmdHistNVP_num);
 }
@@ -158,22 +158,46 @@ void _tone2(int16_t freq)
 #endif
 }
 
-void _playbackMidi2()
+int32_t midiNext = -1;
+uint16_t midiCount = 0;
+void loopMidi();
+void stopMidi();
+
+void startMidi()
 {
 #if defined(ESP32) && defined(P_BUZZER2)
 	pinMode(P_BUZZER2G, OUTPUT);
 	digitalWrite(P_BUZZER2G, LOW);
 #endif
-	for(int i = 0; i < cmdHistNVP_num; i += (1+NOTE_NUM)*2) {
-		#define GetL16(a) (((a)[1]<<8) | (a)[0])
-		int dur   = GetL16(cmdHistNVP+i+0);
-		int note1 = GetL16(cmdHistNVP+i+2);
-		int note2 = GetL16(cmdHistNVP+i+4);
-	//	Serial.printf("%d %d %d\n", dur, (note1==0xffff)?-1:note1, (note2==0xffff)?-1:note2);
-		if(note1 != 0xFFFF) _tone(P_BUZZER, note1, 0);
-		if(note2 != 0xFFFF) _tone2(note2);
-		delay(dur);
-	}
+	midiNext = millis();
+	midiCount = 0;
+	loopMidi();
+}
+
+void loopMidi()
+{
+	if(midiNext < 0) return;
+	int32_t elapsed = (millis() - midiNext);
+	if(elapsed < 0) return;
+
+	#define GetL16(a) (((a)[1]<<8) | (a)[0])
+	int dur   = GetL16(cmdHistNVP + midiCount+0);
+	int note1 = GetL16(cmdHistNVP + midiCount+2);
+	int note2 = GetL16(cmdHistNVP + midiCount+4);
+//	Serial.printf("%d %d %d\n", dur, (note1==0xffff)?-1:note1, (note2==0xffff)?-1:note2);
+	if(note1 != 0xFFFF) _tone(P_BUZZER, note1, 0);
+	if(note2 != 0xFFFF) _tone2(note2);
+
+	midiNext += dur;
+	midiCount += (1+NOTE_NUM)*2;
+	if(midiCount >= cmdHistNVP_num)
+		stopMidi();
+}
+
+void stopMidi()
+{
+	midiNext = -1;
+	midiCount = 0;
 	_tone(P_BUZZER, 0, 0);
 	_tone2(0);
 }
@@ -211,7 +235,6 @@ void _setup(const char* ver)
 	preferencesHIST.begin("histConfig", false);
 	cmdHistNVP_num = preferencesHIST.getBytes("cmdHistNVP", cmdHistNVP, sizeof(cmdHistNVP));
 	cmdHistMode    = preferencesHIST.getUChar("cmdHistMode");
-
 	Serial.printf("NVP:%d,%d\n", cmdHistMode, cmdHistNVP_num);
 #endif
 }
@@ -228,8 +251,8 @@ void _loop(void)
 				case CmdHistMode_PACKETS:
 					playbackPackets(cmdHistNVP, cmdHistNVP_num);
 					break;
-				case CmdHistMode_MIDI2:
-					_playbackMidi2();
+				case CmdHistMode_MIDI:
+					startMidi();
 					break;
 				}
 			#if defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
@@ -239,8 +262,16 @@ void _loop(void)
 			}
 		} else {
 			if(level < 500) {
+				if(cmdHistMode == CmdHistMode_MIDI) stopMidi();
 				state = 0;
+			} else {
+				if(cmdHistMode == CmdHistMode_MIDI) loopMidi();
 			}
+		}
+	} else {
+		if(state == 1) {
+			if(cmdHistMode == CmdHistMode_MIDI) stopMidi();
+			state = 0;
 		}
 	}
 #endif

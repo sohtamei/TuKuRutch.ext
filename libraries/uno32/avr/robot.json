@@ -37,45 +37,4 @@ void setNeoPixel(int c, int level) {}
 		["B", "SW %d.sw",									"getSW",			1,			{"remote":["B",		"B"],"func":"_getSw({0})"}],
 		["w", "set led color %d.color %n",					"setNeoPixel",		"White",10,	{"remote":["L","B"],"func":"setNeoPixel({0},{1});"}],
 	],
-
-	// メニュー定義
-	"menus": {
-		"noteJ2":["C4","D4","E4","F4","G4","A4","B4","C5","D5","E5","F5","G5","A5","B5","rest"],
-		"beats"		:["Half","Quarter","Eighth","Whole","Double"],
-
-		"onoff"		:["On","Off"],
-		"led"		:[1,2,3,4,5,6],
-		"sensor"	:[1,2,3,4],
-		"sw"		:[1,2,3],
-		"color"		:["Black","Red","Green","Blue","Purple","Yellow","Lightblue","White",],
-	},
-
-    // ラベル定義
-	"values":{
-		"C4":262,"D4":294,"E4":330,"F4":349,"G4":392,"A4":440,"B4":494,
-		"C5":523,"D5":587,"E5":659,"F5":698,"G5":784,"A5":880,"B5":988,"rest":0,
-		"Half":500,"Quarter":250,"Eighth":125,"Whole":1000,"Double":2000,
-		"On":1,"Off":0,
-		"Black":0x000000,"Red":0xFF0000,"Green":0x00FF00,"Blue":0x0000FF,"Purple":0xFF00FF,"Yellow":0xFFFF00,"Lightblue":0x00FFFF,"White":0xFFFFFF,
-	},
-
-	// 翻訳定義
-	"translators":{
-		"ja":{
-			"C4":"ド4", "D4":"レ4", "E4":"ミ4", "F4":"ファ4", "G4":"ソ4", "A4":"ラ4", "B4":"シ4",
-			"C5":"ド5", "D5":"レ5", "E5":"ミ5", "F5":"ファ5", "G5":"ソ5", "A5":"ラ5", "B5":"シ5", "rest":"休符",
-			"Half":"2分音符", "Quarter":"4分音符", "Eighth":"8分音符", "Whole":"全音符", "Double":"倍全音符",
-			"Black":"黒","Red":"赤","Green":"緑","Blue":"青","Purple":"紫","Yellow":"黄","Lightblue":"水色","White":"白",
-
-			"set LED %d.led %d.onoff"				:"LED %d.led を %d.onoff",
-			"play tone %d.noteJ1 beat %d.beats"		:"%d.noteJ1 を %d.beats 鳴らす",
-			"play tone %d.noteJ2 beat %d.beats"		:"%d.noteJ2 を %d.beats 鳴らす",
-			"play tone %d.noteJ3 beat %d.beats"		:"%d.noteJ3 を %d.beats 鳴らす",
-			"Sensor %d.sensor average %n times,discharge %n":"センサ %d.sensor の %n 回平均 放充電 %n",
-			"SW %d.sw"								:"スイッチ %d.sw",
-			"set led color %d.color %n"				:"LED 色 %d.color %n",
-		}
-	},
-
-	"sort"			: 11,
 }

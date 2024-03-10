@@ -33,7 +33,6 @@ int _analogRead(uint8_t port, uint16_t count);
 void _regHist();
 void _saveHist();
 void _setMelody(uint8_t* buf, int size);
-void _playbackMidi2();
 #endif
 
 extern uint8_t comMode;
