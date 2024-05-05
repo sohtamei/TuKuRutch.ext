@@ -35,6 +35,7 @@ struct { m5::board_t board; char name[32]; } const boardTable[] = {
 	{ m5::board_t::board_M5StampC3U,	"StampC3U" },		// 16
 	{ m5::board_t::board_M5AtomS3Lite,	"AtomS3Lite" },		// 17
 	{ m5::board_t::board_M5StickCPlus2,	"StickCPlus2" },	// 18
+	{ m5::board_t::board_M5Dial,		"Dial" },			// 19
 };
 
 /*
