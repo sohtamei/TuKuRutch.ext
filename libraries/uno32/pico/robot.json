@@ -19,7 +19,7 @@
 #define mVersion \"uno 1.0\"
 
 #include \"main.h\"
-#define RECV_BUFFER (2048+16)
+#define RECV_BUFFER (4096+16)
 
 void setNeoPixel(int c, int level)
 {

@@ -1,4 +1,4 @@
-LIST=('analogRemote' 'TukurutchEsp' 'TukurutchEspCamera' 'TukurutchCommon')
+LIST=('analogRemote' 'TukurutchEsp' 'TukurutchEspCamera' 'TukurutchCommon' 'TukurutchEspCamera2')
 ARDUINO_PATH="/mnt/c/fd_work/Arduino"
 
 for NAME in ${LIST[@]}; do

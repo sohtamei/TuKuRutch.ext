@@ -4,9 +4,8 @@
 
 #include <TukurutchEsp.h>
 #include "main.h"
-#include <TukurutchEspCamera.h>
-
-#include <TukurutchEspCamera.cpp.h>
+#include <TukurutchEspCamera2.h>
+#include <TukurutchEspCamera2.cpp.h>
 
 WebsocketsServer wsServer;
 

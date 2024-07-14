@@ -11,7 +11,7 @@
 						"custom_JTAGAdapter=esp32_default",
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=esp32_default",
+						"custom_PartitionScheme=esp32_no_ota",
 						"custom_UploadSpeed=esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること

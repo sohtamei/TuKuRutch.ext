@@ -29,7 +29,7 @@
 #include <Wire.h>
 #include <TukurutchEsp.h>
 #include \"main.h\"
-#include <TukurutchEspCamera.h>
+#include <TukurutchEspCamera2.h>
 
 #define P_STBY    0
 #define P_BUZZER  2

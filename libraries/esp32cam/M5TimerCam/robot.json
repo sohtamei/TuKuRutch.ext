@@ -12,7 +12,7 @@
 						"custom_JTAGAdapter=esp32_default",
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_enabled",
-						"custom_PartitionScheme=esp32_default",
+						"custom_PartitionScheme=esp32_no_ota",
 						"custom_UploadSpeed=esp32_1500000"],
 
 	"scratch3burn"	: [

@@ -4,20 +4,13 @@
 #include <analogRemote.h>
 #include <TukurutchEsp.h>
 #include "main.h"
-
-#define LGFX_USE_V1
-#include <LovyanGFX.hpp>
-#include <lgfx_panel_def.h>
-#include <Wire.h>
-
 #include <TukurutchEspCamera.h>
+
 #include <TukurutchEspCamera.cpp.h>
 
 WebsocketsServer wsServer;
 
 static analogRemote remote(MODE_XYKEYS, /*port*/P_IRRX, /*funcLed*/NULL);
-
-lgfx::LGFX_Device *lcd = NULL;
 
 void onConnect(String ip)
 {
@@ -25,36 +18,6 @@ void onConnect(String ip)
 	wsServer.listen(PORT_WEBSOCKET);
 	espcamera_onConnect();
 	Serial.println(ip);
-	if(lcd) lcd->println(ip);
-}
-
-void _setupLCD(const char* ver)
-{
-	Wire.beginTransmission(0x3C);
-	int ret = Wire.endTransmission();
-	if(ret) {
-		Serial.println("no lcd");
-		lcd = NULL;
-		return;
-	}
-
-	uint8_t config_buf[2] = {/*sda*/26, /*scl*/27};
-	lcd = new LGFX_SSD1306(LCDTYPE_SSD1306, config_buf, sizeof(config_buf));
-
-	if(lcd->width()==0) {
-		Serial.println("error");
-		lcd->releaseBus();
-		delete lcd;
-		lcd = NULL;
-		return;
-	}
-
-	lcd->setRotation(2);
-	lcd->fillScreen(TFT_BLACK);
-	lcd->setTextColor(TFT_WHITE,TFT_BLACK);
-	lcd->setFont(&fonts::lgfxJapanGothic_12);
-	lcd->setCursor(0,0);
-	lcd->println(ver);
 }
 
 void _setup(const char* ver)
@@ -70,7 +33,6 @@ void _setup(const char* ver)
 	quadCrawler_tone(T_C4, 300);
 	quadCrawler_tone(T_D4, 300);
 	quadCrawler_tone(T_E4, 300);
-	_setupLCD(ver);
 
 	initWifi(ver, false, onConnect);
 }
@@ -89,18 +51,6 @@ static int detect_sw4(void)
 		detect = 1;
 	lastSw4 = sw4;
 	return detect;
-}
-
-void drawEye(int x, int y, bool closed)
-{
-	if(!lcd) return;
-
-	#define EYE_SIZE  20
-	lcd->fillScreen(TFT_BLACK);
-	if(closed)
-		lcd->fillArc(x+64,-y+32,EYE_SIZE,0,0,180,TFT_WHITE);
-	else
-		lcd->fillCircle(x+64,-y+32,EYE_SIZE,TFT_WHITE);
 }
 
 void loop_originAdj();
@@ -147,39 +97,33 @@ void _loop()
 		case BUTTON_UP:
 			quadCrawler_colorWipe(COLOR_BLUE);
 			quadCrawler_Walk(quadCrawler_fast, COM_FW);
-			drawEye(0,0,false);
 			break;
 		case XY_LEFT:
 		case BUTTON_LEFT:
 			quadCrawler_colorWipe(COLOR_LIGHTBLUE);
 			quadCrawler_Walk(quadCrawler_fast, COM_LEFT);
-			drawEye(+32,0,false);
 			break;
 		case XY_RIGHT:
 		case BUTTON_RIGHT:
 			quadCrawler_colorWipe(COLOR_LIGHTBLUE);
 			quadCrawler_Walk(quadCrawler_fast, COM_RIGHT);
-			drawEye(-32,0,false);
 			break;
 		case XY_DOWN:
 		case BUTTON_DOWN:
 			quadCrawler_colorWipe(COLOR_RED);
 			quadCrawler_Walk(quadCrawler_fast, COM_RW);
-			drawEye(0,-24,false);
 			break;
 		case XY_UP_R:
 		case XY_DOWN_L:
 		case BUTTON_RETURN:
 			quadCrawler_colorWipe(COLOR_GREEN);
 			quadCrawler_Walk(quadCrawler_fast, COM_CW);
-			drawEye(-32,0,false);
 			break;
 		case XY_UP_L:
 		case XY_DOWN_R:
 		case BUTTON_TEST:
 			quadCrawler_colorWipe(COLOR_GREEN);
 			quadCrawler_Walk(quadCrawler_fast, COM_CCW);
-			drawEye(+32,0,false);
 			break;
 
 		case XY_UP_R + A_DOWN_OFFSET:
@@ -231,7 +175,6 @@ void _loop()
 		default:                      // ボタンを離したとき : 停止
 			quadCrawler_colorWipe(COLOR_PURPLE);
 			quadCrawler_Walk(quadCrawler_fast, COM_STOP);
-			drawEye(0,+8,true);
 			break;
 		}
 	}

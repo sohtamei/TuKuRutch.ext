@@ -12,7 +12,7 @@
 						"custom_JTAGAdapter=esp32_default",
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_disabled",
-						"custom_PartitionScheme=esp32_default",
+						"custom_PartitionScheme=esp32_no_ota",
 						"custom_UploadSpeed=esp32_921600"],
 
 	"scratch3burn"	: [
@@ -23,29 +23,13 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"QuadCrawlerAI1.3\"
+#define mVersion \"QuadCrawlerAI1.2\"
 
 #include \"QuadCrawlerAI.h\"
 #include <TukurutchEsp.h>
 #include \"main.h\"
 #include <TukurutchEspCamera.h>
 #define RECV_BUFFER 5000
-
-const lgfx::IFont* fontTbl[] = {
-	NULL,						// 0:
-	&fonts::Font0,				// 1:ascii8
-	&fonts::Font2,				// 2:ascii16
-	NULL,						// 3:
-	&fonts::Font4,				// 4:ascii26
-	NULL,						// 5:
-	&fonts::Font6,				// 6:num48
-	&fonts::Font7,				// 7:7seg48
-	&fonts::Font8,				// 8:num75
-	NULL,						// 9:
-
-	&fonts::lgfxJapanGothic_12,		// 10:
-	&fonts::lgfxJapanGothicP_12,	// 11:
-};
 ",
 	// setup処理 (C言語)
 	"setup":"_setup(mVersion);",
@@ -99,11 +83,6 @@ const lgfx::IFont* fontTbl[] = {
 		["w", "set motion %s",							"setMotion",	"0000ead3ead3ead3ead31d007fd37f7f7fd37f7f3b007fd37f7f7fd37f7f4a007f007f7f7f007f7f59007fa67f7f7fa67f7f5f007fa67f7f7fa67f7f68007fa67f7f7fa67f7f72007f007f7f7f007f7f7f007f2d7f7f7fa67f7f8b007fa67f7f7f2d7f7f98007fd37f7f7fa67f7f",
 																						{"remote":["b2"],		"func":"quadCrawler_setMotion({0});"}],
 
-		["w", "［LCD］draw text %s (%n ,%n ) font=%d.font",	"drawString","test",0,0,"monospace12",{"remote":["s","S","S","B"],"func":"if(lcd) lcd->drawString({0},{1},{2},fontTbl[{3}]);"}],
-		["w", "［LCD］fill screen with %d.color_",		"fillScreen",	"BLACK",		{"remote":["S"],		"func":"if(lcd) {lcd->fillScreen({0}); lcd->setCursor(0,0);}"}],
-		["w", "［LCD］circle x %n y %n r %n ang %n - %n %d.color_","drawCircle",64,32,10,0,360,"WHITE",
-																						{"remote":["S","S","S","S","S","S"],"func":"if(lcd) lcd->fillArc({0},{1},{2},0,{3},{4},{5});"}],
-
 		// enum
 		["r", "%d.color .",								"enumColor",		"red",		{"enum":"",				"func":"{0}"}],
 		["r", "%d.walkcmd .",							"enumWalkcmd",		"fw",		{"enum":"",				"func":"{0}"}],
@@ -132,10 +111,6 @@ const lgfx::IFont* fontTbl[] = {
 		"calibC":["forward_C","back_C","get","reset","reset_all",],
 		"calibK":["up_K","down_K","get","reset","reset_all",],
 		"digital":["HIGH","LOW"],
-
-		"color_":["BLACK","WHITE","TRANSPARENT"],
-		"font":["ascii8","ascii16","ascii26","num48","7seg48","num75",
-				"monospace12","proportional12",],
 	},
 	"values":{
 		"C2":65,"D2":73,"E2":82,"F2":87,"G2":98,"A2":110,"B2":123,
@@ -155,12 +130,6 @@ const lgfx::IFont* fontTbl[] = {
 		"back_C":0,"forward_C":1,"get":2,"reset":3,"reset_all":4,
 		"down_K":0,"up_K":1,
 		"HIGH":1,"LOW":0,
-
-		"BLACK":0x0000,"WHITE":0xFFFF,"NAVY":0x000F,"DARKGREEN":0x03E0,"DARKCYAN":0x03EF,"MAROON":0x7800,"PURPLE":0x780F,"OLIVE":0x7BE0,"LIGHTGREY":0xD69A,"DARKGREY":0x7BEF,"BLUE":0x001F,
-		"GREEN":0x07E0,"CYAN":0x07FF,"RED":0xF800,"MAGENTA":0xF81F,"YELLOW":0xFFE0,"ORANGE":0xFDA0,"GREENYELLOW":0xB7E0,"PINK":0xFE19,"TRANSPARENT":0x0120,
-
-		"ascii8":1,"ascii16":2,"ascii26":4,"num48":6,"7seg48":7,"num75":8,
-		"monospace12":10,"proportional12":11,
 	},
 	"translators":{
 		"ja":{

@@ -1202,16 +1202,186 @@ static esp_err_t index_handler(httpd_req_t *req)
     }
 }
 
+// esp-idf.mater/examples/protocols/http_server/file_serving/main/file_server.c
+#include <Arduino.h>
+#include <sys/param.h>  // for MIN
+#include "esp_vfs.h"
+#include "esp_spiffs.h"
+
+/* Max length a file path can have on storage */
+#define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
+
+/* Scratch buffer size */
+#define SCRATCH_BUFSIZE  4096//8192
+
+struct file_server_data {
+    /* Base path of file storage */
+    //char base_path[ESP_VFS_PATH_MAX + 1];
+
+    /* Scratch buffer for temporary storage during file transfer */
+    char scratch[SCRATCH_BUFSIZE];
+};
+
+
+#define IS_FILE_EXT(filename, ext) \
+    (strcasecmp(&filename[strlen(filename) - sizeof(ext) + 1], ext) == 0)
+
+/* Set HTTP response content type according to file extension */
+static esp_err_t set_content_type_from_file(httpd_req_t *req, const char *filename)
+{
+    if (IS_FILE_EXT(filename, ".pdf")) {
+        return httpd_resp_set_type(req, "application/pdf");
+    } else if (IS_FILE_EXT(filename, ".html")) {
+        return httpd_resp_set_type(req, "text/html");
+    } else if (IS_FILE_EXT(filename, ".css")) {
+        return httpd_resp_set_type(req, "text/css");
+    } else if (IS_FILE_EXT(filename, ".js")) {
+        return httpd_resp_set_type(req, "text/javascript");
+    } else if (IS_FILE_EXT(filename, ".jpeg")||IS_FILE_EXT(filename, ".jpg")) {
+        return httpd_resp_set_type(req, "image/jpeg");
+    } else if (IS_FILE_EXT(filename, ".png")) {
+        return httpd_resp_set_type(req, "image/png");
+    } else if (IS_FILE_EXT(filename, ".svg")) {
+        return httpd_resp_set_type(req, "image/svg+xml");
+    } else if (IS_FILE_EXT(filename, ".ico")) {
+        return httpd_resp_set_type(req, "image/x-icon");
+    }
+    /* This is a limited set only */
+    /* For any other type always set as plain text */
+    return httpd_resp_set_type(req, "text/plain");
+}
+
+/* Copies the full path into destination buffer and returns
+ * pointer to path (skipping the preceding base path) */
+static const char* get_path_from_uri(char *dest, const char *base_path, const char *uri, size_t destsize)
+{
+    const size_t base_pathlen = strlen(base_path);
+    size_t pathlen = strlen(uri);
+
+    const char *quest = strchr(uri, '?');
+    if (quest) {
+        pathlen = MIN(pathlen, quest - uri);
+    }
+    const char *hash = strchr(uri, '#');
+    if (hash) {
+        pathlen = MIN(pathlen, hash - uri);
+    }
+
+    if (base_pathlen + pathlen + 1 > destsize) {
+        /* Full path string won't fit into destination buffer */
+        return NULL;
+    }
+
+    /* Construct full path (base + path) */
+    strcpy(dest, base_path);
+    strlcpy(dest + base_pathlen, uri, pathlen + 1);
+
+    /* Return pointer to path, skipping the base */
+    return dest + base_pathlen;
+}
+
+/* Handler to download a file kept on the server */
+static esp_err_t download_get_handler(httpd_req_t *req)
+{
+    char filepath[FILE_PATH_MAX];
+    FILE *fd = NULL;
+    struct stat file_stat;
+
+    const char *filename = get_path_from_uri(filepath, "/data",
+                                             (!strcmp(req->uri, "/") ? "/list.html" : req->uri), sizeof(filepath));
+    if (!filename) {
+        log_e("Filename is too long");
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Filename too long");
+        return ESP_FAIL;
+    }
+    Serial.printf("http:%s\n", filename);
+
+    if (stat(filepath, &file_stat) == -1) {
+        /* If file not present on SPIFFS check if URI
+         * corresponds to one of the hardcoded paths */
+        /* Respond with 404 Not Found */
+        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "File does not exist");
+        return ESP_FAIL;
+    }
+
+    fd = fopen(filepath, "r");
+    if (!fd) {
+        log_e("Failed to read existing file : %s", filepath);
+        /* Respond with 500 Internal Server Error */
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to read existing file");
+        return ESP_FAIL;
+    }
+
+    log_i("Sending file : %s (%ld bytes)...", filename, file_stat.st_size);
+    set_content_type_from_file(req, filename);
+
+    /* Retrieve the pointer to scratch buffer for temporary storage */
+    char *chunk = ((struct file_server_data *)req->user_ctx)->scratch;
+    size_t chunksize;
+    do {
+        /* Read file in chunks into the scratch buffer */
+        chunksize = fread(chunk, 1, SCRATCH_BUFSIZE, fd);
+
+        if (chunksize > 0) {
+            /* Send the buffer contents as HTTP response chunk */
+            if (httpd_resp_send_chunk(req, chunk, chunksize) != ESP_OK) {
+                fclose(fd);
+                log_e("File sending failed!");
+                /* Abort sending file */
+                httpd_resp_sendstr_chunk(req, NULL);
+                /* Respond with 500 Internal Server Error */
+                httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to send file");
+               return ESP_FAIL;
+           }
+        }
+
+        /* Keep looping till the whole file is sent */
+    } while (chunksize != 0);
+
+    /* Close file after sending complete */
+    fclose(fd);
+    log_i("File sending complete");
+
+    /* Respond with an empty chunk to signal HTTP response completion */
+#ifdef CONFIG_EXAMPLE_HTTPD_CONN_CLOSE_HEADER
+    httpd_resp_set_hdr(req, "Connection", "close");
+#endif
+    httpd_resp_send_chunk(req, NULL, 0);
+    return ESP_OK;
+}
+
 void startCameraServer()
 {
+    static struct file_server_data *server_data = NULL;
+
+    if (server_data) {
+        log_e("File server already started");
+        return; //ESP_ERR_INVALID_STATE;
+    }
+
+    /* Allocate memory for server data */
+    server_data = (struct file_server_data*)calloc(1, sizeof(struct file_server_data));
+    if (!server_data) {
+        log_e("Failed to allocate memory for server data");
+        return; //ESP_ERR_NO_MEM;
+    }
+
+
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = 16;
+    config.uri_match_fn = httpd_uri_match_wildcard;
 
     httpd_uri_t index_uri = {
+/*
         .uri = "/",
         .method = HTTP_GET,
         .handler = index_handler,
-        .user_ctx = NULL
+*/
+        .uri = "/*",  // Match all URIs of type /path/to/file
+        .method = HTTP_GET,
+        .handler = download_get_handler,
+        .user_ctx = server_data    // Pass server data as context
 #ifdef CONFIG_HTTPD_WS_SUPPORT
         ,
         .is_websocket = true,
@@ -1361,7 +1531,6 @@ void startCameraServer()
     log_i("Starting web server on port: '%d'", config.server_port);
     if (httpd_start(&camera_httpd, &config) == ESP_OK)
     {
-        httpd_register_uri_handler(camera_httpd, &index_uri);
         httpd_register_uri_handler(camera_httpd, &cmd_uri);
         httpd_register_uri_handler(camera_httpd, &status_uri);
         httpd_register_uri_handler(camera_httpd, &capture_uri);
@@ -1372,6 +1541,8 @@ void startCameraServer()
         httpd_register_uri_handler(camera_httpd, &greg_uri);
         httpd_register_uri_handler(camera_httpd, &pll_uri);
         httpd_register_uri_handler(camera_httpd, &win_uri);
+        httpd_register_uri_handler(camera_httpd, &stream_uri);
+        httpd_register_uri_handler(camera_httpd, &index_uri);
     }
 
     config.server_port += 1;
@@ -1380,6 +1551,34 @@ void startCameraServer()
     if (httpd_start(&stream_httpd, &config) == ESP_OK)
     {
         httpd_register_uri_handler(stream_httpd, &stream_uri);
+    }
+
+    log_i("Initializing SPIFFS");
+
+    esp_vfs_spiffs_conf_t conf = {
+        .base_path = "/data",
+        .partition_label = NULL,
+        .max_files = 5,   // This sets the maximum number of files that can be open at the same time
+        .format_if_mount_failed = true
+    };
+
+    esp_err_t ret = esp_vfs_spiffs_register(&conf);
+    if (ret != ESP_OK) {
+        if (ret == ESP_FAIL) {
+            log_e("Failed to mount or format filesystem");
+        } else if (ret == ESP_ERR_NOT_FOUND) {
+            log_e("Failed to find SPIFFS partition");
+        } else {
+            log_e("Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+        }
+        return;// ret;
+    }
+
+    size_t total = 0, used = 0;
+    ret = esp_spiffs_info(NULL, &total, &used);
+    if (ret != ESP_OK) {
+        log_e("Failed to get SPIFFS partition information (%s)", esp_err_to_name(ret));
+        return;// ret;
     }
 }
 

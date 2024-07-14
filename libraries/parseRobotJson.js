@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { exec } = require('child_process');
 
 const PWD = process.cwd().replace('/mnt/c','C:');
 const toolsPath = "C:ARDUINO_PATH";
@@ -42,13 +43,13 @@ const jsonToJs = function(target, ext)
 		let src;
 		switch(type) {
 		case 'atmega328':
-			src = binPath+"/src/src.ino.standard.hex";
+			src = binPath + "/src/src.ino.standard.hex";
 			if(fs.existsSync(src))
 				fs.copyFileSync(src, "../scratch3/"+imageName+".hex");
 			break;
 
 		case 'pico':
-			src = binPath+"/src/src.ino.rpipico.uf2";
+			src = binPath + "/src/src.ino.rpipico.uf2";
 			if(fs.existsSync(src))
 				fs.copyFileSync(src, "../scratch3/"+imageName+".uf2");
 			break;
@@ -59,15 +60,15 @@ const jsonToJs = function(target, ext)
 		case 'esp32':
 		case 'esp32c3':
 		case 'esp32s3':
-			src = binPath+"/src/src.ino."+type+".bin";
+			src = binPath + "/src/src.ino."+type+".bin";
 			if(fs.existsSync(src))
 				fs.copyFileSync(src, "../scratch3/"+imageName+".image.bin");
 
-			src = binPath+"/src/src.ino.bootloader.bin";
+			src = binPath + "/src/src.ino.bootloader.bin";
 			if(fs.existsSync(src))
 				fs.copyFileSync(src, "../scratch3/"+imageName+".boot.bin");
 
-			src = binPath+"/src/src.ino.partitions.bin";
+			src = binPath + "/src/src.ino.partitions.bin";
 			if(fs.existsSync(src))
 				fs.copyFileSync(src, "../scratch3/"+imageName+".part.bin");
 			break;
@@ -346,6 +347,43 @@ const jsonToCpp2 = function(target, ext)
 	return true;
 }
 
+const packSpiffs = function(target, ext, spiffsOffset)
+{
+	const boards = ext.boardType.split(":");
+
+	const fwOffset = 0x10000;
+	const fwSpiffsSize = 0x3e0000;
+	const fwSpiffsBuffer = Buffer.alloc(fwSpiffsSize, 0xff);
+	const spiffsSize = fwSpiffsSize - (spiffsOffset - fwOffset);
+
+	//"/portable/packages/esp32/tools/mkspiffs/0.2.3
+
+	const command = "./mkspiffs.exe -c " + target + "/src/data -s " + spiffsSize + " " + target + "/src/build/src.spiffs.bin";
+	exec(command, (error, stdout, stderr) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+		console.log(`stdout: ${stdout}`);
+	//	console.error(`stderr: ${stderr}`);
+
+		fs.readFile(target + "/src/build/src.spiffs.bin", (readErr, data1) => {
+			if (readErr) throw readErr;
+			data1.copy(fwSpiffsBuffer, spiffsOffset - fwOffset);
+
+			fs.readFile(target + "/src/build/src.ino.bin", (readErr, data2) => {
+				if (readErr) throw readErr;
+				data2.copy(fwSpiffsBuffer, 0);
+
+				fs.writeFile(target + "/src/src.ino."+boards[2]+".bin", fwSpiffsBuffer, (writeErr) => {
+					if (writeErr) throw writeErr;
+					console.log("spiffs image has been generated.");
+				});
+			});
+		});
+	});
+}
+
 const copyBins = function(target, ext)
 {
 	const boards = ext.boardType.split(":");
@@ -355,31 +393,31 @@ const copyBins = function(target, ext)
 	switch(boards[1]) {
 	case "avr":
 	default:
-		src = target+"/src/build/src.ino.hex";
-		des = target+"/src/src.ino.standard.hex";
+		src = target + "/src/build/src.ino.hex";
+		des = target + "/src/src.ino.standard.hex";
 		if(fs.existsSync(src))
 			fs.copyFileSync(src, des);
 		break;
 
 	case "rp2040":
-		src = target+"/src/build/src.ino.uf2";
-		des = target+"/src/src.ino.rpipico.uf2";
+		src = target + "/src/build/src.ino.uf2";
+		des = target + "/src/src.ino.rpipico.uf2";
 		if(fs.existsSync(src))
 			fs.copyFileSync(src, des);
 		break;
 
 	case "esp32":
-		src = target+"/src/build/src.ino.bin";
-		des = target+"/src/src.ino."+boards[2]+".bin";
+		src = target + "/src/build/src.ino.bin";
+		des = target + "/src/src.ino."+boards[2]+".bin";
 		if(fs.existsSync(src))
 			fs.copyFileSync(src, des);
 
-		des = target+"/src/src.ino.bootloader.bin";
+		des = target + "/src/src.ino.bootloader.bin";
 		src = des.replace("src/src","src/build/src");
 		if(fs.existsSync(src))
 			fs.copyFileSync(src, des);
 
-		des = target+"/src/src.ino.partitions.bin";
+		des = target + "/src/src.ino.partitions.bin";
 		src = des.replace("src/src","src/build/src");
 		if(fs.existsSync(src))
 			fs.copyFileSync(src, des);
@@ -442,24 +480,24 @@ const _burnFW2 = function(target, ext, selectPort)
 		case "esp32":
 		default:
 			args = "--chip esp32 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x1000 " +target+"/src/src.ino.bootloader.bin"
-				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
-				+" 0x10000 "+hexFile;
+				+" 0x1000 " + target + "/src/src.ino.bootloader.bin"
+				+" 0x8000 " + target + "/src/src.ino.partitions.bin"
+				+" 0xe000 " + toolsPath + "/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
+				+" 0x10000 "+ hexFile;
 			break;
 		case "esp32c3":
 			args = "--chip esp32c3 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x0 "    +target+"/src/src.ino.bootloader.bin"
-				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
-				+" 0x10000 "+hexFile;
+				+" 0x0 "    + target + "/src/src.ino.bootloader.bin"
+				+" 0x8000 " + target + "/src/src.ino.partitions.bin"
+				+" 0xe000 " + toolsPath + "/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
+				+" 0x10000 "+ hexFile;
 			break;
 		case "esp32s3":
 			args = "--chip esp32s3 --port "+selectPort+" --baud "+baud+" --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 80m --flash_size detect"
-				+" 0x0 "    +target+"/src/src.ino.bootloader.bin"
-				+" 0x8000 " +target+"/src/src.ino.partitions.bin"
-				+" 0xe000 " +toolsPath+"/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
-				+" 0x10000 "+hexFile;
+				+" 0x0 "    + target + "/src/src.ino.bootloader.bin"
+				+" 0x8000 " + target + "/src/src.ino.partitions.bin"
+				+" 0xe000 " + toolsPath + "/portable/packages/esp32/hardware/esp32/ESP32_VER/tools/partitions/boot_app0.bin"
+				+" 0x10000 "+ hexFile;
 			break;
 		}
 		cmd = toolsPath+"/portable/packages/esp32/tools/esptool_py/*/esptool.exe";
@@ -525,6 +563,38 @@ const getRobotJson = function(target) {
 
   case 'copyBins':
     RET=copyBins(target, ext);
+	if(ext.boardType.split(":")[1] == "esp32" && fs.existsSync(target + "/src/data")) {
+      let spiffsOffset = 0;
+      for(i = 0; i < ext.prefs.length; i++) {
+        const custom = ext.prefs[i].split('=');
+        if(custom[0] == 'custom_PartitionScheme') {
+          const partition = custom[1].replace('esp32_','').replace('esp32s3_','');
+          switch(partition) {
+          case 'minimal':		spiffsOffset = 0x150000; break;
+
+          case 'min_spiffs':	spiffsOffset = 0x3D0000; break;
+          case 'huge_app':		spiffsOffset = 0x310000; break;
+          case 'default':		spiffsOffset = 0x290000; break;
+          case 'no_ota':		spiffsOffset = 0x210000; break;
+          case 'noota_3g':		spiffsOffset = 0x110000; break;
+
+          case 'default_8MB':	spiffsOffset = 0x670000; break;
+          case 'rainmaker':		spiffsOffset = 0x670000; break;
+
+          case 'defaultffat':	spiffsOffset = 0x290000; break;
+          case 'noota_ffat':	spiffsOffset = 0x210000; break;
+          case 'noota_3gffat':	spiffsOffset = 0x110000; break;
+          case 'fatflash':		spiffsOffset = 0x410000; break;
+          case 'app3M_fat9M_16MB':	spiffsOffset = 0x610000; break;
+          default: break;
+          }
+        }
+      }
+	  if(spiffsOffset != 0) {
+	    console.log('spiffsOffset=' + spiffsOffset.toString(16));
+        RET=packSpiffs(target, ext, spiffsOffset);
+      }
+    }
     break;
 
   case 'jsonToJs':

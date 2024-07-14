@@ -11,7 +11,7 @@
 						"custom_JTAGAdapter=esp32_default",
 						"custom_LoopCore=esp32_1",
 						"custom_PSRAM=esp32_enabled",
-						"custom_PartitionScheme=esp32_default",
+						"custom_PartitionScheme=esp32_no_ota",
 						"custom_UploadSpeed=esp32_921600"],
 
 	// C言語記述注意 : " を使うときは \" とすること
@@ -53,12 +53,4 @@
 		["-"],
 		["w", "set LED %d.onoff",						"setLED",			"On",		{"remote":["B"],		"func":"espcamera_setLED({0});"}],
 	],
-	"menus": {
-		"onoff"		:["On","Off"],
-	},
-	"values":{
-		"On":1,"Off":0,
-	},
-
-	"sort"			: 31,										// メニュー上の表示順序
 }

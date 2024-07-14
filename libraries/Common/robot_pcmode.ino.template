@@ -628,7 +628,7 @@ void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
     Serial.println("Connnection Opened");
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-    Serial.println("Connnection Closed");
+    Serial.println("disconnected-ws");
     connected = 0;
   } else if(event == WebsocketsEvent::GotPing) {
     Serial.println("Got a Ping!");
@@ -680,7 +680,7 @@ static void loopWebSocket(void)
   if(wsServer.poll()) {
     connected = 1;
     _index = 0;
-    Serial.println("connected");
+    Serial.println("connected-ws");
     _client = wsServer.accept();
     _client.onMessage(onMessageCallback);
     _client.onEvent(onEventsCallback);
