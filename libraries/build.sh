@@ -1,6 +1,7 @@
 #!/bin/bash
 ARDUINO_PATH="/mnt/c/fd_work/Arduino"
 ESP32_VER=`ls ${ARDUINO_PATH}/portable/packages/esp32/hardware/esp32/`
+mkdir -p ../scratch3
 
 #################
 TARGETS=\
