@@ -23,7 +23,7 @@
 
 	// ヘッダ (C言語)
 	"header":"
-#define mVersion \"QuadCrawlerAI1.2\"
+#define mVersion \"QuadCrawlerAI1.3\"
 
 #include \"QuadCrawlerAI.h\"
 #include <TukurutchEsp.h>
