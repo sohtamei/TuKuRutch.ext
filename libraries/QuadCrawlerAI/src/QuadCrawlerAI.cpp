@@ -98,13 +98,13 @@ static uint8_t cur_com = COM_STOP;
 static uint8_t  motionState = MotionOff;
 static uint32_t motionStart = 0;
 static uint16_t motionDur = quadCrawler_fast;
-
+/*
 #define VMD_FRAME_SIZE 10
 #define VMD_FRAME_MAX  200
 static uint8_t  motionVmdBuf[VMD_FRAME_MAX][VMD_FRAME_SIZE];
 static uint16_t motionVmdNum = 0;
 static uint16_t motionVmdIndex = 0;
-
+*/
 //---------------------------------------------------------
 
 static int8_t servoPos[8] = {0,0,0,0,0,0,0,0};
@@ -426,7 +426,7 @@ void quadCrawler_servoLoop(void)
 			return;
 		}
 		break;
-
+/*
 	case MotionVmd: {
 		if(elapsed < (GetL16(motionVmdBuf[motionVmdIndex]+0) * 1000UL) / 30)
 			break;
@@ -445,6 +445,7 @@ void quadCrawler_servoLoop(void)
 	//	Serial.printf("%d %d %d %d %d %d %d %d\n", motion[0], motion[1], motion[2], motion[3], motion[4], motion[5], motion[6], motion[7]);
 		break;
 	  }
+*/
 	default:
 		break;
 	}
@@ -736,6 +737,7 @@ uint8_t quadCrawler_digitalRead(uint8_t pin)
 
 void quadCrawler_setMotion(uint8_t* buf, int size)
 {
+/*
 	cur_com = COM_POSE;
 	motionVmdNum = size/VMD_FRAME_SIZE;
 	if(motionVmdNum > VMD_FRAME_MAX) motionVmdNum = VMD_FRAME_MAX;
@@ -752,6 +754,7 @@ void quadCrawler_setMotion(uint8_t* buf, int size)
 	int speed = ((GetL16(motionVmdBuf[motionVmdIndex]+0) - GetL16(motionVmdBuf[motionVmdIndex-1]+0)) * 1000UL) / 30;
 
 	setTargets((int8_t*)motionVmdBuf[motionVmdIndex]+2, speed, MotionVmd);
+*/
 }
 
 // Lidar -----------------

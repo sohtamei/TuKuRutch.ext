@@ -224,6 +224,9 @@ void _setup(const char* ver)
 	}
 #if defined(__AVR_ATmega328P__)
 	pinMode(P_BUZZER, OUTPUT);
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+	pinMode(P_BUZZER2, OUTPUT);
+	digitalWrite(P_BUZZER2, LOW);
 #endif
 	_tone(P_BUZZER, T_C5, 100);
 

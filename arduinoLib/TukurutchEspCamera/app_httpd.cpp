@@ -23,6 +23,7 @@
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
 #endif
+#include <Arduino.h>
 
 // Face Detection will not work on boards without (or with disabled) PSRAM
 #ifdef BOARD_HAS_PSRAM
@@ -770,6 +771,7 @@ static esp_err_t stream_handler(httpd_req_t *req)
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
         uint32_t avg_frame_time = ra_filter_run(&ra_filter, frame_time);
 #endif
+#if 1 // MJPG or heap
         log_i("MJPG: %uB %ums (%.1ffps), AVG: %ums (%.1ffps)"
 #if CONFIG_ESP_FACE_DETECT_ENABLED
                       ", %u+%u+%u+%u=%u %s%d"
@@ -784,6 +786,9 @@ static esp_err_t stream_handler(httpd_req_t *req)
                  (detected) ? "DETECTED " : "", face_id
 #endif
         );
+#else
+Serial.printf("heap/min=%5d,%5d\n",esp_get_free_heap_size(),esp_get_minimum_free_heap_size());
+#endif
     }
 
     isStreaming = false;
@@ -1203,7 +1208,6 @@ static esp_err_t index_handler(httpd_req_t *req)
 }
 
 // esp-idf.mater/examples/protocols/http_server/file_serving/main/file_server.c
-#include <Arduino.h>
 #include <sys/param.h>  // for MIN
 #include "esp_vfs.h"
 #include "esp_spiffs.h"
@@ -1212,7 +1216,7 @@ static esp_err_t index_handler(httpd_req_t *req)
 #define FILE_PATH_MAX (ESP_VFS_PATH_MAX + CONFIG_SPIFFS_OBJ_NAME_LEN)
 
 /* Scratch buffer size */
-#define SCRATCH_BUFSIZE  4096//8192
+#define SCRATCH_BUFSIZE  1024//4096//8192
 
 struct file_server_data {
     /* Base path of file storage */

@@ -15,8 +15,8 @@
   #define P_BUZZER2G 14
   #define LEDC_BUZZER2 13
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
-  #define P_BUZZER  16//19
-  #define P_BUZZER2 20
+  #define P_BUZZER  17//16//19
+  #define P_BUZZER2 18//20
 #endif
 
 void _setup(const char* ver);
