@@ -11,6 +11,7 @@
   static BLEPeripheral blePeripheral = BLEPeripheral();
 #elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
   #include <Adafruit_TinyUSB.h>
+  #include <hardware/pwm.h>
   #include <MIDI.h>
   Adafruit_USBD_MIDI usb_midi;
   MIDI_CREATE_INSTANCE(Adafruit_USBD_MIDI, usb_midi, MIDI);
@@ -398,10 +399,20 @@ static void _setPwm(uint8_t port, uint16_t data)
     }
   }
 }
+#elif defined (ARDUINO_ARCH_MBED_RP2040) || defined(ARDUINO_ARCH_RP2040)
+static void _setPwm(uint8_t port, uint16_t data)
+{
+  gpio_set_function(port, GPIO_FUNC_PWM);
+  uint slice_num = pwm_gpio_to_slice_num(port);
+  pwm_set_wrap(slice_num, 20000-1);    // 133MHz/(20000*133) = 50Hz
+  pwm_set_clkdiv(slice_num, 133.0f);
+  data = (data*625UL)/128;  // 4096->20000
+  pwm_set_gpio_level(port, data);
+  pwm_set_enabled(slice_num, true);
+}
 #else
 // 328P:3,5,6,9,10,11  8bit
 // nRF51,nRF52:5と11除く、8bit、3chまで
-// RP2040
   #define _setPwm(port, data) analogWrite(port, (data)>>4)
 #endif
 
