@@ -18,6 +18,7 @@
 	"scratch3burn"	: [
 			{"name":"M5TimerCam",     "type":"esp32",   "baudrate":1500000, "binPath":"esp32cam/M5TimerCam"},
 			{"name":"M5Camera",       "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/M5Camera"},
+			{"name":"AtomS3R",        "type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/atomS3R"},
 			{"name":"UnitCam",        "type":"esp32",   "baudrate":921600, "binPath":"esp32cam/unitCam"},
 			{"name":"UnitCamS3.uart", "type":"esp32s3", "baudrate":921600, "binPath":"esp32cam/unitCamS3"},
 			{"name":"UnitCamS3.usb",  "type":"esp32s3u","baudrate":921600, "binPath":"esp32cam/unitCamS3u"},

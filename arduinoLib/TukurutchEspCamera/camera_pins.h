@@ -286,6 +286,30 @@
   #define P_LED				-1
   #define P_LED_NEG			0
 
+#elif defined(CAMERA_MODEL_ATOMS3R)
+// ATOMS3R M12, 
+  #define PWDN_GPIO_NUM -1
+  #define RESET_GPIO_NUM -1		// AW9523B_P1_0
+  #define XCLK_GPIO_NUM 21
+  #define SIOD_GPIO_NUM 12
+  #define SIOC_GPIO_NUM 9
+
+  #define Y2_GPIO_NUM 3
+  #define Y3_GPIO_NUM 42
+  #define Y4_GPIO_NUM 46
+  #define Y5_GPIO_NUM 48
+  #define Y6_GPIO_NUM 4
+  #define Y7_GPIO_NUM 17
+  #define Y8_GPIO_NUM 11
+  #define Y9_GPIO_NUM 13
+
+  #define VSYNC_GPIO_NUM 10
+  #define HREF_GPIO_NUM 14
+  #define PCLK_GPIO_NUM 40
+
+  #define P_LED				-1
+  #define P_LED_NEG			0
+
 #else
   #error
 #endif
